@@ -31,4 +31,7 @@ pub enum ParseError {
     
     #[error("Indentation error at line {0}: {1}")]
     IndentationError(usize, String),
+    
+    #[error("Invalid pattern at line {0}, column {1}")]
+    InvalidPattern(usize, usize),
 }
