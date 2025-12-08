@@ -1,7 +1,4 @@
-# Ensure only C++ and CMake are treated in GitHub Linguist
-*.cpp linguist-language=C++
-*.h linguist-language=C++
-CMakeLists.txt linguist-language=CMake
-*.cmake linguist-language=CMake
+# Ensure only Rust is treated in GitHub Linguist
+*.rs linguist-language=Rust
 # Exclude other file types from being counted in language statistics
 * linguist-vendored
