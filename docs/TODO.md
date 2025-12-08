@@ -1,10 +1,12 @@
 # Silk Language - Complete Technical Roadmap
 
+> **⚠️ ACCURACY NOTE**: This document has been updated with accurate implementation status as of December 8, 2025. Previous versions incorrectly marked some components as "complete" when they had critical missing features. See detailed findings below.
+
 ## Current Progress Summary (as of December 8, 2025)
 
 ### ✅ Completed
 - **Project Structure**: Cargo workspace with 5 crates (`silk-cli`, `silk-compiler`, `silk-lexer`, `silk-ast`, `silk-parser`)
-- **Lexer**: Fully functional lexical analyzer
+- **Lexer**: Mostly functional lexical analyzer (⚠️ CRITICAL: missing indentation tracking)
   - 67 token types (35 keywords + operators + literals + delimiters)
   - Complete Unicode support (identifiers and strings)
   - String literals: single/double/triple-quoted with escape sequences
@@ -13,36 +15,86 @@
   - Source location tracking (line, column, span)
   - 7 error types with comprehensive error reporting
   - **72 tests passing** (8 unit + 64 integration tests)
+  - ⚠️ **CRITICAL MISSING**: Indentation tracking (INDENT/DEDENT tokens)
+    - `indent_stack` field exists but logic NOT implemented
+    - Tokens defined (TokenKind::Indent, TokenKind::Dedent) but NEVER generated
+    - Cannot parse Python-style block structure (functions, classes, if/for/while bodies)
+    - This is a BLOCKER for parsing real Python code
 - **AST Definitions** (`silk-ast` crate):
   - 67 AST node variants across 4 modules
   - Expression nodes: 30+ kinds (literals, identifiers, binary/unary ops, comparisons, logical ops, calls, subscripts, attributes, collections)
   - Statement nodes: 20+ kinds (assignments, control flow, imports, function/class definitions)
   - Type annotation nodes: 9 kinds
   - Pattern nodes: 8 kinds for match statements
-- **Parser** (`silk-parser` crate):
-  - Operator precedence climbing algorithm
-  - Expression parsing: literals, identifiers, binary/unary operators, comparisons, logical operators
-  - Postfix operators: function calls, subscripts, attribute access
-  - Collection literals: lists (complete), dict/set (TODO)
-  - Statement parsing: expression statements, assignments (simple/augmented), return, pass, break, continue
-  - ParseError types with 7 error variants
-  - **67 tests passing** covering all implemented features
+- **Parser** (`silk-parser` crate): ⚠️ **PARTIALLY COMPLETE**
+  - Operator precedence climbing algorithm ✅
+  - Expression parsing: literals, identifiers, binary/unary operators, comparisons, logical operators ✅
+  - Postfix operators: function calls, subscripts, attribute access ✅
+  - Collection literals: lists (complete) ✅, dict/set (TODO) ❌
+  - Statement parsing: expression statements ✅, assignments (simple/augmented) ✅, return ✅, pass ✅, break ✅, continue ✅
+  - ParseError types with 7 error variants ✅
+  - **67 tests passing** covering all implemented features ✅
+  - ⚠️ **CRITICAL MISSING**: 16 statement types use `todo!()` (will panic if called)
+    - if/elif/else, while, for loops ❌
+    - Function definitions (def) ❌
+    - Class definitions (class) ❌
+    - Import statements (import, from) ❌
+    - Exception handling (try, raise) ❌
+    - Context managers (with) ❌
+    - Pattern matching (match) ❌
+    - global, nonlocal, assert, del statements ❌
+    - Cannot parse ANY real Python code beyond simple expressions
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
 - **Error Handling**: Foundation with custom error types using thiserror
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - Lexer ✅, AST ✅, Parser (basic expressions & statements complete)
+- **Phase 1: Foundation** - ~70% complete but with CRITICAL gaps
+  - Lexer ⚠️ (95% - missing indentation tracking)
+  - AST ✅ (100% - all definitions complete)
+  - Parser ⚠️ (40% - expressions work, most statements stubbed with todo!())
+  - Semantic Analysis ❌ (0% - not started)
+  - Code Generation ❌ (0% - not started)
+  - Runtime ❌ (0% - not started)
 
-### 📋 Next Steps (Parser Enhancement)
-1. Complete statement parsing: if, while, for, def, class, import, with, try, match
-2. Complete expression parsing: dict/set literals, comprehensions, lambda, if-expressions, slices
-3. Add tuple support and unpacking
-4. Implement indentation/dedentation token generation in lexer (INDENT/DEDENT)
-5. Add binary (0b), octal (0o), hexadecimal (0x) number formats
-6. Add numeric literal underscores (1_000)
-7. Add raw strings (r"...") and f-strings
-8. Begin semantic analysis phase
+### 📋 Next Steps (PRIORITY ORDER)
+
+#### 🔴 CRITICAL - Must Fix First (Blockers)
+1. **FIX LEXER INDENTATION** (1-2 weeks)
+   - Implement indent_stack logic in lexer
+   - Generate INDENT tokens when indentation increases
+   - Generate DEDENT tokens when indentation decreases
+   - Add indentation error detection
+   - Add comprehensive tests for indentation edge cases
+   - **BLOCKER**: Without this, cannot parse any Python block structure
+
+2. **COMPLETE PARSER STATEMENTS** (2-4 weeks)
+   - Remove all 16 `todo!()` statements in stmt.rs
+   - Implement: if/elif/else, while, for, def, class
+   - Implement: import, from, global, nonlocal, assert, raise, del, with, try, match
+   - Add comprehensive tests for each statement type
+   - **BLOCKER**: Without this, cannot parse real Python code
+
+#### 🟡 HIGH Priority (Phase 1 completion)
+3. Complete expression parsing (2-3 weeks):
+   - Dict/set literals, comprehensions, lambda, if-expressions, slices
+   - Tuple support and unpacking
+   
+4. Lexer enhancements (1-2 weeks):
+   - Binary (0b), octal (0o), hexadecimal (0x) number formats
+   - Numeric literal underscores (1_000)
+   - Raw strings (r"...") and f-strings
+
+5. Begin semantic analysis phase (2-3 months):
+   - Create silk-semantic crate
+   - Symbol table management
+   - Type inference engine
+   - Basic type checking
+
+#### 🟢 MEDIUM Priority (Phase 2)
+6. Code generation foundation (2-3 months)
+7. Runtime library basics (1-2 months)
+8. Optimization passes (1-2 months)
 
 ---
 
