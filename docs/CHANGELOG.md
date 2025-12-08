@@ -50,14 +50,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LLVM backend integration details
 - `silk-ast` crate with 67 AST node variants (expressions, statements, types, patterns)
 - `silk-parser` crate with parser infrastructure and error handling
-- Expression parsing with operator precedence climbing algorithm
-- Basic expression support: literals, identifiers, binary/unary operators, comparisons, logical operations
-- Postfix expression support: function calls, subscripts, attribute access
-- Collection literals: lists (complete), dict/set (TODO)
-- Statement parsing: expression statements, assignments, augmented assignments, return
-- Control flow statements: pass, break, continue (simple forms)
-- ParseError types with detailed error information
+- Expression parsing with operator precedence climbing algorithm (13 precedence levels)
+- Basic expression support: literals (int/float/string/bool/None), identifiers, binary/unary operators, comparisons, logical operations
+- Postfix expression support: function calls (with args), subscripts, attribute access (chaining supported)
+- Collection literals: lists (complete with nested support), dict/set (TODO)
+- Statement parsing: expression statements, assignments (simple with type_annotation field), augmented assignments (all operators)
+- Control flow statements: return (with/without value), pass, break, continue
+- ParseError types with 7 error variants and detailed location information
 - Parser helper methods: token navigation, lookahead, expectation checking
+- Parser infinite loop protection with proper precedence handling
+- Comprehensive parser test suite: 67 tests covering all implemented features
+  - Literal tests (7): integers, floats, strings, booleans, None
+  - Identifier tests (2): simple and with underscores
+  - Binary operator tests (5): +, -, *, /, **
+  - Operator precedence tests (3): precedence rules, parentheses, right-associativity
+  - Unary operator tests (4): +, -, ~, not
+  - Comparison tests (6): ==, !=, <, >, <=, >=
+  - Logical operator tests (3): and, or, precedence
+  - Function call tests (4): no args, single arg, multiple args, nested calls
+  - Subscript tests (3): integer index, expression index, chained subscripts
+  - Attribute access tests (3): simple, chained, method calls
+  - List literal tests (4): empty, with elements, with expressions, nested
+  - Statement tests (10): expression stmt, assignments, augmented assignments, return, pass, break, continue
+  - Multiple statement tests (2): sequences, with blank lines
+  - Error tests (4): unexpected token, missing delimiters, invalid syntax
+  - Edge case tests (7): complex expressions, deep nesting, whitespace, trailing commas, empty programs
 - Register allocation and instruction selection
 - Platform-specific ABI and calling conventions
 - Linking process and executable generation
