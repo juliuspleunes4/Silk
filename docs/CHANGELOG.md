@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 14-phase roadmap spanning 40+ months
 - Immediate focus areas and critical dependencies
 - Long-term vision statement
+- Complete compiler architecture documentation (ARCHITECTURE.md)
+- Detailed explanation of all 11 compilation stages
+- SSA form and control flow graph construction
+- Optimization passes documentation (DCE, constant folding, inlining, loop opts)
+- LLVM backend integration details
+- Register allocation and instruction selection
+- Platform-specific ABI and calling conventions
+- Linking process and executable generation
+- Runtime initialization and program execution flow
+- Performance characteristics and benchmarks
+- End-to-end compilation example with timing
 
 ### Changed
 - 
