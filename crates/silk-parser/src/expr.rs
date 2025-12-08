@@ -36,7 +36,8 @@ impl Parser {
         while !self.is_at_end() {
             let precedence = self.get_precedence();
             
-            if precedence < min_precedence {
+            // Stop if precedence is None (not an operator) or less than minimum
+            if precedence == Precedence::None || precedence < min_precedence {
                 break;
             }
             
@@ -163,8 +164,14 @@ impl Parser {
             }
         };
         
-        let end = self.current_token().span.clone();
-        let span = silk_lexer::Span::new(start.start, end.end, start.line, start.column);
+        // Get end position from the previous token (we've advanced past it)
+        let end_pos = if self.position > 0 {
+            self.tokens[self.position - 1].span.end
+        } else {
+            start.end
+        };
+        
+        let span = silk_lexer::Span::new(start.start, end_pos, start.line, start.column);
         
         Ok(Expression::new(kind, span))
     }
@@ -172,6 +179,7 @@ impl Parser {
     /// Parse infix operators (binary, comparison, logical, postfix)
     fn parse_infix(&mut self, left: Expression, _precedence: Precedence) -> ParseResult<Expression> {
         let start = left.span.clone();
+        let op_start = self.current_token().span.clone();
         
         let kind = match self.current_token().kind {
             // Binary operators
@@ -315,8 +323,14 @@ impl Parser {
             _ => return Ok(left),
         };
         
-        let end = self.current_token().span.clone();
-        let span = silk_lexer::Span::new(start.start, end.end, start.line, start.column);
+        // Get end position from the previous token (we've moved past it)
+        let end_pos = if self.position > 0 {
+            self.tokens[self.position - 1].span.end
+        } else {
+            op_start.end
+        };
+        
+        let span = silk_lexer::Span::new(start.start, end_pos, start.line, start.column);
         
         Ok(Expression::new(kind, span))
     }
