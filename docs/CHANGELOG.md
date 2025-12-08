@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 
+- Copilot instructions for Silk compiler development workflow
+- Comprehensive development guidelines and best practices
+- Testing requirements and code quality standards
+- Language design philosophy: Python syntax with C-level performance
 
 ### Changed
 - 
