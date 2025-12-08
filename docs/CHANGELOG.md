@@ -48,6 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSA form and control flow graph construction
 - Optimization passes documentation (DCE, constant folding, inlining, loop opts)
 - LLVM backend integration details
+- `silk-ast` crate with 67 AST node variants (expressions, statements, types, patterns)
+- `silk-parser` crate with parser infrastructure and error handling
+- Expression parsing with operator precedence climbing algorithm
+- Basic expression support: literals, identifiers, binary/unary operators, comparisons, logical operations
+- Postfix expression support: function calls, subscripts, attribute access
+- Collection literals: lists (complete), dict/set (TODO)
+- Statement parsing: expression statements, assignments, augmented assignments, return
+- Control flow statements: pass, break, continue (simple forms)
+- ParseError types with detailed error information
+- Parser helper methods: token navigation, lookahead, expectation checking
 - Register allocation and instruction selection
 - Platform-specific ABI and calling conventions
 - Linking process and executable generation

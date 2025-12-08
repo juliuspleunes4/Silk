@@ -59,7 +59,7 @@ fn main() -> Result<()> {
     let compiler = Compiler::new();
     
     match cli.command {
-        Commands::Build { file, output, opt_level } => {
+        Commands::Build { file, output: _, opt_level } => {
             println!("Building {} (opt-level: {})...", file.display(), opt_level);
             let source = fs::read_to_string(&file)?;
             

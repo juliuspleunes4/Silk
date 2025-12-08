@@ -1,0 +1,403 @@
+/// Expression parsing with operator precedence
+
+use silk_ast::{Expression, ExpressionKind, BinaryOperator, UnaryOperator, CompareOperator, LogicalOperator};
+use silk_lexer::TokenKind;
+use crate::{Parser, ParseResult, ParseError};
+
+/// Operator precedence levels (higher = tighter binding)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Precedence {
+    None = 0,
+    Or = 1,           // or
+    And = 2,          // and
+    Not = 3,          // not (prefix)
+    Comparison = 4,   // ==, !=, <, >, <=, >=, in, not in, is, is not
+    BitwiseOr = 5,    // |
+    BitwiseXor = 6,   // ^
+    BitwiseAnd = 7,   // &
+    Shift = 8,        // <<, >>
+    Addition = 9,     // +, -
+    Multiplication = 10, // *, /, //, %, @
+    Unary = 11,       // +, -, ~
+    Power = 12,       // **
+    Primary = 13,     // ., [], ()
+}
+
+impl Parser {
+    /// Parse an expression
+    pub(crate) fn parse_expression(&mut self) -> ParseResult<Expression> {
+        self.parse_precedence(Precedence::None)
+    }
+    
+    /// Parse expression with operator precedence climbing
+    fn parse_precedence(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
+        let mut left = self.parse_primary()?;
+        
+        while !self.is_at_end() {
+            let precedence = self.get_precedence();
+            
+            if precedence < min_precedence {
+                break;
+            }
+            
+            left = self.parse_infix(left, precedence)?;
+        }
+        
+        Ok(left)
+    }
+    
+    /// Parse a primary expression (literals, identifiers, prefix operators, grouping)
+    fn parse_primary(&mut self) -> ParseResult<Expression> {
+        let start = self.current_token().span.clone();
+        
+        let kind = match &self.current_token().kind {
+            // Literals
+            TokenKind::Integer(value) => {
+                let value = *value;
+                self.advance();
+                ExpressionKind::Integer(value)
+            }
+            TokenKind::Float(value) => {
+                let value = *value;
+                self.advance();
+                ExpressionKind::Float(value)
+            }
+            TokenKind::String(value) => {
+                let value = value.clone();
+                self.advance();
+                ExpressionKind::String(value)
+            }
+            TokenKind::True => {
+                self.advance();
+                ExpressionKind::Boolean(true)
+            }
+            TokenKind::False => {
+                self.advance();
+                ExpressionKind::Boolean(false)
+            }
+            TokenKind::None => {
+                self.advance();
+                ExpressionKind::None
+            }
+            
+            // Identifier
+            TokenKind::Identifier => {
+                let name = self.current_token().lexeme.clone();
+                self.advance();
+                ExpressionKind::Identifier(name)
+            }
+            
+            // Grouping
+            TokenKind::LeftParen => {
+                self.advance(); // consume '('
+                let expr = self.parse_expression()?;
+                self.expect(TokenKind::RightParen, "Expected ')' after expression")?;
+                return Ok(expr); // Return grouped expression directly
+            }
+            
+            // Unary operators
+            TokenKind::Plus | TokenKind::Minus | TokenKind::Tilde => {
+                let op = match self.current_token().kind {
+                    TokenKind::Plus => UnaryOperator::UAdd,
+                    TokenKind::Minus => UnaryOperator::USub,
+                    TokenKind::Tilde => UnaryOperator::Invert,
+                    _ => unreachable!(),
+                };
+                self.advance();
+                let operand = self.parse_precedence(Precedence::Unary)?;
+                ExpressionKind::UnaryOp {
+                    op,
+                    operand: Box::new(operand),
+                }
+            }
+            
+            // Not operator
+            TokenKind::Not => {
+                self.advance();
+                let operand = self.parse_precedence(Precedence::Not)?;
+                ExpressionKind::UnaryOp {
+                    op: UnaryOperator::Not,
+                    operand: Box::new(operand),
+                }
+            }
+            
+            // List literal
+            TokenKind::LeftBracket => {
+                self.advance(); // consume '['
+                let mut elements = Vec::new();
+                
+                while !self.check(TokenKind::RightBracket) && !self.is_at_end() {
+                    elements.push(self.parse_expression()?);
+                    
+                    if !self.check(TokenKind::RightBracket) {
+                        self.expect(TokenKind::Comma, "Expected ',' or ']' in list")?;
+                    }
+                }
+                
+                self.expect(TokenKind::RightBracket, "Expected ']' after list elements")?;
+                ExpressionKind::List { elements }
+            }
+            
+            // Dict/set literal
+            TokenKind::LeftBrace => {
+                self.advance(); // consume '{'
+                
+                // Empty dict
+                if self.check(TokenKind::RightBrace) {
+                    self.advance();
+                    return Ok(Expression::new(
+                        ExpressionKind::Dict { keys: vec![], values: vec![] },
+                        silk_lexer::Span::new(start.start, self.current_token().span.end, start.line, start.column)
+                    ));
+                }
+                
+                // TODO: Distinguish between dict and set
+                todo!("Implement dict/set literal parsing")
+            }
+            
+            _ => {
+                return Err(ParseError::InvalidExpression(
+                    self.current_token().span.line,
+                    self.current_token().span.column,
+                ));
+            }
+        };
+        
+        let end = self.current_token().span.clone();
+        let span = silk_lexer::Span::new(start.start, end.end, start.line, start.column);
+        
+        Ok(Expression::new(kind, span))
+    }
+    
+    /// Parse infix operators (binary, comparison, logical, postfix)
+    fn parse_infix(&mut self, left: Expression, _precedence: Precedence) -> ParseResult<Expression> {
+        let start = left.span.clone();
+        
+        let kind = match self.current_token().kind {
+            // Binary operators
+            TokenKind::Plus => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Addition.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Add,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Minus => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Addition.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Sub,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Star => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Multiplication.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Mult,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Slash => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Multiplication.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Div,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::DoubleStar => {
+                self.advance();
+                // Power is right-associative
+                let right = self.parse_precedence(Precedence::Power)?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Pow,
+                    right: Box::new(right),
+                }
+            }
+            
+            // Comparison operators
+            TokenKind::Equal => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::Eq],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::NotEqual => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::NotEq],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::Less => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::Lt],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::Greater => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::Gt],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::LessEqual => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::LtE],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::GreaterEqual => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::GtE],
+                    comparators: vec![right],
+                }
+            }
+            
+            // Logical operators
+            TokenKind::And => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::And.succ())?;
+                ExpressionKind::LogicalOp {
+                    left: Box::new(left),
+                    op: LogicalOperator::And,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Or => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Or.succ())?;
+                ExpressionKind::LogicalOp {
+                    left: Box::new(left),
+                    op: LogicalOperator::Or,
+                    right: Box::new(right),
+                }
+            }
+            
+            // Postfix operators
+            TokenKind::LeftParen => {
+                // Function call
+                self.parse_call(left)?
+            }
+            TokenKind::LeftBracket => {
+                // Subscript
+                self.parse_subscript(left)?
+            }
+            TokenKind::Dot => {
+                // Attribute access
+                self.parse_attribute(left)?
+            }
+            
+            _ => return Ok(left),
+        };
+        
+        let end = self.current_token().span.clone();
+        let span = silk_lexer::Span::new(start.start, end.end, start.line, start.column);
+        
+        Ok(Expression::new(kind, span))
+    }
+    
+    /// Get precedence of current token
+    fn get_precedence(&self) -> Precedence {
+        match self.current_token().kind {
+            TokenKind::Or => Precedence::Or,
+            TokenKind::And => Precedence::And,
+            TokenKind::Equal | TokenKind::NotEqual | TokenKind::Less | TokenKind::Greater |
+            TokenKind::LessEqual | TokenKind::GreaterEqual | TokenKind::In | TokenKind::Is => {
+                Precedence::Comparison
+            }
+            TokenKind::Pipe => Precedence::BitwiseOr,
+            TokenKind::Caret => Precedence::BitwiseXor,
+            TokenKind::Ampersand => Precedence::BitwiseAnd,
+            TokenKind::LeftShift | TokenKind::RightShift => Precedence::Shift,
+            TokenKind::Plus | TokenKind::Minus => Precedence::Addition,
+            TokenKind::Star | TokenKind::Slash | TokenKind::DoubleSlash |
+            TokenKind::Percent => Precedence::Multiplication,
+            TokenKind::DoubleStar => Precedence::Power,
+            TokenKind::LeftParen | TokenKind::LeftBracket | TokenKind::Dot => Precedence::Primary,
+            _ => Precedence::None,
+        }
+    }
+    
+    fn parse_call(&mut self, func: Expression) -> ParseResult<ExpressionKind> {
+        self.advance(); // consume '('
+        
+        let mut args = Vec::new();
+        let keywords = Vec::new();
+        
+        while !self.check(TokenKind::RightParen) && !self.is_at_end() {
+            // TODO: Handle keyword arguments
+            args.push(self.parse_expression()?);
+            
+            if !self.check(TokenKind::RightParen) {
+                self.expect(TokenKind::Comma, "Expected ',' or ')' in function call")?;
+            }
+        }
+        
+        self.expect(TokenKind::RightParen, "Expected ')' after function arguments")?;
+        
+        Ok(ExpressionKind::Call {
+            func: Box::new(func),
+            args,
+            keywords,
+        })
+    }
+    
+    fn parse_subscript(&mut self, value: Expression) -> ParseResult<ExpressionKind> {
+        self.advance(); // consume '['
+        
+        let index = self.parse_expression()?;
+        
+        self.expect(TokenKind::RightBracket, "Expected ']' after subscript")?;
+        
+        Ok(ExpressionKind::Subscript {
+            value: Box::new(value),
+            index: Box::new(index),
+        })
+    }
+    
+    fn parse_attribute(&mut self, value: Expression) -> ParseResult<ExpressionKind> {
+        self.advance(); // consume '.'
+        
+        let attr = self.expect(TokenKind::Identifier, "Expected attribute name after '.'")?;
+        
+        Ok(ExpressionKind::Attribute {
+            value: Box::new(value),
+            attr: attr.lexeme,
+        })
+    }
+}
+
+impl Precedence {
+    /// Get next higher precedence level (for left-associative operators)
+    fn succ(self) -> Self {
+        match self as u8 {
+            x if x < Precedence::Primary as u8 => unsafe { std::mem::transmute(x + 1) },
+            _ => self,
+        }
+    }
+}

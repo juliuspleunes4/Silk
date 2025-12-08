@@ -1,0 +1,15 @@
+[package]
+name = "silk-parser"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+silk-lexer = { path = "../silk-lexer" }
+silk-ast = { path = "../silk-ast" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "silk-ast"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+silk-lexer = { path = "../silk-lexer" }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

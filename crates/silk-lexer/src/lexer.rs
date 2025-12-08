@@ -6,10 +6,11 @@ use crate::error::{LexError, LexResult};
 use crate::token::{Span, Token, TokenKind};
 
 pub struct Lexer {
-    source: Vec<char>,
+    input: Vec<char>,
     position: usize,
     line: usize,
     column: usize,
+    #[allow(dead_code)] // TODO: Used for indentation tracking
     indent_stack: Vec<usize>,
 }
 
@@ -17,7 +18,7 @@ impl Lexer {
     /// Create a new lexer from source code
     pub fn new(source: &str) -> Self {
         Self {
-            source: source.chars().collect(),
+            input: source.chars().collect(),
             position: 0,
             line: 1,
             column: 1,
@@ -93,20 +94,20 @@ impl Lexer {
     // Helper methods
     
     fn current_char(&self) -> char {
-        self.source[self.position]
+        self.input[self.position]
     }
     
     fn peek_char(&self, offset: usize) -> Option<char> {
         let pos = self.position + offset;
-        if pos < self.source.len() {
-            Some(self.source[pos])
+        if pos < self.input.len() {
+            Some(self.input[pos])
         } else {
             std::option::Option::None
         }
     }
     
     fn advance(&mut self) -> char {
-        let ch = self.source[self.position];
+        let ch = self.input[self.position];
         self.position += 1;
         
         if ch == '\n' {
@@ -120,7 +121,7 @@ impl Lexer {
     }
     
     fn is_at_end(&self) -> bool {
-        self.position >= self.source.len()
+        self.position >= self.input.len()
     }
     
     fn skip_whitespace_inline(&mut self) {
@@ -159,7 +160,7 @@ impl Lexer {
             self.advance();
         }
         
-        let lexeme: String = self.source[start_pos..self.position].iter().collect();
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
         
         Ok(Token {
             kind: TokenKind::Comment,
@@ -181,7 +182,7 @@ impl Lexer {
             }
         }
         
-        let lexeme: String = self.source[start_pos..self.position].iter().collect();
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
         
         // Check if it's a keyword
         let kind = TokenKind::keyword(&lexeme).unwrap_or(TokenKind::Identifier);
@@ -244,7 +245,7 @@ impl Lexer {
             }
         }
         
-        let lexeme: String = self.source[start_pos..self.position].iter().collect();
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
         
         let kind = if is_float {
             match lexeme.parse::<f64>() {
@@ -345,7 +346,7 @@ impl Lexer {
             }
         }
         
-        let lexeme: String = self.source[start_pos..self.position].iter().collect();
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
         
         Ok(Token {
             kind: TokenKind::String(value),
@@ -530,7 +531,7 @@ impl Lexer {
             }
         };
         
-        let lexeme: String = self.source[start_pos..self.position].iter().collect();
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
         
         Ok(Token {
             kind,
@@ -641,3 +642,4 @@ mod tests {
         assert_eq!(tokens[3].kind, TokenKind::Comment);
     }
 }
+

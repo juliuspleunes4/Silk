@@ -1,8 +1,8 @@
 [workspace]
-members = [
+members = ["crates/silk-ast",
     "crates/silk-cli",
     "crates/silk-compiler",
-    "crates/silk-lexer",
+    "crates/silk-lexer", "crates/silk-parser",
 ]
 resolver = "2"
 
