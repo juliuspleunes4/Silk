@@ -37,3 +37,7 @@ Makefile
 
 # Output
 *.log
+
+# Added by cargo
+
+/target

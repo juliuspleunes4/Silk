@@ -1,0 +1,16 @@
+[package]
+name = "silk-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "silk"
+path = "src/main.rs"
+
+[dependencies]
+silk-compiler = { path = "../silk-compiler" }
+clap.workspace = true
+anyhow.workspace = true
