@@ -338,8 +338,8 @@
   - Solution: `parse_expression()` stops naturally at `for` (not an infix operator)
 - [x] **9.2** Implement `parse_generator_expression(element, start)`
 - [x] **9.3** Test: `(x for x in items)` and `(x for x in items if x > 0)`
-- **Result**: All 226 parser tests passing, all 352 workspace tests passing
-- [ ] **9.4** Test: `sum(x*x for x in range(100))`
+- [x] **9.4** Test: `sum(x*x for x in range(100))` - generator in function call without parens
+- **Result**: All 227 parser tests passing, all 353 workspace tests passing
 
 #### Step 10: Edge Cases & Polish (2 hours)
 - [ ] **10.1** Empty sequences: `[x for x in []]`

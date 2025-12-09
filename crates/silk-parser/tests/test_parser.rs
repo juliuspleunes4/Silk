@@ -3590,4 +3590,34 @@ fn test_generator_exp_with_filter() {
     }
 }
 
+#[test]
+fn test_generator_exp_in_function_call() {
+    let source = "sum(x * x for x in range(100))";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::Call { ref func, ref args, keywords: _ } => {
+            // Check function name is 'sum'
+            assert!(matches!(func.kind, ExpressionKind::Identifier(ref name) if name == "sum"));
+            
+            // Check one argument
+            assert_eq!(args.len(), 1);
+            
+            // Check argument is generator expression
+            match &args[0].kind {
+                ExpressionKind::GeneratorExp { element, generators } => {
+                    // Check element is x * x
+                    assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
+                    
+                    // Check one generator
+                    assert_eq!(generators.len(), 1);
+                    assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+                }
+                _ => panic!("Expected generator expression as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
 

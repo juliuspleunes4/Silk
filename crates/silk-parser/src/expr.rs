@@ -627,7 +627,22 @@ impl Parser {
                                 self.current_token().span.column,
                             ));
                         }
-                        args.push(self.parse_expression()?);
+                        
+                        let expr = self.parse_expression()?;
+                        
+                        // Check for generator expression
+                        if self.check(TokenKind::For) {
+                            let generators = self.parse_comprehension_generators()?;
+                            args.push(Expression::new(
+                                ExpressionKind::GeneratorExp {
+                                    element: Box::new(expr),
+                                    generators,
+                                },
+                                silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                            ));
+                        } else {
+                            args.push(expr);
+                        }
                     }
                 } else {
                     // No next token, treat as positional
@@ -638,7 +653,22 @@ impl Parser {
                             self.current_token().span.column,
                         ));
                     }
-                    args.push(self.parse_expression()?);
+                    
+                    let expr = self.parse_expression()?;
+                    
+                    // Check for generator expression
+                    if self.check(TokenKind::For) {
+                        let generators = self.parse_comprehension_generators()?;
+                        args.push(Expression::new(
+                            ExpressionKind::GeneratorExp {
+                                element: Box::new(expr),
+                                generators,
+                            },
+                            silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                        ));
+                    } else {
+                        args.push(expr);
+                    }
                 }
             }
             // Regular positional argument
@@ -650,7 +680,23 @@ impl Parser {
                         self.current_token().span.column,
                     ));
                 }
-                args.push(self.parse_expression()?);
+                
+                // Parse expression, then check for generator
+                let expr = self.parse_expression()?;
+                
+                // Check for generator expression: func(x for x in items)
+                if self.check(TokenKind::For) {
+                    let generators = self.parse_comprehension_generators()?;
+                    args.push(Expression::new(
+                        ExpressionKind::GeneratorExp {
+                            element: Box::new(expr),
+                            generators,
+                        },
+                        silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                    ));
+                } else {
+                    args.push(expr);
+                }
             }
             
             if !self.check(TokenKind::RightParen) {
