@@ -7,9 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🎯 ARCHITECTURE FIX - Single-Pass Semantic Analysis - December 9, 2025
+
+**Refactored semantic analyzer from two-pass to single-pass architecture**, eliminating scope persistence issues.
+
+**Problem Solved**:
+- Two-pass architecture had fundamental flaw: Pass 2 created new scopes instead of reusing Pass 1 scopes
+- This caused parameters to be redundantly redefined in Pass 2
+- Led to technical debt and complexity in extending semantic analysis
+
+**Solution - Single-Pass with Pre-Pass**:
+1. **Lightweight pre-pass**: Collect only function/class names for forward references  
+2. **Main pass**: Define symbols and validate references in one traversal
+3. **Natural scope persistence**: Scopes created once, used throughout analysis
+
+**Benefits**:
+- ✅ Cleaner architecture - eliminates redundant parameter definitions
+- ✅ Simpler mental model - one traversal instead of two
+- ✅ Forward references work correctly (Python compatibility)
+- ✅ Better foundation for type checking (next phase)
+- ✅ Less code, easier to maintain
+
+**New Test Coverage** - Added 14 forward reference tests:
+- Function calling function defined later
+- Class referencing class defined later
+- Mutual recursion between functions
+- Decorator/base class forward references
+- Nested function scope validation
+- Comprehension scope persistence
+
+**Total Test Count**: **484 tests** (115 lexer + 11 unit + 255 parser + 103 semantic)
+- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table
+
+---
+
 ### 🚀 PHASE 2 - Semantic Analysis Foundation - December 9, 2025
 
-**Implemented complete symbol table and two-pass semantic analyzer** with comprehensive testing (86 tests total).
+**Implemented complete symbol table and semantic analyzer** with comprehensive testing (89 tests total).
 
 **New Crate: silk-semantic**
 - Symbol table with scope stack management
