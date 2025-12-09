@@ -231,8 +231,141 @@
     - ✅ All 93 lexer tests passing, 183 parser tests passing (287 total workspace tests)
 
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
+
+### 🎯 COMPREHENSIONS - Systematic Implementation Plan
+
+**Goal**: Implement list/dict/set comprehensions and generator expressions to complete Phase 1 parser
+
+**Why This Failed Before**: 
+- Infinite recursion when parsing `[x for x in items]`
+- Parser called `parse_expression()` which saw `[` and started parsing list comprehension again
+- Conditional expressions (`if...else`) conflicted with comprehension filters (`if`)
+- Multiple filters caused hanging
+
+**New Approach - Incremental Micro-Tasks**:
+
+#### Step 1: Foundation & Understanding (30 min)
+- [ ] **1.1** Review AST structure in `silk-ast/src/expr.rs`:
+  - Understand `ListComp`, `DictComp`, `SetComp`, `GeneratorExp` variants
+  - Study `Comprehension` struct: `target`, `iter`, `ifs`, `is_async`
+  - Document what each field means with examples
+- [ ] **1.2** Study how current list parsing works in `parse_primary()`
+- [ ] **1.3** Study `expr_to_pattern()` - how we convert expressions to patterns
+
+#### Step 2: Detection Logic (1 hour)
+- [ ] **2.1** Modify list parsing to detect comprehensions
+  - After parsing first element in `[...]`, check if next token is `for`
+  - If yes → comprehension path
+  - If no → regular list path
+- [ ] **2.2** Write SINGLE test: `test_list_comp_detection`
+  - Test `[x]` → List (not comprehension)
+  - Test `[x for x in items]` → ListComp detected
+- [ ] **2.3** Run test, verify detection works before parsing
+
+#### Step 3: Simplest Comprehension - No Filters (2 hours)
+- [ ] **3.1** Implement `parse_list_comprehension(element, start)` method
+  - Takes first element that was already parsed
+  - Calls `parse_comprehension_generators()`
+  - Returns `ListComp` AST node
+- [ ] **3.2** Implement `parse_comprehension_generators()` - MINIMAL version
+  - Only handle SINGLE `for` clause
+  - No `if` filters yet
+  - No multiple `for` loops yet
+- [ ] **3.3** Parse target: `for x in ...`
+  - Use `parse_precedence(Precedence::Or)` to stop before `in`
+  - Convert result to Pattern using `expr_to_pattern()`
+- [ ] **3.4** Parse iterator: `for x in items`
+  - **KEY**: Use `parse_precedence(Precedence::Or)` NOT `parse_expression()`
+  - This prevents infinite recursion
+  - Stops at `]` naturally
+- [ ] **3.5** Test: `[x for x in items]`
+  - Verify element is `x`
+  - Verify target pattern is `Name("x")`
+  - Verify iterator is `Identifier("items")`
+  - Verify no filters
+- [ ] **3.6** Test variations:
+  - `[x * 2 for x in numbers]` - expression as element
+  - `[obj.name for obj in objects]` - attribute access
+  - `[(x, y) for x in items]` - tuple as element
+
+#### Step 4: Single Filter (1 hour)
+- [ ] **4.1** Extend `parse_comprehension_generators()` to handle `if` clause
+  - After parsing iterator, check for `if` token
+  - Parse filter condition using `parse_precedence(Precedence::Or)`
+  - Add to `ifs` vector
+- [ ] **4.2** Test: `[x for x in items if x > 0]`
+  - Verify filter exists and is correct comparison
+- [ ] **4.3** Test edge cases:
+  - `[x for x in items if True]` - boolean literal
+  - `[x for x in items if x]` - identifier as condition
+
+#### Step 5: Multiple Filters (1 hour)
+- [ ] **5.1** Loop to parse multiple `if` clauses
+  - `while self.check(TokenKind::If) && !is_ternary_if()`
+  - Add each filter to `ifs` vector
+- [ ] **5.2** Implement `is_ternary_if()` helper
+  - Distinguish `if x > 0` (filter) from `x if cond else y` (ternary)
+  - Check if we're inside an element expression vs after `in`
+- [ ] **5.3** Test: `[x for x in items if x > 0 if x < 10]`
+- [ ] **5.4** Test: `[x * 2 if x > 0 else x for x in items]` - ternary in element
+
+#### Step 6: Nested Comprehensions (Multiple `for` clauses) (2 hours)
+- [ ] **6.1** Extend generator parsing loop to handle multiple `for`
+  - Keep parsing `for target in iter [if cond]*` until no more `for`
+- [ ] **6.2** Test: `[x + y for x in range(3) for y in range(3)]`
+- [ ] **6.3** Test: `[x for x in range(10) for y in range(10) if x == y]`
+
+#### Step 7: Dict Comprehensions (1 hour)
+- [ ] **7.1** Apply same logic to `parse_primary()` for `{...}`
+  - After first expression, check for `:`
+  - If colon and then `for` → dict comprehension
+- [ ] **7.2** Implement `parse_dict_comprehension(key, start)`
+  - Parse `:` then value expression
+  - Call `parse_comprehension_generators()`
+  - Return `DictComp` node
+- [ ] **7.3** Test: `{x: x*x for x in range(5)}`
+- [ ] **7.4** Test: `{k: v for k, v in items.items() if v > 0}`
+
+#### Step 8: Set Comprehensions (30 min)
+- [ ] **8.1** In `{...}` parsing, detect set comprehension
+  - First element, then `for` (no colon) → set comprehension
+- [ ] **8.2** Implement `parse_set_comprehension(element, start)`
+- [ ] **8.3** Test: `{x for x in items if x > 0}`
+- [ ] **8.4** Test: `{x.lower() for x in strings}`
+
+#### Step 9: Generator Expressions (1 hour)
+- [ ] **9.1** In `(...)` parsing, detect generator expression
+  - After first element, check for `for`
+  - Distinguish from: parenthesized expression, tuple, function call
+- [ ] **9.2** Implement `parse_generator_expression(element, start)`
+- [ ] **9.3** Test: `(x for x in items)`
+- [ ] **9.4** Test: `sum(x*x for x in range(100))`
+
+#### Step 10: Edge Cases & Polish (2 hours)
+- [ ] **10.1** Empty sequences: `[x for x in []]`
+- [ ] **10.2** Tuple unpacking: `[x+y for x, y in pairs]`
+- [ ] **10.3** Nested comprehensions: `[[y for y in row] for row in matrix]`
+- [ ] **10.4** Comprehensions in function calls: `func([x for x in items])`
+- [ ] **10.5** Complex filters: `[x for x in items if isinstance(x, int) and x > 0]`
+
+#### Step 11: Final Testing (1 hour)
+- [ ] **11.1** Run all tests: `cargo test`
+- [ ] **11.2** Test real Python code with comprehensions
+- [ ] **11.3** Document any known limitations
+- [ ] **11.4** Update CHANGELOG and README
+
+**Total Estimated Time**: 12-15 hours of focused work
+
+**Key Success Factors**:
+1. ✅ Use `parse_precedence()` with specific levels, NOT `parse_expression()`
+2. ✅ Test each micro-step before moving to next
+3. ✅ If anything hangs, STOP and analyze - don't continue
+4. ✅ One feature at a time - no combining steps
+
+---
+
 15. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-    - Comprehensions (list/dict/set/generator) - complex, needs careful design
+    - Comprehensions (list/dict/set/generator) - SEE DETAILED PLAN ABOVE
    
 9. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
