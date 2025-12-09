@@ -67,6 +67,115 @@ fn test_float_literal() {
 }
 
 #[test]
+fn test_binary_literal() {
+    let expr = parse_expr("0b1010").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 10), // 0b1010 = 10
+        _ => panic!("Expected integer literal from binary, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_binary_literal_uppercase() {
+    let expr = parse_expr("0B1111").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 15), // 0B1111 = 15
+        _ => panic!("Expected integer literal from binary, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_octal_literal() {
+    let expr = parse_expr("0o755").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 493), // 0o755 = 493
+        _ => panic!("Expected integer literal from octal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_octal_literal_uppercase() {
+    let expr = parse_expr("0O77").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 63), // 0O77 = 63
+        _ => panic!("Expected integer literal from octal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal() {
+    let expr = parse_expr("0xFF").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 255), // 0xFF = 255
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal_uppercase() {
+    let expr = parse_expr("0XAB").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 171), // 0XAB = 171
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal_mixed_case() {
+    let expr = parse_expr("0xDeAdBeEf").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 3735928559), // 0xDEADBEEF = 3735928559
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_number_with_underscores() {
+    let expr = parse_expr("1_000_000").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 1_000_000),
+        _ => panic!("Expected integer literal with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_binary_with_underscores() {
+    let expr = parse_expr("0b1111_0000").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 240), // 0b1111_0000 = 240
+        _ => panic!("Expected integer literal from binary with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_with_underscores() {
+    let expr = parse_expr("0xDEAD_BEEF").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 3735928559), // 0xDEAD_BEEF
+        _ => panic!("Expected integer literal from hex with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_float_with_underscores() {
+    let expr = parse_expr("3.14_15_92").unwrap();
+    match expr.kind {
+        ExpressionKind::Float(value) => assert!((value - 3.141592).abs() < 0.0001),
+        _ => panic!("Expected float literal with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_number_formats_in_expression() {
+    // Test that different number formats work in expressions
+    let expr = parse_expr("0xFF + 0b1010 + 0o10 + 100").unwrap();
+    match expr.kind {
+        ExpressionKind::BinaryOp { .. } => (), // Should parse as binary operations
+        _ => panic!("Expected binary operation, got {:?}", expr.kind),
+    }
+}
+
+#[test]
 fn test_string_literal() {
     let expr = parse_expr("\"hello\"").unwrap();
     match expr.kind {

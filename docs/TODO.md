@@ -786,7 +786,7 @@ def func(pos_only, /, both, *, kw_only):
   - [x] Decorator syntax (@decorator)
   - [x] Type annotations (full support in parameters and return types)
 
-#### Parser Test Coverage ✅ 243 TESTS PASSING
+#### Parser Test Coverage ✅ 255 TESTS PASSING
 - [x] All expression types (literals, operators, calls, comprehensions, lambda, ternary, slices, subscripts)
 - [x] All statement types (assignments, control flow, imports, exceptions, pattern matching)
 - [x] Function and class definitions (with decorators, type annotations, *args, **kwargs)
