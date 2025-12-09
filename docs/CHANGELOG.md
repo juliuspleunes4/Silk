@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ VERIFIED - Conditional Expressions (Ternary Operator) - December 9, 2025
+**Confirmed full implementation** of Python's conditional expressions (`x if condition else y`).
+
+**Discovery**: While planning to implement ternary operators, discovered they were already fully implemented with comprehensive test coverage!
+
+**Implementation Details**:
+- **AST Node**: `IfExp { test, body, orelse }` in `ExpressionKind` (silk-ast)
+- **Parser**: Implemented in `parse_infix()` at `Precedence::Or` level (silk-parser)
+- **Precedence**: Correctly binds looser than binary operators, allowing `x + 1 if a > b else y + 2`
+- **Associativity**: Right-associative for chaining: `a if x else b if y else c`
+
+**Test Coverage** - 13 comprehensive tests:
+1. Basic: `x if condition else y`
+2. With literals: `1 if True else 0`
+3. With comparisons: `positive if x > 0 else negative`
+4. With expressions: `x + 1 if x > 0 else x - 1`
+5. Nested/chained: `a if x > 0 else b if x < 0 else c`
+6. In function calls: `foo(x if cond else y)`
+7. In lists: `[x if x > 0 else 0]`
+8. With strings: `"yes" if flag else "no"`
+9. With function calls: `foo() if condition else bar()`
+10. With logical ops: `result if x > 0 and y > 0 else default`
+11. In assignments: `result = positive if x > 0 else negative`
+12. With subscripts: `lst[0] if lst else None`
+13. With lambdas: `(lambda: x) if flag else (lambda: y)`
+14. Common patterns: `a if a > b else b` (max idiom)
+
+**Status**: All 359 tests passing (115 lexer + 11 unit + 233 parser)
+
+---
+
 ### ✅ FEATURE - Comprehensions (List/Dict/Set/Generator) - December 9, 2025
 **Implemented all four comprehension types** - list, dict, set comprehensions and generator expressions with full support for multiple generators and filters.
 
