@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ VERIFIED - Slice Expressions - December 9, 2025
+**Confirmed full implementation** of Python's slice notation (`a[start:stop:step]`).
+
+**Discovery**: While planning to implement slice expressions, discovered they were already fully implemented with comprehensive test coverage!
+
+**Implementation Details**:
+- **AST Node**: `Slice { lower: Option<Box<Expression>>, upper: Option<Box<Expression>>, step: Option<Box<Expression>> }` in `ExpressionKind` (silk-ast)
+- **Parser**: Implemented in `parse_subscript()` with colon detection (silk-parser)
+- **Integration**: Slices are wrapped in `Subscript` nodes as the index
+- **Flexibility**: All three components (start, stop, step) are optional
+
+**Test Coverage** - 12 comprehensive tests:
+1. Basic slice: `list[1:5]` (start and stop)
+2. Full slice: `list[0:10:2]` (start, stop, step)
+3. From beginning: `list[:5]` (only stop)
+4. To end: `list[5:]` (only start)
+5. Copy all: `list[:]` (all empty)
+6. Every nth: `list[::2]` (only step)
+7. First n by step: `list[:10:2]` (stop and step)
+8. From index by step: `list[5::2]` (start and step)
+9. Negative indices: `list[-5:-1]` (negative start/stop)
+10. Variable slices: `list[x:y:z]` (identifier expressions)
+11. Computed bounds: `list[i+1:i+10:2]` (complex expressions)
+12. Reverse: `list[::-1]` (common Python idiom)
+13. Regular subscripts: `list[5]` (non-slice still works)
+14. Chained slicing: `matrix[0][1:3]` (nested subscripts with slices)
+
+**Key Features**:
+- ✅ All three components optional (9 valid combinations)
+- ✅ Negative indices supported (via unary minus)
+- ✅ Complex expressions in any position
+- ✅ Chained with regular subscripts
+- ✅ Reverse slicing (`[::-1]`)
+- ✅ Works with any subscriptable value
+
+**Status**: All 359 tests passing (115 lexer + 11 unit + 233 parser)
+
+---
+
 ### ✅ VERIFIED - Lambda Expressions - December 9, 2025
 **Confirmed full implementation** of Python's lambda expressions (`lambda params: body`).
 
