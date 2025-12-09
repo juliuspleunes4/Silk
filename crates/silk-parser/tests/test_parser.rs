@@ -2150,6 +2150,152 @@ fn test_keyword_with_function_call() {
     }
 }
 
+#[test]
+fn test_keyword_with_string() {
+    let expr = parse_expr(r#"func(name="Alice", age=30)"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("name".to_string()));
+            assert_eq!(keywords[1].arg, Some("age".to_string()));
+            match &keywords[0].value.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "Alice"),
+                _ => panic!("Expected string"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_list() {
+    let expr = parse_expr("func(items=[1, 2, 3])").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::List { elements } => assert_eq!(elements.len(), 3),
+                _ => panic!("Expected list in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_dict() {
+    let expr = parse_expr("func(options={'a': 1})").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Dict { .. } => {},
+                _ => panic!("Expected dict in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_lambda() {
+    let expr = parse_expr("func(key=lambda x: x.lower())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_ternary() {
+    let expr = parse_expr("func(value=x if condition else y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_comprehension() {
+    let expr = parse_expr("func(items=[x * 2 for x in range(10)])").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::ListComp { .. } => {},
+                _ => panic!("Expected list comprehension in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_many_keyword_args() {
+    let expr = parse_expr("func(a=1, b=2, c=3, d=4, e=5)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 5);
+            assert_eq!(keywords[0].arg, Some("a".to_string()));
+            assert_eq!(keywords[4].arg, Some("e".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_nested_call_with_keywords() {
+    let expr = parse_expr("outer(inner(x=1), y=2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 1);
+            assert_eq!(keywords.len(), 1);
+            // Check inner call
+            match &args[0].kind {
+                ExpressionKind::Call { keywords: inner_kw, .. } => {
+                    assert_eq!(inner_kw.len(), 1);
+                    assert_eq!(inner_kw[0].arg, Some("x".to_string()));
+                }
+                _ => panic!("Expected inner function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_in_method_call() {
+    let expr = parse_expr("obj.method(x=1, y=2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { func, keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            match &func.kind {
+                ExpressionKind::Attribute { .. } => {},
+                _ => panic!("Expected attribute access"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_positional_after_keyword_error() {
+    let result = parse_expr("func(x=1, 2)");
+    assert!(result.is_err(), "Should error: positional after keyword");
+}
+
 // ============================================================================
 // Function Parameter Tests (*args, **kwargs)
 // ============================================================================
