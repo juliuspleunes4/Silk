@@ -390,6 +390,20 @@ impl SemanticAnalyzer {
                 }
             }
 
+            // Match statement: validate subject, guards, and case bodies
+            StatementKind::Match { subject, cases } => {
+                self.analyze_expression(subject);
+                for case in cases {
+                    // TODO: Handle pattern variable binding once pattern analysis is implemented
+                    if let Some(guard) = &case.guard {
+                        self.analyze_expression(guard);
+                    }
+                    for stmt in &case.body {
+                        self.analyze_statement(stmt);
+                    }
+                }
+            }
+
             // Other statements (Pass, Global, Nonlocal, etc.)
             _ => {}
         }

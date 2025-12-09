@@ -555,3 +555,9 @@ finally:
     let result = analyze(source);
     assert!(result.is_ok(), "Variables should flow through try/except blocks: {:?}", result);
 }
+
+// TODO: Add match statement tests once parser fully supports match/case syntax
+// Currently parser has issues with:
+// - Pattern parsing (InvalidPattern errors)
+// - Guard expressions being confused with ternary operator
+// The semantic analyzer code is ready to handle match statements.
