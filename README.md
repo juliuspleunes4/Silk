@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-514%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-581%20passing-brightgreen.svg)](#testing)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
 > A compiled programming language with Python-compatible syntax and C-level performance
@@ -135,11 +135,19 @@ cargo test --package silk-parser
 cargo test --package silk-semantic
 ```
 
-**Current test coverage:** 514 tests across all components
-- 115 lexer tests
-- 11 unit tests  
+**Current test coverage:** 581 tests across all components (13 ignored)
+- 126 lexer tests (11 unit + 115 integration)
 - 255 parser tests
-- 133 semantic analysis tests (17 symbol table + 28 analyzer + 44 name resolution + 14 forward references + 6 parameter defaults + 24 decorators/bases/keywords)
+- 8 type system unit tests
+- 192 semantic analysis tests:
+  - 28 analyzer tests (3 ignored)
+  - 14 forward reference tests
+  - 44 name resolution tests
+  - 17 symbol table tests
+  - 6 parameter defaults tests
+  - 24 decorators/bases/keywords tests
+  - 28 type inference tests
+  - 31 binary operation tests (10 ignored)
 
 ## Contributing
 

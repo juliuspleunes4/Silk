@@ -3,6 +3,7 @@
 use silk_lexer::Span;
 use crate::scope::{Scope, ScopeKind};
 use crate::error::{SemanticError, SemanticResult};
+use crate::types::Type;
 
 /// Kind of symbol
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,28 +29,28 @@ pub struct Symbol {
     pub kind: SymbolKind,
     /// Location where the symbol was defined
     pub span: Span,
-    /// Type information (to be expanded in future)
-    pub type_info: Option<String>,
+    /// Type of the symbol
+    pub ty: Type,
 }
 
 impl Symbol {
-    /// Create a new symbol
+    /// Create a new symbol with unknown type
     pub fn new(name: String, kind: SymbolKind, span: Span) -> Self {
         Self {
             name,
             kind,
             span,
-            type_info: None,
+            ty: Type::Unknown,
         }
     }
 
-    /// Create a new symbol with type information
-    pub fn with_type(name: String, kind: SymbolKind, span: Span, type_info: String) -> Self {
+    /// Create a new symbol with a specific type
+    pub fn with_type(name: String, kind: SymbolKind, span: Span, ty: Type) -> Self {
         Self {
             name,
             kind,
             span,
-            type_info: Some(type_info),
+            ty,
         }
     }
 }

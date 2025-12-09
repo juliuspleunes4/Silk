@@ -93,13 +93,17 @@ impl SemanticAnalyzer {
                 // Validate the value expression first
                 self.analyze_expression(value);
                 
+                // Infer type from the value
+                let inferred_type = self.infer_type(value);
+                
                 // Define the target variables
                 for target in targets {
                     if let ExpressionKind::Identifier(name) = &target.kind {
-                        let symbol = Symbol::new(
+                        let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
                             target.span.clone(),
+                            inferred_type.clone(),
                         );
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
                             self.errors.push(err);
@@ -597,12 +601,16 @@ impl SemanticAnalyzer {
             ExpressionKind::NamedExpr { target, value } => {
                 self.analyze_expression(value);
                 
+                // Infer type from the value
+                let inferred_type = self.infer_type(value);
+                
                 // Define the target variable
                 if let ExpressionKind::Identifier(name) = &target.kind {
-                    let symbol = Symbol::new(
+                    let symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Variable,
                         target.span.clone(),
+                        inferred_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
@@ -612,6 +620,164 @@ impl SemanticAnalyzer {
 
             // Literals don't need validation
             _ => {}
+        }
+    }
+
+    /// Infer the type of an expression
+    /// 
+    /// Returns the inferred type based on the expression kind.
+    /// For now, this handles simple cases like literals.
+    fn infer_type(&self, expr: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        
+        match &expr.kind {
+            // Literal types
+            ExpressionKind::Integer(_) => Type::Int,
+            ExpressionKind::Float(_) => Type::Float,
+            ExpressionKind::String(_) | ExpressionKind::RawString(_) | ExpressionKind::FString { .. } => Type::Str,
+            ExpressionKind::Boolean(_) => Type::Bool,
+            ExpressionKind::None => Type::None,
+            
+            // For identifiers, look up their type in the symbol table
+            ExpressionKind::Identifier(name) => {
+                if let Some(symbol) = self.symbol_table.resolve_symbol(name) {
+                    symbol.ty.clone()
+                } else {
+                    Type::Unknown
+                }
+            }
+            
+            // Binary operations
+            ExpressionKind::BinaryOp { left, op, right } => {
+                self.infer_binary_op_type(left, *op, right)
+            }
+            
+            // Comparison operations (always return Bool)
+            ExpressionKind::Compare { .. } => Type::Bool,
+            
+            // Logical operations
+            ExpressionKind::LogicalOp { left, op, right } => {
+                self.infer_logical_op_type(left, *op, right)
+            }
+            
+            // Unary operations
+            ExpressionKind::UnaryOp { op, operand } => {
+                self.infer_unary_op_type(*op, operand)
+            }
+            
+            // For now, other expressions return Unknown
+            // TODO: Infer types for calls, collections, etc.
+            _ => Type::Unknown,
+        }
+    }
+    
+    /// Infer type for binary arithmetic operations
+    fn infer_binary_op_type(&self, left: &Expression, op: silk_ast::BinaryOperator, right: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        use silk_ast::BinaryOperator;
+        
+        let left_type = self.infer_type(left);
+        let right_type = self.infer_type(right);
+        
+        match op {
+            // Arithmetic operators
+            BinaryOperator::Add => {
+                match (&left_type, &right_type) {
+                    // Int + Int = Int
+                    (Type::Int, Type::Int) => Type::Int,
+                    // Float + Float = Float
+                    (Type::Float, Type::Float) => Type::Float,
+                    // Int + Float = Float or Float + Int = Float
+                    (Type::Int, Type::Float) | (Type::Float, Type::Int) => Type::Float,
+                    // String + String = String
+                    (Type::Str, Type::Str) => Type::Str,
+                    // Unknown for other combinations
+                    _ => Type::Unknown,
+                }
+            }
+            BinaryOperator::Sub | BinaryOperator::Mult | BinaryOperator::Div | 
+            BinaryOperator::FloorDiv | BinaryOperator::Mod | BinaryOperator::Pow => {
+                match (&left_type, &right_type) {
+                    // Int op Int = Int
+                    (Type::Int, Type::Int) => Type::Int,
+                    // Float op Float = Float
+                    (Type::Float, Type::Float) => Type::Float,
+                    // Int op Float = Float or Float op Int = Float
+                    (Type::Int, Type::Float) | (Type::Float, Type::Int) => Type::Float,
+                    // Unknown for other combinations
+                    _ => Type::Unknown,
+                }
+            }
+            // Bitwise operators (only work with integers)
+            BinaryOperator::BitOr | BinaryOperator::BitXor | BinaryOperator::BitAnd |
+            BinaryOperator::LShift | BinaryOperator::RShift => {
+                match (&left_type, &right_type) {
+                    (Type::Int, Type::Int) => Type::Int,
+                    _ => Type::Unknown,
+                }
+            }
+        }
+    }
+    
+    /// Infer type for logical operations
+    fn infer_logical_op_type(&self, left: &Expression, op: silk_ast::LogicalOperator, right: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // In Python, 'and' and 'or' return one of the operands, not necessarily Bool
+        // For now, we simplify and return Unknown
+        // TODO: Implement proper 'and'/'or' semantics (return type of last evaluated operand)
+        let _ = (left, op, right);
+        Type::Unknown
+    }
+    
+    /// Infer type for unary operations
+    fn infer_unary_op_type(&self, op: silk_ast::UnaryOperator, operand: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        use silk_ast::UnaryOperator;
+        
+        match op {
+            UnaryOperator::Not => Type::Bool,
+            UnaryOperator::UAdd | UnaryOperator::USub => {
+                // Unary + and - preserve the numeric type
+                let operand_type = self.infer_type(operand);
+                match operand_type {
+                    Type::Int => Type::Int,
+                    Type::Float => Type::Float,
+                    _ => Type::Unknown,
+                }
+            }
+            UnaryOperator::Invert => {
+                // Bitwise NOT only works with integers
+                let operand_type = self.infer_type(operand);
+                match operand_type {
+                    Type::Int => Type::Int,
+                    _ => Type::Unknown,
+                }
+            }
+        }
+    }
+
+    /// Resolve a type annotation from AST to semantic Type
+    /// 
+    /// Converts AST TypeKind to semantic Type enum.
+    /// For now, handles built-in named types (int, str, bool, float).
+    /// Returns Unknown for non-built-in types.
+    /// 
+    /// NOTE: Currently unused pending parser implementation of AnnAssign.
+    /// Will be used once parser supports `x: int = 5` syntax.
+    #[allow(dead_code)]
+    fn resolve_type_annotation(&self, type_ann: &silk_ast::Type) -> crate::types::Type {
+        use crate::types::Type;
+        
+        match &type_ann.kind {
+            silk_ast::TypeKind::Name(name) => {
+                // Try to parse as built-in type
+                Type::from_str(name).unwrap_or(Type::Unknown)
+            }
+            
+            // For now, complex types return Unknown
+            // TODO: Handle Generic, Union, Optional, Callable, etc.
+            _ => Type::Unknown,
         }
     }
 
