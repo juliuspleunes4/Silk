@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Ellipsis Literal (...) - December 9, 2025
+**Implemented ellipsis literal expression** - adds Python's `...` literal for type hints, stub implementations, and placeholder values.
+
+**AST Enhancement (silk-ast)** - Ellipsis Expression ✅:
+- ✅ Added Ellipsis variant to ExpressionKind enum: `Ellipsis,  // ... literal`
+- ✅ Represents the `...` literal used in Python for:
+  - Type annotations: `def func(x: tuple[int, ...]):`
+  - Stub implementations: `def abstract_method(): ...`
+  - Placeholder values: `config = ...`
+  - Open-ended slicing: `array[1:]` (future slicing feature)
+
+**Parser Enhancement (silk-parser)** - Ellipsis Parsing ✅:
+- ✅ Added ellipsis literal parsing in parse_primary()
+- ✅ Maps TokenKind::Ellipsis → ExpressionKind::Ellipsis
+- ✅ Valid in all expression contexts (assignments, function bodies, collections, etc.)
+- ✅ Added 7 comprehensive tests:
+  - test_ellipsis_literal: Basic `...` expression
+  - test_ellipsis_in_assignment: `x = ...`
+  - test_ellipsis_in_function_body: `def foo():\n    ...`
+  - test_ellipsis_in_list: `[1, 2, ..., 5]`
+  - test_ellipsis_in_tuple: `(1, ..., 3)`
+  - test_ellipsis_as_function_argument: `func(...)`
+  - test_ellipsis_in_return: `return ...`
+- ✅ All 206 parser tests passing (332 total workspace tests)
+
+**Common Use Cases**:
+```python
+# Type hints
+def accepts_variable_args(args: tuple[str, ...]) -> None: ...
+
+# Stub implementation
+def unimplemented_feature():
+    ...
+
+# Placeholder configuration
+DATABASE_URL = ...
+
+# Part of collections
+partial_data = [1, 2, ..., 10]
+```
+
 ### ✅ FEATURE - Byte Raw Strings (br-strings) - December 9, 2025
 **Implemented byte raw string literals** - combining byte strings and raw strings for binary data with literal backslashes.
 

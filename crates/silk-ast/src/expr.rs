@@ -31,6 +31,7 @@ pub enum ExpressionKind {
     },
     Boolean(bool),
     None,
+    Ellipsis,  // ... literal
     
     // Identifiers
     Identifier(String),

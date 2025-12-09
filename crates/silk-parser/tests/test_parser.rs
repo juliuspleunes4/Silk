@@ -3015,4 +3015,115 @@ fn test_byte_raw_string_uppercase_variants() {
     }
 }
 
+// ============================================================================
+// Ellipsis Literal Tests (...)
+// ============================================================================
+
+#[test]
+fn test_ellipsis_literal() {
+    let expr = parse_expr("...").unwrap();
+    match expr.kind {
+        ExpressionKind::Ellipsis => {},
+        _ => panic!("Expected ellipsis literal"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_assignment() {
+    let stmt = parse_stmt("x = ...").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref value, .. } => {
+            match value.kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_function_body() {
+    let stmt = parse_stmt("def foo():\n    ...").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { ref body, .. } => {
+            assert_eq!(body.len(), 1);
+            match body[0].kind {
+                StatementKind::Expr(ref expr) => {
+                    match expr.kind {
+                        ExpressionKind::Ellipsis => {},
+                        _ => panic!("Expected ellipsis in function body"),
+                    }
+                }
+                _ => panic!("Expected expression statement"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_list() {
+    let expr = parse_expr("[1, 2, ..., 5]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 4);
+            match elements[2].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_tuple() {
+    let expr = parse_expr("(1, ..., 3)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[1].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in tuple"),
+            }
+        }
+        _ => panic!("Expected tuple"),
+    }
+}
+
+#[test]
+fn test_ellipsis_as_function_argument() {
+    let expr = parse_expr("func(...)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_return() {
+    let stmt = parse_stmt("return ...").unwrap();
+    match stmt.kind {
+        StatementKind::Return { ref value } => {
+            match value {
+                Some(expr) => {
+                    match expr.kind {
+                        ExpressionKind::Ellipsis => {},
+                        _ => panic!("Expected ellipsis in return"),
+                    }
+                }
+                None => panic!("Expected return value"),
+            }
+        }
+        _ => panic!("Expected return statement"),
+    }
+}
+
 

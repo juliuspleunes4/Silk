@@ -101,6 +101,10 @@ impl Parser {
                 self.advance();
                 ExpressionKind::None
             }
+            TokenKind::Ellipsis => {
+                self.advance();
+                ExpressionKind::Ellipsis
+            }
             
             // Identifier
             TokenKind::Identifier => {
