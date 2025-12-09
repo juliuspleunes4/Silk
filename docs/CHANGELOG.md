@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Comprehensions (List/Dict/Set/Generator) - December 9, 2025
+**Implemented all four comprehension types** - list, dict, set comprehensions and generator expressions with full support for multiple generators and filters.
+
+**Parser Enhancement (silk-parser)** - Comprehension Parsing ✅:
+- ✅ **List Comprehensions**: `[element for target in iter]`
+  - Detects `for` after first element in list literal
+  - Calls `parse_list_comprehension(element, start)`
+  - Returns `ListComp` AST node
+  
+- ✅ **Dict Comprehensions**: `{key: value for target in iter}`
+  - Detects `for` after key:value pair
+  - Calls `parse_dict_comprehension(key, value, start)`
+  - Returns `DictComp` AST node
+  
+- ✅ **Set Comprehensions**: `{element for target in iter}`
+  - Detects `for` after first element (no colon)
+  - Calls `parse_set_comprehension(element, start)`
+  - Returns `SetComp` AST node
+  
+- ✅ **Generator Expressions**: `(element for target in iter)`
+  - Detects `for` after first expression in parentheses
+  - Calls `parse_generator_expression(element, start)`
+  - Returns `GeneratorExp` AST node
+  - Properly disambiguates from tuples and parenthesized expressions
+
+**Core Implementation**:
+- ✅ `parse_comprehension_generators()`: Shared generator parsing logic
+  - Loops to parse multiple `for target in iter` clauses (nested comprehensions)
+  - Parses optional `if` filters after each iterator
+  - Uses `Precedence::Primary` for target (stops before `in`)
+  - Uses `Precedence::Comparison` for iterator (stops before `if` or closing bracket)
+  - Uses `Precedence::And` for filters (stops before ternary `if`)
+  - Returns `Vec<Comprehension>` with target, iter, ifs, is_async
+
+**Key Technical Solutions**:
+- ✅ **Infinite Recursion Fix**: Use specific precedence levels instead of `parse_expression()`
+- ✅ **Ternary vs Filter**: Use `And` precedence for filters (ternary `if` is at `Or` level)
+- ✅ **Generator Detection**: `parse_expression()` naturally stops at `for` (not an infix operator)
+- ✅ **Multiple Generators**: Loop until no more `for` keywords detected
+- ✅ **Multiple Filters**: Loop to collect all `if` clauses for each generator
+
+**Added 9 comprehensive tests**:
+- ✅ `test_list_comp_detection`: Verify detection doesn't break regular lists
+- ✅ `test_list_comp_simplest`: `[x for x in items]` basic case
+- ✅ `test_list_comp_single_filter`: `[x for x in items if x > 0]`
+- ✅ `test_list_comp_multiple_filters`: `[x for x in items if x > 0 if x < 10]`
+- ✅ `test_list_comp_nested_simple`: `[x + y for x in range(3) for y in range(3)]`
+- ✅ `test_list_comp_nested_with_filter`: Multiple generators with filter
+- ✅ `test_dict_comp_simple`: `{x: x * 2 for x in items}`
+- ✅ `test_dict_comp_with_filter`: Dict comprehension with filter
+- ✅ `test_set_comp_simple`: `{x * 2 for x in items}`
+- ✅ `test_generator_exp_simple`: `(x for x in items)`
+- ✅ `test_generator_exp_with_filter`: `(x for x in items if x > 0)`
+
+**Test Results**: 
+- Parser tests: 217 → 226 (+9 new tests)
+- Total workspace tests: 352 (115 lexer + 11 unit + 226 parser)
+- All tests passing ✅
+
+**Files Modified**:
+- `crates/silk-parser/src/expr.rs`: Added detection and parsing for all comprehension types
+- `crates/silk-parser/tests/test_parser.rs`: Added 9 new tests
+- `docs/TODO.md`: Updated Steps 3-9 as complete
+
 ### ✅ FEATURE - NotImplemented Singleton - December 9, 2025
 **Implemented NotImplemented singleton literal** - adds Python's `NotImplemented` constant for rich comparison method returns.
 

@@ -3558,4 +3558,36 @@ fn test_dict_comp_with_filter() {
     }
 }
 
+#[test]
+fn test_generator_exp_simple() {
+    let source = "(x for x in items)";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::GeneratorExp { ref element, ref generators } => {
+            // Check element is 'x'
+            assert!(matches!(element.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected generator expression"),
+    }
+}
+
+#[test]
+fn test_generator_exp_with_filter() {
+    let source = "(x for x in items if x > 0)";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::GeneratorExp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            assert_eq!(generators[0].ifs.len(), 1);
+        }
+        _ => panic!("Expected generator expression"),
+    }
+}
+
 

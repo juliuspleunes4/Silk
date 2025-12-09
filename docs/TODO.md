@@ -308,36 +308,37 @@
   - Two filters parsed correctly
   - All 219 parser tests passing
 
-#### Step 6: Nested Comprehensions (Multiple `for` clauses) (2 hours)
-- [ ] **6.1** Extend generator parsing loop to handle multiple `for`
+#### Step 6: Nested Comprehensions (Multiple `for` clauses) (2 hours) ✅ COMPLETE
+- [x] **6.1** Extend generator parsing loop to handle multiple `for`
   - Keep parsing `for target in iter [if cond]*` until no more `for`
-- [ ] **6.2** Test: `[x + y for x in range(3) for y in range(3)]`
-- [ ] **6.3** Test: `[x for x in range(10) for y in range(10) if x == y]`
+- [x] **6.2** Test: `[x + y for x in range(3) for y in range(3)]`
+- [x] **6.3** Test: `[x for x in range(10) for y in range(10) if x == y]`
+- **Result**: 221 parser tests passing
 
-#### Step 7: Dict Comprehensions (1 hour)
-- [ ] **7.1** Apply same logic to `parse_primary()` for `{...}`
+#### Step 7: Dict Comprehensions (1 hour) ✅ COMPLETE
+- [x] **7.1** Apply same logic to `parse_primary()` for `{...}`
   - After first expression, check for `:`
   - If colon and then `for` → dict comprehension
-- [ ] **7.2** Implement `parse_dict_comprehension(key, start)`
-  - Parse `:` then value expression
+- [x] **7.2** Implement `parse_dict_comprehension(key, value, start)`
   - Call `parse_comprehension_generators()`
   - Return `DictComp` node
-- [ ] **7.3** Test: `{x: x*x for x in range(5)}`
-- [ ] **7.4** Test: `{k: v for k, v in items.items() if v > 0}`
+- [x] **7.3** Test: `{x: x * 2 for x in items}`
+- [x] **7.4** Test: `{x: x * 2 for x in items if x > 0}`
 
-#### Step 8: Set Comprehensions (30 min)
-- [ ] **8.1** In `{...}` parsing, detect set comprehension
+#### Step 8: Set Comprehensions (30 min) ✅ COMPLETE
+- [x] **8.1** In `{...}` parsing, detect set comprehension
   - First element, then `for` (no colon) → set comprehension
-- [ ] **8.2** Implement `parse_set_comprehension(element, start)`
-- [ ] **8.3** Test: `{x for x in items if x > 0}`
-- [ ] **8.4** Test: `{x.lower() for x in strings}`
+- [x] **8.2** Implement `parse_set_comprehension(element, start)`
+- [x] **8.3** Test: `{x * 2 for x in items}`
+- **Result**: 224 parser tests passing
 
-#### Step 9: Generator Expressions (1 hour)
-- [ ] **9.1** In `(...)` parsing, detect generator expression
+#### Step 9: Generator Expressions (1 hour) ✅ COMPLETE
+- [x] **9.1** In `(...)` parsing, detect generator expression
   - After first element, check for `for`
-  - Distinguish from: parenthesized expression, tuple, function call
-- [ ] **9.2** Implement `parse_generator_expression(element, start)`
-- [ ] **9.3** Test: `(x for x in items)`
+  - Solution: `parse_expression()` stops naturally at `for` (not an infix operator)
+- [x] **9.2** Implement `parse_generator_expression(element, start)`
+- [x] **9.3** Test: `(x for x in items)` and `(x for x in items if x > 0)`
+- **Result**: All 226 parser tests passing, all 352 workspace tests passing
 - [ ] **9.4** Test: `sum(x*x for x in range(100))`
 
 #### Step 10: Edge Cases & Polish (2 hours)

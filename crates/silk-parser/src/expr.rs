@@ -126,7 +126,8 @@ impl Parser {
                     self.advance();
                     ExpressionKind::Tuple { elements: Vec::new() }
                 } else {
-                    // Parse first expression
+                    // Parse first expression - use parse_expression() to get full expression
+                    // including walrus operator, but 'for' is not an infix op so it stops naturally
                     let first_expr = self.parse_expression()?;
                     
                     // Check for generator expression: (x for x in items)
@@ -778,6 +779,20 @@ impl Parser {
         self.expect(TokenKind::RightBrace, "Expected '}' after set comprehension")?;
         Ok(Expression::new(
             ExpressionKind::SetComp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse generator expression: (element for target in iter)
+    fn parse_generator_expression(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightParen, "Expected ')' after generator expression")?;
+        Ok(Expression::new(
+            ExpressionKind::GeneratorExp {
                 element: Box::new(element),
                 generators,
             },
