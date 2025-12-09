@@ -122,6 +122,7 @@ pub enum TokenKind {
     
     Comma,          // ,
     Colon,          // :
+    ColonEqual,     // :=
     Semicolon,      // ;
     Dot,            // .
     Arrow,          // ->

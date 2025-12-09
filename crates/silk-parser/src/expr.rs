@@ -8,19 +8,20 @@ use crate::{Parser, ParseResult, ParseError};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
     None = 0,
-    Or = 1,           // or
-    And = 2,          // and
-    Not = 3,          // not (prefix)
-    Comparison = 4,   // ==, !=, <, >, <=, >=, in, not in, is, is not
-    BitwiseOr = 5,    // |
-    BitwiseXor = 6,   // ^
-    BitwiseAnd = 7,   // &
-    Shift = 8,        // <<, >>
-    Addition = 9,     // +, -
-    Multiplication = 10, // *, /, //, %, @
-    Unary = 11,       // +, -, ~
-    Power = 12,       // **
-    Primary = 13,     // ., [], ()
+    Walrus = 1,       // := (named expression)
+    Or = 2,           // or
+    And = 3,          // and
+    Not = 4,          // not (prefix)
+    Comparison = 5,   // ==, !=, <, >, <=, >=, in, not in, is, is not
+    BitwiseOr = 6,    // |
+    BitwiseXor = 7,   // ^
+    BitwiseAnd = 8,   // &
+    Shift = 9,        // <<, >>
+    Addition = 10,    // +, -
+    Multiplication = 11, // *, /, //, %, @
+    Unary = 12,       // +, -, ~
+    Power = 13,       // **
+    Primary = 14,     // ., [], ()
 }
 
 impl Parser {
@@ -418,6 +419,28 @@ impl Parser {
                 }
             }
             
+            // Named expression (walrus operator :=)
+            TokenKind::ColonEqual => {
+                self.advance(); // consume ':='
+                
+                // The left side must be an identifier
+                if !matches!(left.kind, ExpressionKind::Identifier(_)) {
+                    return Err(ParseError::InvalidSyntax(
+                        "Left side of := must be a simple identifier".to_string(),
+                        left.span.line,
+                        left.span.column,
+                    ));
+                }
+                
+                // Parse the value (right-associative, parse at Walrus precedence)
+                let value = Box::new(self.parse_precedence(Precedence::Walrus)?);
+                
+                ExpressionKind::NamedExpr {
+                    target: Box::new(left),
+                    value,
+                }
+            }
+            
             // Ternary/conditional expression: body if test else orelse
             TokenKind::If => {
                 self.advance(); // consume 'if'
@@ -470,7 +493,8 @@ impl Parser {
     /// Get precedence of current token
     fn get_precedence(&self) -> Precedence {
         match self.current_token().kind {
-            TokenKind::If => Precedence::Or,  // Ternary is between None and Or precedence
+            TokenKind::ColonEqual => Precedence::Walrus,
+            TokenKind::If => Precedence::Or,  // Ternary is at Or precedence level
             TokenKind::Or => Precedence::Or,
             TokenKind::And => Precedence::And,
             TokenKind::Equal | TokenKind::NotEqual | TokenKind::Less | TokenKind::Greater |

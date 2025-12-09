@@ -141,6 +141,12 @@ pub enum ExpressionKind {
         orelse: Box<Expression>,
     },
     
+    // Named expression (walrus operator :=)
+    NamedExpr {
+        target: Box<Expression>,
+        value: Box<Expression>,
+    },
+    
     // Await expression
     Await {
         value: Box<Expression>,
@@ -153,12 +159,6 @@ pub enum ExpressionKind {
     
     // Yield from expression
     YieldFrom {
-        value: Box<Expression>,
-    },
-    
-    // Named expression (walrus operator :=)
-    NamedExpr {
-        target: Box<Expression>,
         value: Box<Expression>,
     },
 }

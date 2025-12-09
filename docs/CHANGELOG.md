@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Walrus Operator (:=) - December 9, 2025
+**Implemented walrus operator (named expressions)** - enabling Python 3.8+ assignment expressions.
+
+**Lexer Enhancement (silk-lexer)** - := Token ✅:
+- ✅ Added TokenKind::ColonEqual for the := operator
+- ✅ Lexer recognizes := as a two-character token
+- ✅ Proper tokenization distinguishing := from : and =
+
+**AST Enhancement (silk-ast)** - Named Expression ✅:
+- ✅ Added ExpressionKind::NamedExpr variant
+- ✅ Stores target (identifier) and value (expression)
+- ✅ Supports nesting and complex expressions
+
+**Parser Expression Enhancement (silk-parser)** - Walrus Operator ✅:
+- ✅ Added Walrus precedence level (between None and Or)
+- ✅ Basic assignment expressions: `x := 10`
+- ✅ In conditionals: `if (n := len(data)) > 0:`
+- ✅ In while loops: `while (line := file.readline()):`
+- ✅ In lists: `[y := 5, y + 1, y + 2]`
+- ✅ In function calls: `print(result := calculate())`
+- ✅ Nested walrus: `(a := (b := 5))`
+- ✅ With expressions: `total := x + y`
+- ✅ With comparisons: `(n := len(data)) > 10`
+- ✅ Right-associative parsing at Walrus precedence level
+- ✅ Validates target must be a simple identifier
+- ✅ Added 8 comprehensive tests covering all walrus operator forms
+- ✅ All 168 parser tests passing (243 total workspace tests)
+- **Status**: Parser now at ~92% complete, Phase 1 at ~93%
+- **Impact**: Full Python 3.8+ assignment expression syntax enabled
+
 ### ✅ FEATURE - Decorators - December 9, 2025
 **Implemented decorator parsing** - enabling Python-style decorators for functions and classes.
 

@@ -2419,4 +2419,141 @@ fn test_decorator_with_complex_call() {
     }
 }
 
+// ==================== Walrus Operator Tests ====================
+
+#[test]
+fn test_walrus_basic() {
+    let expr = parse_expr("x := 10").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier target"),
+            }
+            match value.kind {
+                ExpressionKind::Integer(v) => assert_eq!(v, 10),
+                _ => panic!("Expected integer value"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_in_if() {
+    let stmt = parse_stmt("if x := get_value():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::If { test, .. } => {
+            match test.kind {
+                ExpressionKind::NamedExpr { target, value } => {
+                    match target.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected identifier"),
+                    }
+                    match value.kind {
+                        ExpressionKind::Call { .. } => {},
+                        _ => panic!("Expected call"),
+                    }
+                }
+                _ => panic!("Expected named expression in if test"),
+            }
+        }
+        _ => panic!("Expected if statement"),
+    }
+}
+
+#[test]
+fn test_walrus_in_while() {
+    let stmt = parse_stmt("while line := file.readline():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::While { test, .. } => {
+            match test.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in while test"),
+            }
+        }
+        _ => panic!("Expected while statement"),
+    }
+}
+
+#[test]
+fn test_walrus_in_list() {
+    let expr = parse_expr("[y := 5, y + 1, y + 2]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            match &elements[0].kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression as first element"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_walrus_with_expression() {
+    let expr = parse_expr("total := x + y").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "total"),
+                _ => panic!("Expected identifier"),
+            }
+            match value.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_nested() {
+    let expr = parse_expr("(a := (b := 5))").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "a"),
+                _ => panic!("Expected identifier"),
+            }
+            match value.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected nested named expression"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_with_comparison() {
+    let expr = parse_expr("(n := len(data)) > 10").unwrap();
+    match expr.kind {
+        ExpressionKind::Compare { left, .. } => {
+            match left.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in comparison"),
+            }
+        }
+        _ => panic!("Expected comparison"),
+    }
+}
+
+#[test]
+fn test_walrus_in_function_call() {
+    let expr = parse_expr("print(result := calculate())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
 

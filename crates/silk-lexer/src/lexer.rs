@@ -537,7 +537,14 @@ impl Lexer {
             '}' => TokenKind::RightBrace,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            ':' => TokenKind::Colon,
+            ':' => {
+                if self.peek_char(0) == Some('=') {
+                    self.advance();
+                    TokenKind::ColonEqual
+                } else {
+                    TokenKind::Colon
+                }
+            }
             '~' => TokenKind::Tilde,
             
             '+' => {

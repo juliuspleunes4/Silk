@@ -60,12 +60,12 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~92% complete! Core statements functional, most expressions working
+- **Phase 1: Foundation** - ~93% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (91% - all statements complete, most expressions work)
+  - Parser 🟡 (92% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
+    - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary, walrus)
     - ✅ Complete: Function params with *args/**kwargs support
     - ✅ Complete: Decorators for functions and classes
     - ❌ Missing: comprehensions
@@ -166,8 +166,23 @@
     - ✅ Added 8 comprehensive tests covering all decorator forms
     - ✅ All 160 parser tests passing (235 total workspace tests)
 
+11. ~~**WALRUS OPERATOR (:=)**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added ColonEqual token (:=) to lexer (TokenKind::ColonEqual)
+    - ✅ Added NamedExpr variant to AST (ExpressionKind::NamedExpr)
+    - ✅ Implemented walrus operator parsing with proper precedence (Walrus level)
+    - ✅ Basic assignment expressions: x := 10
+    - ✅ In conditionals: if (n := len(data)) > 0:
+    - ✅ In while loops: while (line := file.readline()):
+    - ✅ In lists: [y := 5, y + 1, y + 2]
+    - ✅ In function calls: print(result := calculate())
+    - ✅ Nested walrus: (a := (b := 5))
+    - ✅ With expressions: total := x + y
+    - ✅ With comparisons: (n := len(data)) > 10
+    - ✅ Added 8 comprehensive tests covering all walrus operator forms
+    - ✅ All 168 parser tests passing (243 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-11. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+12. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
     - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):

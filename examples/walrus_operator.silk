@@ -1,0 +1,69 @@
+# Walrus Operator (:=) Examples
+# Demonstrates Python 3.8+ assignment expressions
+
+# Basic walrus operator - assign and use in one expression
+x := 10
+print(x)
+
+# In if condition - assign and test
+if n := len(data) > 0:
+    print("Data has", n, "elements")
+
+# In while loop - read and test
+while line := file.readline():
+    process(line)
+
+# In list - assign and reuse value
+values = [y := 5, y + 1, y + 2, y * 2]
+# values = [5, 6, 7, 10]
+
+# In function call
+print(result := expensive_calculation())
+use_result(result)  # Can use result later
+
+# Nested walrus operators
+outer := (inner := compute_value())
+# Both outer and inner are assigned
+
+# With comparison
+if (count := len(items)) > 100:
+    print("Too many items:", count)
+
+# In comprehension (useful pattern)
+filtered = [match for item in items if (match := pattern.search(item))]
+
+# Real-world example: processing data
+def process_file(filename):
+    with open(filename) as f:
+        # Read and process non-empty lines
+        while (line := f.readline()):
+            if stripped := line.strip():
+                yield stripped
+
+# Walrus in complex expressions
+total := sum(values) if (n := len(values)) > 0 else 0
+
+# Multiple assignments in list
+coords = [(x := 10), (y := 20), x + y]
+# coords = [10, 20, 30]
+
+# With function chains
+if (result := api_call()) and (processed := process(result)):
+    save(processed)
+
+# Avoiding repeated calculations
+# Before:
+if len(data) > 0:
+    average = sum(data) / len(data)
+    
+# With walrus:
+if (n := len(data)) > 0:
+    average = sum(data) / n
+
+# In while with sentinel pattern
+while (block := file.read(1024)) != "":
+    process_block(block)
+
+# Walrus with logical operators
+if (x := get_x()) and (y := get_y()) and x + y > 10:
+    use_values(x, y)
