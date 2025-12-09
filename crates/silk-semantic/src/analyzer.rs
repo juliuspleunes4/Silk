@@ -128,6 +128,18 @@ impl SemanticAnalyzer {
 
             // Function definition: already declared in pre-pass, now analyze body
             StatementKind::FunctionDef { params, body, .. } => {
+                // Analyze parameter defaults BEFORE entering scope (evaluated in outer scope)
+                for param in &params.args {
+                    if let Some(default_expr) = &param.default {
+                        self.analyze_expression(default_expr);
+                    }
+                }
+                for param in &params.kwonlyargs {
+                    if let Some(default_expr) = &param.default {
+                        self.analyze_expression(default_expr);
+                    }
+                }
+                
                 // Enter function scope
                 self.symbol_table.enter_scope(ScopeKind::Function);
 
@@ -467,6 +479,13 @@ impl SemanticAnalyzer {
 
             // Lambda expression
             ExpressionKind::Lambda { params, body } => {
+                // Analyze parameter defaults BEFORE entering scope (evaluated in outer scope)
+                for param in params {
+                    if let Some(default_expr) = &param.default {
+                        self.analyze_expression(default_expr);
+                    }
+                }
+                
                 self.symbol_table.enter_scope(ScopeKind::Function);
                 
                 // Define lambda parameters

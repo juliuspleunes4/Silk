@@ -28,6 +28,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Better foundation for type checking (next phase)
 - ✅ Less code, easier to maintain
 
+### 🔍 Parameter Default Value Validation - December 9, 2025
+
+**Fixed parameter default value scoping** to match Python semantics.
+
+**Issue**: Default parameter values were not being validated before entering function scope, allowing:
+- Undefined variables in defaults to go undetected
+- Incorrect assumption that defaults could reference parameters
+- Inconsistent handling between lambda and function parameters
+
+**Fix**:
+- Default expressions now analyzed **before** entering function/lambda scope
+- Correctly matches Python behavior: defaults evaluated in outer scope, not function scope
+- Applied consistently to all parameter types:
+  - Regular function parameters
+  - Keyword-only parameters  
+  - Lambda parameters (ready for when parser supports them)
+
+**Tests Added**: 6 new comprehensive tests in `test_parameter_defaults.rs`
+- Validates outer scope variable access ✅
+- Detects undefined variables in defaults ✅
+- Prevents parameters from referencing other parameters in defaults ✅
+- Tests nested function defaults ✅
+- Tests complex expressions in defaults ✅
+
 **New Test Coverage** - Added 14 forward reference tests:
 - Function calling function defined later
 - Class referencing class defined later
