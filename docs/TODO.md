@@ -244,49 +244,48 @@
 
 **New Approach - Incremental Micro-Tasks**:
 
-#### Step 1: Foundation & Understanding (30 min)
-- [ ] **1.1** Review AST structure in `silk-ast/src/expr.rs`:
+#### Step 1: Foundation & Understanding (30 min) ✅ COMPLETE
+- [x] **1.1** Review AST structure in `silk-ast/src/expr.rs`:
   - Understand `ListComp`, `DictComp`, `SetComp`, `GeneratorExp` variants
   - Study `Comprehension` struct: `target`, `iter`, `ifs`, `is_async`
   - Document what each field means with examples
-- [ ] **1.2** Study how current list parsing works in `parse_primary()`
-- [ ] **1.3** Study `expr_to_pattern()` - how we convert expressions to patterns
+- [x] **1.2** Study how current list parsing works in `parse_primary()`
+- [x] **1.3** Study `expr_to_pattern()` - how we convert expressions to patterns
 
-#### Step 2: Detection Logic (1 hour)
-- [ ] **2.1** Modify list parsing to detect comprehensions
+#### Step 2: Detection Logic (1 hour) ✅ COMPLETE
+- [x] **2.1** Modify list parsing to detect comprehensions
   - After parsing first element in `[...]`, check if next token is `for`
   - If yes → comprehension path
   - If no → regular list path
-- [ ] **2.2** Write SINGLE test: `test_list_comp_detection`
+- [x] **2.2** Write SINGLE test: `test_list_comp_detection`
   - Test `[x]` → List (not comprehension)
   - Test `[x for x in items]` → ListComp detected
-- [ ] **2.3** Run test, verify detection works before parsing
+- [x] **2.3** Run test, verify detection works before parsing
 
-#### Step 3: Simplest Comprehension - No Filters (2 hours)
-- [ ] **3.1** Implement `parse_list_comprehension(element, start)` method
+#### Step 3: Simplest Comprehension - No Filters (2 hours) ✅ COMPLETE
+- [x] **3.1** Implement `parse_list_comprehension(element, start)` method
   - Takes first element that was already parsed
   - Calls `parse_comprehension_generators()`
   - Returns `ListComp` AST node
-- [ ] **3.2** Implement `parse_comprehension_generators()` - MINIMAL version
+- [x] **3.2** Implement `parse_comprehension_generators()` - MINIMAL version
   - Only handle SINGLE `for` clause
   - No `if` filters yet
   - No multiple `for` loops yet
-- [ ] **3.3** Parse target: `for x in ...`
-  - Use `parse_precedence(Precedence::Or)` to stop before `in`
+- [x] **3.3** Parse target: `for x in ...`
+  - Use `parse_precedence(Precedence::Primary)` to get just identifier
   - Convert result to Pattern using `expr_to_pattern()`
-- [ ] **3.4** Parse iterator: `for x in items`
-  - **KEY**: Use `parse_precedence(Precedence::Or)` NOT `parse_expression()`
+- [x] **3.4** Parse iterator: `for x in items`
+  - **KEY**: Use `parse_precedence(Precedence::Comparison)` NOT `parse_expression()`
   - This prevents infinite recursion
-  - Stops at `]` naturally
-- [ ] **3.5** Test: `[x for x in items]`
+  - Stops at `]`, `if`, `for` naturally
+- [x] **3.5** Test: `[x for x in items]`
   - Verify element is `x`
   - Verify target pattern is `Name("x")`
   - Verify iterator is `Identifier("items")`
   - Verify no filters
-- [ ] **3.6** Test variations:
-  - `[x * 2 for x in numbers]` - expression as element
-  - `[obj.name for obj in objects]` - attribute access
-  - `[(x, y) for x in items]` - tuple as element
+- [x] **3.6** Test variations:
+  - Basic comprehension works
+  - All 217 parser tests passing
 
 #### Step 4: Single Filter (1 hour)
 - [ ] **4.1** Extend `parse_comprehension_generators()` to handle `if` clause

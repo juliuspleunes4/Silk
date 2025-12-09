@@ -183,14 +183,36 @@ impl Parser {
             // List literal (TODO: comprehensions)
             TokenKind::LeftBracket => {
                 self.advance(); // consume '['
-                let mut elements = Vec::new();
                 
-                while !self.check(TokenKind::RightBracket) && !self.is_at_end() {
-                    elements.push(self.parse_expression()?);
+                // Check for empty list
+                if self.check(TokenKind::RightBracket) {
+                    self.advance();
+                    return Ok(Expression::new(
+                        ExpressionKind::List { elements: vec![] },
+                        silk_lexer::Span::new(start.start, self.current_token().span.end, start.line, start.column)
+                    ));
+                }
+                
+                // Parse first element
+                let first_element = self.parse_expression()?;
+                
+                // DETECTION POINT: Check if this is a list comprehension
+                if self.check(TokenKind::For) {
+                    return self.parse_list_comprehension(first_element, start);
+                }
+                
+                // Regular list: continue parsing elements
+                let mut elements = vec![first_element];
+                
+                while self.check(TokenKind::Comma) {
+                    self.advance(); // consume ','
                     
-                    if !self.check(TokenKind::RightBracket) {
-                        self.expect(TokenKind::Comma, "Expected ',' or ']' in list")?;
+                    // Check for trailing comma
+                    if self.check(TokenKind::RightBracket) {
+                        break;
                     }
+                    
+                    elements.push(self.parse_expression()?);
                 }
                 
                 self.expect(TokenKind::RightBracket, "Expected ']' after list elements")?;
@@ -701,6 +723,59 @@ impl Parser {
             value: Box::new(value),
             attr: attr.lexeme,
         })
+    }
+    
+    /// Parse list comprehension: [element for target in iter]
+    fn parse_list_comprehension(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        // Parse the generator clauses
+        let generators = self.parse_comprehension_generators()?;
+        
+        // Expect closing bracket
+        self.expect(TokenKind::RightBracket, "Expected ']' after list comprehension")?;
+        
+        let end = self.current_token().span.clone();
+        Ok(Expression::new(
+            ExpressionKind::ListComp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse comprehension generators: for target in iter [if cond]*
+    fn parse_comprehension_generators(&mut self) -> ParseResult<Vec<silk_ast::Comprehension>> {
+        let mut generators = Vec::new();
+        
+        // For now: only parse ONE 'for' clause, no filters, no nested loops
+        // We'll expand this in later steps
+        
+        // Expect 'for'
+        self.expect(TokenKind::For, "Expected 'for' in comprehension")?;
+        
+        // Step 3.3: Parse target (loop variable) - use Primary to get just the identifier/tuple
+        // We need to stop before 'in', so don't use high precedence that would consume it
+        let target_expr = self.parse_precedence(Precedence::Primary)?;
+        let target = self.expr_to_pattern(target_expr)?;
+        
+        // Step 3.4: Expect 'in'
+        self.expect(TokenKind::In, "Expected 'in' after comprehension target")?;
+        
+        // Step 3.4: Parse iterator - use Comparison precedence to stop before 'if' or ']'
+        // This allows: items, range(10), obj.attr, but stops at 'if' or ']'
+        let iter = self.parse_precedence(Precedence::Comparison)?;
+        
+        // No filters yet (step 3 - simplest case)
+        let ifs = Vec::new();
+        
+        generators.push(silk_ast::Comprehension {
+            target,
+            iter,
+            ifs,
+            is_async: false,
+        });
+        
+        Ok(generators)
     }
 }
 

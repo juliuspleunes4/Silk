@@ -3261,4 +3261,74 @@ fn test_notimplemented_in_conditional() {
     }
 }
 
+// ============================================================================
+// Comprehension Tests - Step by Step Implementation
+// ============================================================================
+
+#[test]
+fn test_list_comp_detection() {
+    // Test 1: Regular list should still work
+    let expr = parse_expr("[x]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 1);
+        }
+        _ => panic!("Expected regular list for [x]"),
+    }
+    
+    // Test 2: List comprehension should now parse successfully!
+    let result = parse_expr("[x for x in items]");
+    match result {
+        Ok(expr) => {
+            match expr.kind {
+                ExpressionKind::ListComp { .. } => {
+                    // Success! Comprehension detected and parsed
+                }
+                _ => panic!("Expected list comprehension"),
+            }
+        }
+        Err(e) => panic!("Comprehension should parse successfully now, got error: {:?}", e),
+    }
+}
+
+#[test]
+fn test_list_comp_simplest() {
+    // Simplest possible: [x for x in items]
+    // First verify parsing doesn't hang - add timeout expectation
+    let source = "[x for x in items]";
+    println!("Parsing: {}", source);
+    let expr = parse_expr(source).unwrap();
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x'
+            match element.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' as element"),
+            }
+            
+            // Check we have exactly one generator
+            assert_eq!(generators.len(), 1);
+            
+            let gen = &generators[0];
+            
+            // Check target is 'x'
+            match &gen.target.kind {
+                silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected name pattern for target"),
+            }
+            
+            // Check iterator is 'items'
+            match gen.iter.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
+                _ => panic!("Expected identifier 'items' as iterator"),
+            }
+            
+            // No filters
+            assert_eq!(gen.ifs.len(), 0);
+            assert_eq!(gen.is_async, false);
+        }
+        _ => panic!("Expected list comprehension, got: {:?}", expr.kind),
+    }
+}
+
 
