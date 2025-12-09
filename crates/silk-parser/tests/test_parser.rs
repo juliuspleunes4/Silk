@@ -3435,4 +3435,69 @@ fn test_list_comp_multiple_filters() {
     }
 }
 
+#[test]
+fn test_list_comp_nested_simple() {
+    let source = "[x + y for x in range(3) for y in range(3)]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x + y'
+            match &element.kind {
+                ExpressionKind::BinaryOp { left, op, right } => {
+                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                    assert_eq!(*op, silk_ast::BinaryOperator::Add);
+                    assert!(matches!(right.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                }
+                _ => panic!("Expected binary op for element"),
+            }
+            
+            // Check two generators
+            assert_eq!(generators.len(), 2);
+            
+            // First: for x in range(3)
+            let gen1 = &generators[0];
+            assert!(matches!(gen1.target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(matches!(gen1.iter.kind, ExpressionKind::Call { .. }));
+            assert_eq!(gen1.ifs.len(), 0);
+            
+            // Second: for y in range(3)
+            let gen2 = &generators[1];
+            assert!(matches!(gen2.target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+            assert!(matches!(gen2.iter.kind, ExpressionKind::Call { .. }));
+            assert_eq!(gen2.ifs.len(), 0);
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_list_comp_nested_with_filter() {
+    let source = "[x for x in range(10) for y in range(10) if x == y]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 2);
+            
+            // First generator: for x in range(10) - no filter
+            assert_eq!(generators[0].ifs.len(), 0);
+            
+            // Second generator: for y in range(10) if x == y - one filter
+            assert_eq!(generators[1].ifs.len(), 1);
+            
+            // Check the filter is x == y
+            match &generators[1].ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Eq);
+                    assert!(matches!(comparators[0].kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                }
+                _ => panic!("Expected compare for filter"),
+            }
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
 

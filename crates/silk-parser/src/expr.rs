@@ -747,41 +747,45 @@ impl Parser {
     fn parse_comprehension_generators(&mut self) -> ParseResult<Vec<silk_ast::Comprehension>> {
         let mut generators = Vec::new();
         
-        // For now: only parse ONE 'for' clause
-        // Step 4: support filters (if clauses)
-        // Multiple 'for' loops will be added in step 6
-        
-        // Expect 'for'
-        self.expect(TokenKind::For, "Expected 'for' in comprehension")?;
-        
-        // Parse target (loop variable) - use Primary to get just the identifier/tuple
-        let target_expr = self.parse_precedence(Precedence::Primary)?;
-        let target = self.expr_to_pattern(target_expr)?;
-        
-        // Expect 'in'
-        self.expect(TokenKind::In, "Expected 'in' after comprehension target")?;
-        
-        // Parse iterator - use Comparison precedence to stop before 'if' or ']'
-        let iter = self.parse_precedence(Precedence::Comparison)?;
-        
-        // Step 4: Parse optional 'if' filters
-        let mut ifs = Vec::new();
-        while self.check(TokenKind::If) {
-            self.advance(); // consume 'if'
+        // Step 6: Loop to parse multiple 'for' clauses
+        // Parse at least one 'for', then continue while we see more
+        loop {
+            // Expect 'for'
+            self.expect(TokenKind::For, "Expected 'for' in comprehension")?;
             
-            // Parse the filter condition
-            // Use And precedence (one level below Or) to stop BEFORE ternary 'if'
-            // This allows: x > 0, x and y, etc. but stops at ternary and next filter 'if'
-            let filter = self.parse_precedence(Precedence::And)?;
-            ifs.push(filter);
+            // Parse target (loop variable) - use Primary to get just the identifier/tuple
+            let target_expr = self.parse_precedence(Precedence::Primary)?;
+            let target = self.expr_to_pattern(target_expr)?;
+            
+            // Expect 'in'
+            self.expect(TokenKind::In, "Expected 'in' after comprehension target")?;
+            
+            // Parse iterator - use Comparison precedence to stop before 'if' or ']'
+            let iter = self.parse_precedence(Precedence::Comparison)?;
+            
+            // Parse optional 'if' filters for this generator
+            let mut ifs = Vec::new();
+            while self.check(TokenKind::If) {
+                self.advance(); // consume 'if'
+                
+                // Parse the filter condition
+                // Use And precedence (one level below Or) to stop BEFORE ternary 'if'
+                let filter = self.parse_precedence(Precedence::And)?;
+                ifs.push(filter);
+            }
+            
+            generators.push(silk_ast::Comprehension {
+                target,
+                iter,
+                ifs,
+                is_async: false,
+            });
+            
+            // Check if there's another 'for' clause
+            if !self.check(TokenKind::For) {
+                break;
+            }
         }
-        
-        generators.push(silk_ast::Comprehension {
-            target,
-            iter,
-            ifs,
-            is_async: false,
-        });
         
         Ok(generators)
     }
