@@ -2062,3 +2062,92 @@ fn test_ternary_max_pattern() {
     }
 }
 
+// ============================================================================
+// Keyword Argument Tests
+// ============================================================================
+
+#[test]
+fn test_function_call_with_keyword_arg() {
+    let expr = parse_expr("func(x=1)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 0);
+            assert_eq!(keywords.len(), 1);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_mixed_args() {
+    let expr = parse_expr("func(1, 2, x=3, y=4)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 2);
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+            assert_eq!(keywords[1].arg, Some("y".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_kwargs_unpack() {
+    let expr = parse_expr("func(**options)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 0);
+            assert_eq!(keywords.len(), 1);
+            assert_eq!(keywords[0].arg, None); // None means **kwargs
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_mixed_with_kwargs_unpack() {
+    let expr = parse_expr("func(1, x=2, **options)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 1);
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+            assert_eq!(keywords[1].arg, None);
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_expression() {
+    let expr = parse_expr("func(x=a + b, y=c * 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            match &keywords[0].value.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_function_call() {
+    let expr = parse_expr("func(x=other())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+

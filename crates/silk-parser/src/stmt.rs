@@ -697,8 +697,8 @@ impl Parser {
         Ok(statements)
     }
     
-    /// Convert an expression to a pattern (for use in for loops, assignments, etc.)
-    fn expr_to_pattern(&self, expr: silk_ast::Expression) -> ParseResult<silk_ast::Pattern> {
+    /// Convert an expression to a pattern (for use in for loops, assignments, comprehensions, etc.)
+    pub(crate) fn expr_to_pattern(&self, expr: silk_ast::Expression) -> ParseResult<silk_ast::Pattern> {
         use silk_ast::{ExpressionKind, Pattern, PatternKind};
         
         Ok(match expr.kind {

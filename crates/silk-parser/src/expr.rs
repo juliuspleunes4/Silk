@@ -151,7 +151,7 @@ impl Parser {
                 }
             }
             
-            // List literal
+            // List literal (TODO: comprehensions)
             TokenKind::LeftBracket => {
                 self.advance(); // consume '['
                 let mut elements = Vec::new();
@@ -494,11 +494,73 @@ impl Parser {
         self.advance(); // consume '('
         
         let mut args = Vec::new();
-        let keywords = Vec::new();
+        let mut keywords = Vec::new();
+        let mut seen_keyword = false;
         
         while !self.check(TokenKind::RightParen) && !self.is_at_end() {
-            // TODO: Handle keyword arguments
-            args.push(self.parse_expression()?);
+            let arg_start = self.current_token().span.clone();
+            
+            // Check for **kwargs
+            if self.check(TokenKind::DoubleStar) {
+                self.advance(); // consume '**'
+                let value = self.parse_expression()?;
+                keywords.push(silk_ast::CallKeyword {
+                    arg: None, // None means **kwargs
+                    value,
+                    span: arg_start,
+                });
+                seen_keyword = true;
+            }
+            // Check if this is a keyword argument (identifier followed by '=', but not '==')
+            else if self.check(TokenKind::Identifier) {
+                // Look ahead to see if there's an '=' after the identifier
+                if let Some(next_tok) = self.peek_token(1) {
+                    if matches!(next_tok.kind, TokenKind::Assign) {
+                        // This is a keyword argument: name=value
+                        let name = self.current_token().lexeme.clone();
+                        self.advance(); // consume identifier
+                        self.advance(); // consume '='
+                        let value = self.parse_expression()?;
+                        keywords.push(silk_ast::CallKeyword {
+                            arg: Some(name),
+                            value,
+                            span: arg_start,
+                        });
+                        seen_keyword = true;
+                    } else {
+                        // Regular positional argument that starts with identifier
+                        if seen_keyword {
+                            return Err(ParseError::InvalidSyntax(
+                                "Positional argument cannot follow keyword argument".to_string(),
+                                self.current_token().span.line,
+                                self.current_token().span.column,
+                            ));
+                        }
+                        args.push(self.parse_expression()?);
+                    }
+                } else {
+                    // No next token, treat as positional
+                    if seen_keyword {
+                        return Err(ParseError::InvalidSyntax(
+                            "Positional argument cannot follow keyword argument".to_string(),
+                            self.current_token().span.line,
+                            self.current_token().span.column,
+                        ));
+                    }
+                    args.push(self.parse_expression()?);
+                }
+            }
+            // Regular positional argument
+            else {
+                if seen_keyword {
+                    return Err(ParseError::InvalidSyntax(
+                        "Positional argument cannot follow keyword argument".to_string(),
+                        self.current_token().span.line,
+                        self.current_token().span.column,
+                    ));
+                }
+                args.push(self.parse_expression()?);
+            }
             
             if !self.check(TokenKind::RightParen) {
                 self.expect(TokenKind::Comma, "Expected ',' or ')' in function call")?;

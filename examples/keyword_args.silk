@@ -1,0 +1,90 @@
+# Keyword Arguments in Function Calls Examples
+
+# Basic keyword arguments
+print(x=10, y=20)
+result = calculate(width=100, height=50)
+
+# Mixed positional and keyword arguments
+draw_rectangle(10, 20, width=100, height=50, color="blue")
+config = create_config("production", debug=False, timeout=30)
+
+# Keyword arguments only
+user = create_user(name="Alice", email="alice@example.com", age=30)
+
+# **kwargs unpacking
+options = {"timeout": 30, "retry": 3, "verbose": True}
+connect(**options)
+
+# Combined positional, keyword, and **kwargs
+request("POST", "/api/users", data=payload, headers=headers, **extra_options)
+
+# Keyword arguments with complex expressions
+process(
+    x=calculate_x(),
+    y=a + b * 2,
+    z=values[0] if values else default,
+    config=get_default_config()
+)
+
+# Common patterns
+# Default values via keyword arguments
+def greet(name, greeting="Hello", punctuation="!"):
+    return f"{greeting}, {name}{punctuation}"
+
+greet("Alice")                                    # Uses defaults
+greet("Bob", greeting="Hi")                        # Override one
+greet("Charlie", punctuation=".")                  # Override another
+greet("Diana", greeting="Hey", punctuation="!!!")  # Override both
+
+# Configuration objects
+config = Config(
+    host="localhost",
+    port=8080,
+    debug=True,
+    max_connections=100,
+    timeout=30
+)
+
+# API calls with options
+response = api_call(
+    endpoint="/users",
+    method="GET",
+    headers={"Authorization": "Bearer token"},
+    params={"page": 1, "limit": 10},
+    timeout=5
+)
+
+# Flexible function calls
+plot(
+    x=data_x,
+    y=data_y,
+    title="Results",
+    xlabel="Time",
+    ylabel="Value",
+    color="blue",
+    linestyle="--",
+    marker="o"
+)
+
+# Forwarding options
+def wrapper(*args, **kwargs):
+    setup()
+    result = actual_function(*args, **kwargs)
+    cleanup()
+    return result
+
+# Kwargs unpacking from dict
+settings = load_settings()
+initialize_system(**settings)
+
+# Multiple kwargs unpacking (Python 3.5+)
+defaults = {"timeout": 10, "retry": 3}
+overrides = {"timeout": 30}
+connect(**defaults, **overrides)  # overrides wins for 'timeout'
+
+# Keyword-only separator (in function definition)
+def divide(numerator, denominator, *, precision=2, round_mode="half_up"):
+    # precision and round_mode MUST be passed as keyword arguments
+    pass
+
+divide(10, 3, precision=4, round_mode="truncate")

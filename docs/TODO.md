@@ -60,14 +60,14 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~89% complete! Core statements functional, most expressions working
+- **Phase 1: Foundation** - ~90% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (88% - all statements complete, most expressions work)
+  - Parser 🟡 (89% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Most expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
+    - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
     - ❌ Missing: comprehensions
-    - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
+    - ⚠️ Partial: Function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
   - Runtime ❌ (0% - not started)
@@ -132,10 +132,19 @@
    - ✅ Proper precedence handling (Or level)
    - ✅ Added 14 comprehensive tests covering all ternary forms
 
+8. ~~**KEYWORD ARGUMENTS IN FUNCTION CALLS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented keyword argument parsing: func(x=1, y=2)
+   - ✅ Mixed positional and keyword arguments: func(1, 2, x=3, y=4)
+   - ✅ **kwargs unpacking: func(**options)
+   - ✅ Combined forms: func(1, x=2, **opts)
+   - ✅ Proper enforcement: positional args cannot follow keyword args
+   - ✅ Lookahead parsing to distinguish keyword args from other uses of '='
+   - ✅ Added 6 comprehensive tests covering all keyword argument forms
+   - ✅ All 144 parser tests passing (219 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-8. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Comprehensions (list/dict/set/generator)
-   - Keyword arguments in function calls
+9. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+   - Comprehensions (list/dict/set/generator) - complex, needs careful design
    - *args and **kwargs in function parameters
    
 9. Lexer enhancements (1-2 weeks):

@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### ✅ FEATURE - Ternary/Conditional Expressions - December 9, 2025
+### \u2705 FEATURE - Keyword Arguments in Function Calls - December 9, 2025
+**Implemented keyword argument parsing** - enabling named arguments and **kwargs unpacking in function calls.
+
+**Parser Expression Enhancement (silk-parser)** - Keyword Arguments \u2705:
+- \u2705 Implemented keyword argument parsing: `func(x=1, y=2)`
+- \u2705 Mixed positional and keyword arguments: `func(1, 2, x=3, y=4)`
+- \u2705 **kwargs unpacking: `func(**options)`
+- \u2705 Combined forms: `func(1, x=2, **opts)`
+- \u2705 Proper enforcement: positional arguments cannot follow keyword arguments
+- \u2705 Lookahead parsing to distinguish `x=value` (keyword arg) from other uses of `=`
+- \u2705 Keyword arguments with complex expressions: `func(x=a + b, y=other())`
+- \u2705 Added 6 comprehensive tests covering all keyword argument forms
+- \u2705 All 144 parser tests passing (219 total workspace tests)
+- **Status**: Parser now at ~89% complete, Phase 1 at ~90%
+- **Impact**: Full Python-style named arguments enabled in function calls
+
+### \u2705 FEATURE - Ternary/Conditional Expressions - December 9, 2025
 **Implemented ternary operator parsing** - enabling inline conditional expressions.
 
 **Parser Expression Enhancement (silk-parser)** - Ternary/Conditional Expressions ✅:
