@@ -27,11 +27,11 @@
   - Statement nodes: 20+ kinds (assignments, control flow, imports, function/class definitions)
   - Type annotation nodes: 9 kinds
   - Pattern nodes: 8 kinds for match statements
-- **Parser** (`silk-parser` crate): ✅ **CORE FEATURES COMPLETE**
+- **Parser** (`silk-parser` crate): 🟡 **CORE STATEMENTS COMPLETE, EXPRESSIONS PARTIAL**
   - Operator precedence climbing algorithm ✅
   - Expression parsing: literals, identifiers, binary/unary operators, comparisons, logical operators ✅
-  - Postfix operators: function calls, subscripts, attribute access ✅
-  - Collection literals: lists (complete) ✅, dict/set (TODO for future) 
+  - Postfix operators: function calls (positional args only), subscripts (no slices), attribute access ✅
+  - Collection literals: lists ✅, dict/set ❌ (todo!() macro - causes panic), tuples ❌ (incomplete)
   - Statement parsing: ALL CORE STATEMENTS NOW IMPLEMENTED ✅
     - Expression statements, assignments (simple/augmented), return, pass, break, continue ✅
     - if/elif/else with full nesting ✅
@@ -47,19 +47,30 @@
   - ParseError types with 8 error variants ✅
   - **67 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
-  - Function parameter parsing with type annotations and defaults ✅
+  - Function parameter parsing with type annotations and defaults ✅ (no *args/**kwargs yet)
   - Type annotation parsing (simple types and generics) ✅
   - Expression to pattern conversion for for loops ✅
+  - **Known Limitations**:
+    - Dict/set literal parsing causes panic (todo!() in expr.rs:156)
+    - List/dict/set comprehensions not implemented
+    - Lambda expressions not implemented
+    - Slice syntax not implemented (only single subscripts)
+    - Ternary/conditional expressions not implemented
+    - Keyword arguments in function calls not implemented
+    - Decorators have placeholder implementation only
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
 - **Error Handling**: Foundation with custom error types using thiserror
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~90% complete! Core parsing fully functional
+- **Phase 1: Foundation** - ~82% complete! Core statements functional, basic expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser ✅ (90% - all core statements and expressions work)
-    - Remaining: dict/set literals, comprehensions, lambda, slices, advanced features
+  - Parser 🟡 (78% - all statements complete, basic expressions work)
+    - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
+    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists)
+    - ❌ Missing: dict/set literals (causes panic), comprehensions, lambda, slices, ternary, tuples
+    - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
   - Runtime ❌ (0% - not started)
@@ -81,9 +92,15 @@
    - ✅ Can now parse real Python code with functions, classes, and control flow
 
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-3. Complete expression parsing (2-3 weeks):
-   - Dict/set literals, comprehensions, lambda, if-expressions, slices
-   - Tuple support and unpacking
+3. Complete expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+   - Dict/set literals (**URGENT** - currently causes panic)
+   - Tuple literals and tuple unpacking
+   - Slice syntax (list[start:stop:step])
+   - Comprehensions (list/dict/set/generator)
+   - Lambda expressions
+   - Ternary/conditional expressions (x if cond else y)
+   - Keyword arguments in function calls
+   - *args and **kwargs in function parameters
    
 4. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
@@ -544,16 +561,17 @@ def func(pos_only, /, both, *, kw_only):
 ## 2. Compiler Architecture
 
 ### 2.1 Frontend - Lexical Analysis
-- [x] **Lexer/Tokenizer Implementation** ✅ COMPLETE
+- [x] **Lexer/Tokenizer Implementation** ✅ COMPLETE (Core features 100%, Advanced features TODO)
   - [x] Token definitions for all Python syntax elements (67 token types)
   - [x] Source location tracking (line, column, span)
+  - [x] Indentation tracking (INDENT/DEDENT tokens) ✅
   - [x] Unicode support (UTF-8) - identifiers and strings
   - [x] String literal handling (single, double, triple-quoted with escape sequences)
-  - [ ] String literal handling - raw strings (r"...") - TODO
-  - [ ] String literal handling - f-strings - TODO
+  - [ ] String literal handling - raw strings (r"...") - TODO (non-critical)
+  - [ ] String literal handling - f-strings - TODO (non-critical)
   - [x] Number literal handling (int, float, scientific notation)
-  - [ ] Number literal handling - binary (0b), octal (0o), hex (0x) - TODO
-  - [ ] Number literal handling - underscores (1_000) - TODO
+  - [ ] Number literal handling - binary (0b), octal (0o), hex (0x) - TODO (non-critical)
+  - [ ] Number literal handling - underscores (1_000) - TODO (non-critical)
   - [x] Comment handling (single-line #)
   - [ ] Indentation/dedentation token generation - TODO (field exists, logic not implemented)
   - [x] Error recovery for malformed tokens (7 error types with proper reporting)
@@ -570,47 +588,51 @@ def func(pos_only, /, both, *, kw_only):
 - [x] Error conditions (unterminated strings, unexpected characters, invalid numbers)
 
 ### 2.2 Frontend - Syntax Analysis
-- [x] **Parser Implementation** ✅ BASIC COMPLETE
-  - [ ] Complete Python grammar implementation - in progress (basic subset complete)
+- [x] **Parser Implementation** 🟡 STATEMENTS COMPLETE, EXPRESSIONS PARTIAL (~78%)
+  - [ ] Complete Python grammar implementation - in progress (statements done, expressions partial)
   - [x] Recursive descent parser with operator precedence climbing
   - [x] Operator precedence handling (13 precedence levels)
   - [x] Expression parsing - basic complete (literals, binary/unary ops, comparisons, logical ops, calls, subscripts, attributes, lists)
-  - [ ] Expression parsing - advanced TODO (dict/set literals, comprehensions, lambda, if-expr, slices, tuples)
+  - [ ] Expression parsing - advanced TODO (dict/set literals ⚠️ panic, comprehensions, lambda, if-expr, slices, tuples)
+  - [x] Statement parsing - ALL COMPLETE ✅ (if, while, for, def, class, import, with, try, match, global, nonlocal, assert, raise, del)
   - [x] Statement parsing - basic complete (expression statements, assignments, augmented assignments, return, pass, break, continue)
-  - [ ] Statement parsing - advanced TODO (if, while, for, def, class, import, with, try, match)
   - [x] AST (Abstract Syntax Tree) construction - 67 node variants defined
   - [ ] Syntax error recovery - basic (ParseError types defined)
   - [x] Error messages with location info
   - [x] Source location preservation in AST (all nodes have Span)
 
 #### Parser Components
-- [x] Expression parser - BASIC COMPLETE
+- [x] Expression parser - BASIC COMPLETE (~70%)
   - [x] Binary operators (+, -, *, /, //, %, **, &, |, ^, <<, >>)
   - [x] Unary operators (+, -, ~, not)
   - [x] Comparison chains (==, !=, <, >, <=, >=) - single comparisons working
-  - [x] Function calls (with positional args, keyword args TODO)
-  - [x] Indexing (subscripts working, slicing TODO)
+  - [x] Function calls (positional args only, keyword args ❌ TODO)
+  - [x] Indexing (single subscripts only, slicing ❌ TODO)
   - [x] Attribute access (chained access supported)
-  - [ ] Comprehensions (list/dict/set/generator) - TODO
-  - [ ] Lambda expressions - TODO
-  - [ ] Conditional expressions (ternary) - TODO
+  - [ ] Comprehensions (list/dict/set/generator) - ❌ TODO
+  - [ ] Lambda expressions - ❌ TODO
+  - [ ] Conditional expressions (ternary) - ❌ TODO
   - [x] List literals
-  - [ ] Dict/set literals - TODO
-  - [ ] Tuple literals - TODO
+  - [ ] Dict/set literals - ⚠️ TODO (causes panic!)
+  - [ ] Tuple literals - ❌ TODO (incomplete)
 
-- [x] Statement parser - BASIC COMPLETE
+- [x] Statement parser - ✅ COMPLETE (100%)
   - [x] Assignment statements (simple with type_annotation support)
   - [x] Augmented assignments (+=, -=, *=, /=, //=, %=, **=, &=, |=, ^=, <<=, >>=)
-  - [ ] If/elif/else statements - TODO
-  - [ ] While loops - TODO
-  - [ ] For loops - TODO
+  - [x] If/elif/else statements ✅ COMPLETE
+  - [x] While loops (with optional else) ✅ COMPLETE
+  - [x] For loops (with optional else, pattern matching) ✅ COMPLETE
   - [x] Break/continue
   - [x] Return statements (with/without value)
   - [x] Pass statements
-  - [ ] Import statements - TODO
-  - [ ] Raise statements - TODO
-  - [ ] Try/except/finally blocks - TODO
-  - [ ] With statements - TODO
+  - [x] Import statements (import, from...import with aliases) ✅ COMPLETE
+  - [x] Raise statements (with optional cause) ✅ COMPLETE
+  - [x] Try/except/finally blocks (multiple handlers, else clause) ✅ COMPLETE
+  - [x] With statements (multiple context managers) ✅ COMPLETE
+  - [x] Match/case statements (with patterns and guards) ✅ COMPLETE
+  - [x] Global/nonlocal statements ✅ COMPLETE
+  - [x] Assert statements ✅ COMPLETE
+  - [x] Del statements ✅ COMPLETE
   - [ ] Match statements - TODO
   - [ ] Async/await statements - TODO
 
@@ -1741,21 +1763,25 @@ def func(pos_only, /, both, *, kw_only):
 
 ## 22. Roadmap Phases
 
-### Phase 1: Foundation (Months 1-3) - IN PROGRESS ⏳
-- [x] Project structure setup (Cargo workspace with 3 crates) ✅
-- [x] Basic lexer (tokens, source location) ✅ COMPLETE
+### Phase 1: Foundation (Months 1-3) - IN PROGRESS ⏳ (~82% complete)
+- [x] Project structure setup (Cargo workspace with 5 crates) ✅
+- [x] Basic lexer (tokens, source location) ✅ COMPLETE (100%)
   - [x] 67 token types (keywords, operators, literals, delimiters)
   - [x] Source location tracking (line, column, span)
   - [x] Unicode support
   - [x] String literals (single, double, triple-quoted, escape sequences)
   - [x] Number literals (int, float, scientific notation)
   - [x] Comment handling
+  - [x] Indentation tracking (INDENT/DEDENT tokens) ✅
   - [x] 7 error types with proper reporting
-  - [x] 72 comprehensive tests (all passing)
-- [ ] Basic parser (expressions, statements)
-- [ ] Simple AST definitions
-- [x] Error handling foundation (LexError with thiserror) ✅
-- [ ] Hello world compilation (via LLVM)
+  - [x] 75 comprehensive tests (all passing)
+- [x] Basic parser (expressions, statements) 🟡 PARTIAL (~78%)
+  - [x] All statement types implemented ✅
+  - [x] Basic expressions (literals, operators, calls, subscripts, attributes, lists) ✅
+  - [ ] Advanced expressions (dict/set, comprehensions, lambda, slices, ternary) ❌
+- [x] Complete AST definitions (67 node variants) ✅
+- [x] Error handling foundation (LexError, ParseError with thiserror) ✅
+- [ ] Hello world compilation (via LLVM) - Phase 2
 - [x] Basic CLI structure (4 subcommands: build, run, check, lex) ✅
 - [x] Initial test infrastructure (Cargo test, pretty_assertions) ✅
 
