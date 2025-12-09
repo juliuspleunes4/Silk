@@ -10,7 +10,7 @@ resolver = "2"
 version = "0.1.0"
 edition = "2021"
 authors = ["Silk Contributors"]
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/juliuspleunes4/silk"
 
 [workspace.dependencies]
