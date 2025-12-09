@@ -260,6 +260,41 @@ def outer():
 // ========== CONTROL FLOW CONTEXT VALIDATION ==========
 
 #[test]
+fn test_break_in_while_loop_ok() {
+    let source = r#"
+x = 0
+while x:
+    break
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Break inside while loop should be valid: {:?}", result);
+}
+
+#[test]
+fn test_continue_in_while_loop_ok() {
+    let source = r#"
+x = 0
+while x:
+    continue
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Continue inside while loop should be valid: {:?}", result);
+}
+
+#[test]
+fn test_break_in_nested_loop_ok() {
+    let source = r#"
+x = 0
+while x:
+    y = 0
+    while y:
+        break
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Break inside nested loop should be valid: {:?}", result);
+}
+
+#[test]
 fn test_return_outside_function_error() {
     let source = "return 42";
     let result = analyze(source);

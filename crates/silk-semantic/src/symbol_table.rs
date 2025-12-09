@@ -61,6 +61,8 @@ pub struct SymbolTable {
     scopes: Vec<Scope>,
     /// Index of the current scope
     current_scope: usize,
+    /// Loop depth counter for break/continue validation
+    loop_depth: usize,
 }
 
 impl SymbolTable {
@@ -70,6 +72,7 @@ impl SymbolTable {
         Self {
             scopes: vec![global_scope],
             current_scope: 0,
+            loop_depth: 0,
         }
     }
 
@@ -165,10 +168,21 @@ impl SymbolTable {
     }
 
     /// Check if currently in a loop scope (for break/continue validation)
-    /// Note: This is a placeholder - loop tracking will be added later
+    /// Returns true if currently inside a loop (for break/continue validation)
     pub fn in_loop(&self) -> bool {
-        // TODO: Implement loop scope tracking
-        false
+        self.loop_depth > 0
+    }
+
+    /// Enter a loop scope (increment loop depth)
+    pub fn enter_loop(&mut self) {
+        self.loop_depth += 1;
+    }
+
+    /// Exit a loop scope (decrement loop depth)
+    pub fn exit_loop(&mut self) {
+        if self.loop_depth > 0 {
+            self.loop_depth -= 1;
+        }
     }
 }
 

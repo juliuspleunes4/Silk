@@ -419,9 +419,13 @@ impl SemanticAnalyzer {
 
             StatementKind::While { test, body, orelse } => {
                 self.resolve_expression(test);
+                
+                self.symbol_table.enter_loop();
                 for stmt in body {
                     self.resolve_statement(stmt);
                 }
+                self.symbol_table.exit_loop();
+                
                 for stmt in orelse {
                     self.resolve_statement(stmt);
                 }
@@ -429,9 +433,13 @@ impl SemanticAnalyzer {
 
             StatementKind::For { target: _, iter, body, orelse, .. } => {
                 self.resolve_expression(iter);
+                
+                self.symbol_table.enter_loop();
                 for stmt in body {
                     self.resolve_statement(stmt);
                 }
+                self.symbol_table.exit_loop();
+                
                 for stmt in orelse {
                     self.resolve_statement(stmt);
                 }
