@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-381%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-467%20passing-brightgreen.svg)](#testing)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
 > A compiled programming language with Python-compatible syntax and C-level performance
@@ -103,12 +103,12 @@ Silk is organized as a Cargo workspace with multiple crates:
 - **silk-parser** — Syntax analysis and AST generation
 - **silk-ast** — Abstract syntax tree definitions
 - **silk-compiler** — Compilation orchestration
-- **silk-semantic** _(planned)_ — Type checking and semantic analysis
+- **silk-semantic** — Symbol table and semantic analysis (Phase 2 in progress)
 - **silk-codegen** _(planned)_ — Native code generation
 
 ## Development Status
 
-Silk is in active development. The compiler frontend (lexer and parser) is largely complete, with semantic analysis and code generation phases currently in progress.
+Silk is in active development. The compiler frontend (lexer and parser) is complete, and Phase 2 (semantic analysis) is now in progress.
 
 ### Current Capabilities
 
@@ -116,7 +116,7 @@ Silk is in active development. The compiler frontend (lexer and parser) is large
 - ✅ Statement parsing (functions, classes, control flow, imports, etc.)
 - ✅ Expression parsing (operators, literals, calls, comprehensions, etc.)
 - ✅ Type annotation parsing
-- ⏳ Semantic analysis (in progress)
+- 🚀 Semantic analysis (symbol table, name resolution, scope management)
 - ⏳ Code generation (planned)
 
 See [docs/TODO.md](docs/TODO.md) for detailed progress tracking.
@@ -132,9 +132,14 @@ cargo test --workspace
 # Run specific crate tests
 cargo test --package silk-lexer
 cargo test --package silk-parser
+cargo test --package silk-semantic
 ```
 
-**Current test coverage:** 381 tests across all components (115 lexer + 11 unit + 255 parser)
+**Current test coverage:** 467 tests across all components
+- 115 lexer tests
+- 11 unit tests  
+- 255 parser tests
+- 86 semantic analysis tests (17 symbol table + 28 analyzer + 41 name resolution)
 
 ## Contributing
 
