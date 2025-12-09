@@ -1,0 +1,49 @@
+# Tuple Examples
+
+# Empty tuple
+empty = ()
+
+# Single-element tuple (requires trailing comma)
+single = (42,)
+one_string = ("hello",)
+
+# Two-element tuple
+point = (10, 20)
+coords = (x, y)
+
+# Multiple-element tuple
+rgb = (255, 128, 0)
+person = ("Alice", 30, "alice@example.com")
+
+# Tuple with trailing comma
+data = (1, 2, 3,)
+
+# Mixed types
+mixed = (42, "hello", True, None, 3.14)
+
+# Nested tuples
+matrix = ((1, 2), (3, 4), (5, 6))
+nested = ((1, 2, 3), (4, 5, 6))
+
+# Tuples with expressions
+calculations = (x + y, x * y, x - y)
+ranges = (min_val, max_val, max_val - min_val)
+
+# Tuples with function calls
+results = (foo(), bar(), baz())
+
+# Tuple in list
+points = [(0, 0), (1, 1), (2, 4)]
+
+# Tuple as return value (multiple return)
+def get_stats():
+    return (mean, median, mode)
+
+# Tuple unpacking (when implemented)
+x, y = point
+r, g, b = rgb
+
+# Parenthesized expressions (NOT tuples)
+just_number = (42)          # This is just 42
+calculation = (1 + 2)       # This is just 3
+grouped = ((x + y) * z)     # Grouped expression

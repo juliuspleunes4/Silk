@@ -25,6 +25,12 @@ pub enum LexError {
     #[error("Invalid Unicode escape at line {0}, column {1}")]
     InvalidUnicodeEscape(usize, usize),
     
+    #[error("Invalid f-string: {0} at line {1}, column {2}")]
+    InvalidFString(String, usize, usize),
+    
+    #[error("Invalid byte string: {0} at line {1}, column {2}")]
+    InvalidByteString(String, usize, usize),
+    
     #[error("Unexpected end of file")]
     UnexpectedEof,
 }
@@ -48,6 +54,12 @@ impl LexError {
                 Some(Span::new(0, 1, *line, *col))
             }
             LexError::InvalidUnicodeEscape(line, col) => {
+                Some(Span::new(0, 1, *line, *col))
+            }
+            LexError::InvalidFString(_, line, col) => {
+                Some(Span::new(0, 1, *line, *col))
+            }
+            LexError::InvalidByteString(_, line, col) => {
                 Some(Span::new(0, 1, *line, *col))
             }
             LexError::UnexpectedEof => std::option::Option::None,

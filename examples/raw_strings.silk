@@ -1,0 +1,128 @@
+# Raw String Example
+# Demonstrates Silk's support for raw string literals
+
+# Basic raw string - escape sequences preserved literally
+raw_newline = r"\n"
+regular_newline = "\n"
+
+print("Raw string:", repr(raw_newline))      # Output: Raw string: '\\n'
+print("Regular string:", repr(regular_newline))  # Output: Regular string: '\n'
+
+# Windows file paths - no need to escape backslashes
+windows_path = r"C:\Users\John\Documents\file.txt"
+print(windows_path)  # Output: C:\Users\John\Documents\file.txt
+
+# Without raw strings, you'd need to double every backslash
+escaped_path = "C:\\Users\\John\\Documents\\file.txt"  # Same result but more verbose
+
+# Regex patterns - backslashes are literal
+email_pattern = r"\w+@\w+\.\w+"
+phone_pattern = r"\d{3}-\d{3}-\d{4}"
+url_pattern = r"https?://[\w\-\.]+(:\d+)?(/[\w\-\.\/]*)?(\?[\w\-=&]*)?"
+
+print("Email pattern:", email_pattern)
+# Output: Email pattern: \w+@\w+\.\w+
+
+# LaTeX mathematical expressions
+latex_equation = r"\frac{a}{b} = \frac{c}{d}"
+latex_greek = r"\alpha + \beta = \gamma"
+latex_integral = r"\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}"
+
+print(latex_equation)
+# Output: \frac{a}{b} = \frac{c}{d}
+
+# SQL queries with backslashes
+sql_query = r"SELECT * FROM users WHERE name LIKE '%\%%'"
+print(sql_query)
+# Output: SELECT * FROM users WHERE name LIKE '%\%%'
+
+# Network paths (UNC paths)
+network_path = r"\\server\share\folder\file.txt"
+print(network_path)
+# Output: \\server\share\folder\file.txt
+
+# Multiple backslashes preserved
+multiple_backslashes = r"\\\\"
+print(len(multiple_backslashes))  # Output: 4
+print(multiple_backslashes)       # Output: \\\\
+
+# Triple-quoted raw strings for multi-line patterns
+regex_verbose = r"""
+    ^                   # Start of string
+    [a-zA-Z0-9_.+-]+    # Username
+    @                   # At symbol
+    [a-zA-Z0-9-]+       # Domain name
+    \.                  # Dot
+    [a-zA-Z0-9-.]+      # Top-level domain
+    $                   # End of string
+"""
+
+# Raw strings in function calls (common for regex compilation)
+def compile_pattern(pattern):
+    print(f"Compiling pattern: {pattern}")
+    return pattern
+
+# Common use cases
+ip_pattern = compile_pattern(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+date_pattern = compile_pattern(r"\d{4}-\d{2}-\d{2}")
+time_pattern = compile_pattern(r"\d{2}:\d{2}:\d{2}")
+
+# Raw strings in lists (pattern collections)
+common_patterns = [
+    r"\d+",           # One or more digits
+    r"\w+",           # One or more word characters
+    r"\s+",           # One or more whitespace
+    r"[a-z]+",        # One or more lowercase letters
+    r"[A-Z]+",        # One or more uppercase letters
+]
+
+# Raw strings vs regular strings comparison
+print("Raw string tab:", repr(r"\t"))      # Output: Raw string tab: '\\t'
+print("Regular string tab:", repr("\t"))   # Output: Regular string tab: '\t'
+
+print("Raw string quote:", repr(r"\""))    # Output: Raw string quote: '\\"'
+print("Regular string quote:", repr("\"")) # Output: Regular string quote: '"'
+
+# Case-insensitive prefix (R instead of r)
+uppercase_raw = R"C:\WINDOWS\SYSTEM32"
+print(uppercase_raw)  # Output: C:\WINDOWS\SYSTEM32
+
+# Practical example: Configuration paths
+class Config:
+    LOG_PATH = r"C:\Program Files\MyApp\logs"
+    DATA_PATH = r"C:\Program Files\MyApp\data"
+    BACKUP_PATH = r"\\backup-server\backups\myapp"
+    
+    # Regex patterns for validation
+    EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    PHONE_REGEX = r"^\+?1?\d{9,15}$"
+    URL_REGEX = r"^https?://[^\s/$.?#].[^\s]*$"
+
+print("Log path:", Config.LOG_PATH)
+print("Email regex:", Config.EMAIL_REGEX)
+
+# Example: Text processing with raw strings
+text_patterns = {
+    'variable': r'\$\{[a-zA-Z_][a-zA-Z0-9_]*\}',  # ${variable}
+    'command': r'\$\([^)]+\)',                     # $(command)
+    'escape': r'\\.',                              # Any escaped character
+}
+
+# Raw strings make these patterns much more readable than:
+# 'variable': '\\$\\{[a-zA-Z_][a-zA-Z0-9_]*\\}'  # Without raw string
+
+# When NOT to use raw strings:
+# 1. When you actually want escape sequences processed
+message = "Hello\nWorld"  # Use regular string for actual newline
+
+# 2. When you need the string to end with a backslash (not allowed in Python)
+# bad_raw = r"path\"  # SyntaxError - raw strings can't end with odd number of backslashes
+# Instead: good_path = r"path" + "\\"  # Concatenate if needed
+
+print("\n=== Summary ===")
+print("Raw strings are perfect for:")
+print("- File paths (especially Windows)")
+print("- Regular expressions")
+print("- LaTeX expressions")
+print("- SQL queries")
+print("- Any text with many backslashes")

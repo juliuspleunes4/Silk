@@ -1,0 +1,77 @@
+# Decorators Example
+# Demonstrates Python-style decorators for functions and classes
+
+# Simple decorator
+@timing
+def slow_function():
+    pass
+
+# Decorator with arguments
+@retry(max_attempts=3, delay=1.0)
+def unreliable_api_call():
+    pass
+
+# Decorator with keyword arguments
+@cache(timeout=60, max_size=100)
+def expensive_computation(x, y):
+    return x * y + expensive_helper(x)
+
+# Attribute decorator (from module)
+@functools.lru_cache(maxsize=128)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# Multiple stacked decorators
+@auth_required
+@rate_limit(requests_per_minute=100)
+@log_calls
+def protected_api_endpoint(user_id, data):
+    pass
+
+# Complex decorator call with multiple argument types
+@app.route("/users/<id>", methods=["GET", "POST"], **extra_opts)
+def user_handler(id):
+    pass
+
+# Class decorator
+@dataclass
+class Point:
+    x: int
+    y: int
+
+# Multiple class decorators
+@total_ordering
+@dataclass(frozen=True)
+class ImmutablePoint:
+    x: int
+    y: int
+
+# Decorator that returns a decorator (higher-order)
+@decorator_factory(arg1, arg2, key=value)
+def configured_function():
+    pass
+
+# Property decorators
+class MyClass:
+    @property
+    def computed_value(self):
+        return self._value * 2
+    
+    @staticmethod
+    def static_helper():
+        pass
+    
+    @classmethod
+    def from_string(cls, s):
+        return cls()
+
+# Real-world example: web route with multiple decorators
+@app.route("/api/data")
+@require_auth
+@validate_json_schema(user_schema)
+@rate_limit(100)
+@cache(ttl=300)
+def get_user_data():
+    return {"status": "ok"}

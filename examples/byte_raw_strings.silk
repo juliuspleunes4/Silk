@@ -1,0 +1,89 @@
+# Byte Raw Strings (br-strings or rb-strings) Example
+# Byte raw strings combine byte strings (binary data) with raw strings (literal backslashes)
+# They are ASCII-only and preserve escape sequences literally - perfect for binary patterns
+
+# Basic byte raw strings - both prefixes work
+pattern1 = br"Hello\nWorld"  # br prefix
+pattern2 = rb"Hello\nWorld"  # rb prefix (equivalent)
+
+# Escape sequences are NOT processed - preserved literally
+# br"\n" stays as two bytes: backslash (92) and 'n' (110)
+literal_escapes = br"Line1\nLine2\tTab\r"
+# The above contains literal backslashes, not actual newlines or tabs
+
+# Windows file paths as bytes - backslashes preserved
+windows_path = br"C:\Users\username\Documents\file.txt"
+network_path = br"\\server\share\folder\file.dat"
+
+# Binary regex patterns - perfect use case!
+# Regex patterns often need literal backslashes
+email_pattern = br"\w+@\w+\.\w+"
+digit_pattern = br"\d+\.\d+"
+word_boundary = br"\bword\b"
+hex_pattern = br"0x[0-9A-Fa-f]+"
+
+# Network protocol patterns with literal backslashes
+http_pattern = br"GET /\w+ HTTP/1\.[01]\r\n"
+ftp_pattern = br"USER \w+\r\nPASS \w+\r\n"
+
+# Hex notation is NOT processed in byte raw strings
+# br"\x41" stays as literal backslash-x-4-1 (not converted to 'A')
+hex_literal = br"\x41\x42\x43"  # Literal: \x41\x42\x43 (12 bytes)
+# Compare with byte string: b"\x41\x42\x43" → ABC (3 bytes)
+
+# Triple-quoted byte raw strings for multiline patterns
+multiline_regex = br"""
+    \d{3}-\d{2}-\d{4}  # SSN pattern
+    \w+@\w+\.\w+        # Email pattern
+    \([0-9]{3}\)\s\d{3}-\d{4}  # Phone pattern
+"""
+
+# Single quotes work too
+single_quoted = br'Pattern\d+'
+
+# Case insensitive prefixes (all equivalent)
+br_lower = br"test\n"
+BR_upper = BR"test\n"
+Br_mixed = Br"test\n"
+rb_lower = rb"test\n"
+RB_upper = RB"test\n"
+rB_mixed = rB"test\n"
+
+# Empty byte raw string
+empty = br""
+
+# Binary file format patterns with literal backslashes
+# Useful for matching binary data patterns
+binary_signature = br"\x89PNG\r\n\x1a\n"  # Literal: \x89PNG\r\n\x1a\n
+gif_pattern = br"GIF8[79]a"
+jpeg_pattern = br"\xFF\xD8\xFF"
+
+# Comparing all four string types:
+# Regular string: "Hello\n" → "Hello" + newline (6 chars)
+# Raw string: r"Hello\n" → "Hello\n" (8 chars, literal backslash-n)
+# Byte string: b"Hello\n" → bytes [72, 101, 108, 108, 111, 10] (6 bytes with newline)
+# Byte raw string: br"Hello\n" → bytes [72, 101, 108, 108, 111, 92, 110] (7 bytes, literal \n)
+
+regular = "Hello\n"        # Newline processed
+raw = r"Hello\n"           # Backslash-n literal (Unicode string)
+byte = b"Hello\n"          # Newline processed (bytes)
+byte_raw = br"Hello\n"     # Backslash-n literal (bytes)
+
+# Use cases for byte raw strings:
+# 1. Binary regex patterns (matching binary data with backslash patterns)
+# 2. Binary protocol patterns (network protocols with escape sequences)
+# 3. File format signatures with literal backslashes
+# 4. Windows file paths as binary data
+# 5. Binary data templates with backslash notation
+# 6. When you need BOTH: ASCII-only validation AND literal backslashes
+
+# Byte raw strings CANNOT contain non-ASCII characters (like all byte strings)
+# This would cause an error:
+# invalid = br"Hello 世界"  # Error: InvalidByteString (non-ASCII)
+
+# But you can include high ASCII values as literal \x notation (not processed)
+high_bytes_literal = br"\x80\x90\xA0"  # Literal: \x80\x90\xA0 (12 bytes)
+
+print(pattern1)
+print(windows_path)
+print(email_pattern)

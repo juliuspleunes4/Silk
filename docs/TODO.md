@@ -7,14 +7,14 @@
 ### ✅ Completed
 - **Project Structure**: Cargo workspace with 5 crates (`silk-cli`, `silk-compiler`, `silk-lexer`, `silk-ast`, `silk-parser`)
 - **Lexer**: Fully functional lexical analyzer ✅
-  - 67 token types (35 keywords + operators + literals + delimiters)
+  - 69 token types (35 keywords + operators + literals + delimiters)
   - Complete Unicode support (identifiers and strings)
-  - String literals: single/double/triple-quoted with escape sequences
-  - Number literals: integers, floats, scientific notation
+  - String literals: single/double/triple-quoted with escape sequences, f-strings, raw strings (r"..."), byte strings (b"..."), byte raw strings (br"..." or rb"...")
+  - Number literals: integers, floats, scientific notation, binary (0b), octal (0o), hex (0x), underscores
   - Comment handling (single-line)
   - Source location tracking (line, column, span)
-  - 7 error types with comprehensive error reporting
-  - **75 tests passing** (11 unit + 64 integration tests)
+  - 8 error types with comprehensive error reporting
+  - **115 tests passing** (11 unit + 104 integration tests)
   - ✅ **INDENTATION TRACKING COMPLETE**: INDENT/DEDENT tokens now generated
     - `indent_stack` fully implemented with state tracking
     - Generates INDENT when indentation increases
@@ -27,50 +27,52 @@
   - Statement nodes: 20+ kinds (assignments, control flow, imports, function/class definitions)
   - Type annotation nodes: 9 kinds
   - Pattern nodes: 8 kinds for match statements
-- **Parser** (`silk-parser` crate): 🟡 **CORE STATEMENTS COMPLETE, EXPRESSIONS PARTIAL**
+- **Parser** (`silk-parser` crate): 🟡 **CORE STATEMENTS COMPLETE, EXPRESSIONS COMPREHENSIVE**
   - Operator precedence climbing algorithm ✅
-  - Expression parsing: literals, identifiers, binary/unary operators, comparisons, logical operators ✅
-  - Postfix operators: function calls (positional args only), subscripts (no slices), attribute access ✅
-  - Collection literals: lists ✅, dict/set ❌ (todo!() macro - causes panic), tuples ❌ (incomplete)
+  - Expression parsing: all literals (strings, f-strings, raw strings, byte strings, numbers), identifiers, binary/unary operators, comparisons, logical operators ✅
+  - Postfix operators: function calls (with keyword args), subscripts (with slices), attribute access ✅
+  - Collection literals: lists ✅, dicts ✅, sets ✅, tuples ✅
   - Statement parsing: ALL CORE STATEMENTS NOW IMPLEMENTED ✅
     - Expression statements, assignments (simple/augmented), return, pass, break, continue ✅
     - if/elif/else with full nesting ✅
     - while loops with optional else ✅
     - for loops with pattern matching and optional else ✅
-    - Function definitions (def) with parameters, type annotations, return types ✅
-    - Class definitions (class) with bases and keyword arguments ✅
+    - Function definitions (def) with parameters, type annotations, return types, *args/**kwargs ✅
+    - Class definitions (class) with bases, keyword arguments, and decorators ✅
     - Import statements (import with aliases, from...import with relative imports) ✅
     - Exception handling (try/except/finally/else with multiple handlers) ✅
     - Context managers (with statement with multiple context managers) ✅
     - Pattern matching (match/case with patterns and guards) ✅
     - global, nonlocal, assert, del, raise statements ✅
   - ParseError types with 8 error variants ✅
-  - **67 tests passing** covering all implemented features ✅
+  - **215 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
-  - Function parameter parsing with type annotations and defaults ✅ (no *args/**kwargs yet)
+  - Function parameter parsing with type annotations, defaults, *args, **kwargs ✅
   - Type annotation parsing (simple types and generics) ✅
   - Expression to pattern conversion for for loops ✅
+  - Decorators for functions and classes ✅
+  - Lambda expressions ✅
+  - Ternary/conditional expressions ✅
+  - Walrus operator (named expressions) ✅
+  - Ellipsis literal (...) for type hints and stubs ✅
+  - NotImplemented singleton for rich comparison methods ✅
   - **Known Limitations**:
     - List/dict/set comprehensions not implemented
-    - Lambda expressions not implemented
-    - Slice syntax not implemented (only single subscripts)
-    - Ternary/conditional expressions not implemented
-    - Tuple literals not implemented
-    - Keyword arguments in function calls not implemented
-    - Decorators have placeholder implementation only
+    - Generator expressions not implemented
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
 - **Error Handling**: Foundation with custom error types using thiserror
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~84% complete! Core statements functional, basic expressions working
-  - Lexer ✅ (100% - all core features including indentation tracking)
+- **Phase 1: Foundation** - ~97% complete! Core statements functional, comprehensive expressions working
+  - Lexer ✅ (100% - all core features including f-strings, raw strings, byte strings, byte raw strings, binary/octal/hex numbers, indentation)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (81% - all statements complete, most expressions work)
+  - Parser 🟡 (96% - all statements complete, comprehensive expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets)
-    - ❌ Missing: comprehensions, lambda, slices, ternary, tuples
-    - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
+    - ✅ Complete: All expressions (literals including strings/f-strings/raw strings/byte strings/numbers, operators, calls with keyword args, subscripts with slices, attributes, lists, dicts, sets, tuples, lambda, ternary, walrus)
+    - ✅ Complete: Function params with *args/**kwargs support
+    - ✅ Complete: Decorators for functions and classes
+    - ❌ Missing: comprehensions, generator expressions
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
   - Runtime ❌ (0% - not started)
@@ -98,31 +100,155 @@
    - ✅ Support for trailing commas, nested structures, expression keys/values
    - ✅ Added 17 comprehensive tests covering all scenarios
 
+4. ~~**TUPLE LITERAL PARSING**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented tuple literal parsing: (1, 2, 3)
+   - ✅ Empty tuple support: ()
+   - ✅ Single-element tuple: (x,) with required trailing comma
+   - ✅ Proper disambiguation from parenthesized expressions
+   - ✅ Support for nested tuples, trailing commas, mixed types
+   - ✅ Added 15 comprehensive tests covering all scenarios
+
+5. ~~**SLICE SYNTAX**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented slice parsing: list[start:stop:step]
+   - ✅ All optional components: list[:stop], list[start:], list[::step], list[:]
+   - ✅ Support for negative indices: list[-5:-1]
+   - ✅ Support for expressions: list[i:i+10:2]
+   - ✅ Reverse slicing: list[::-1]
+   - ✅ Slices work correctly as subscript indices
+   - ✅ Added 14 comprehensive tests covering all slice forms
+
+6. ~~**LAMBDA EXPRESSIONS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented lambda expression parsing: lambda x: x + 1
+   - ✅ No parameters: lambda: 42
+   - ✅ Single parameter: lambda x: x * 2
+   - ✅ Multiple parameters: lambda x, y: x + y
+   - ✅ Complex expressions in body
+   - ✅ Nested lambdas: lambda x: lambda y: x + y
+   - ✅ Lambdas in function calls, lists, etc.
+   - ✅ Added 14 comprehensive tests covering all lambda forms
+
+7. ~~**TERNARY/CONDITIONAL EXPRESSIONS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented ternary operator parsing: value if condition else other
+   - ✅ Basic ternary: x if cond else y
+   - ✅ Ternaries with comparisons: positive if x > 0 else negative
+   - ✅ Nested ternaries: a if x else b if y else c
+   - ✅ Ternaries in function calls, lists, assignments
+   - ✅ Complex conditions with logical operators
+   - ✅ Proper precedence handling (Or level)
+   - ✅ Added 14 comprehensive tests covering all ternary forms
+
+8. ~~**KEYWORD ARGUMENTS IN FUNCTION CALLS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented keyword argument parsing: func(x=1, y=2)
+   - ✅ Mixed positional and keyword arguments: func(1, 2, x=3, y=4)
+   - ✅ **kwargs unpacking: func(**options)
+   - ✅ Combined forms: func(1, x=2, **opts)
+   - ✅ Proper enforcement: positional args cannot follow keyword args
+   - ✅ Lookahead parsing to distinguish keyword args from other uses of '='
+   - ✅ Added 6 comprehensive tests covering all keyword argument forms
+   - ✅ All 144 parser tests passing (219 total workspace tests)
+
+9. ~~***ARGS AND **KWARGS IN FUNCTION PARAMETERS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented *args parsing: def func(*args)
+   - ✅ Implemented **kwargs parsing: def func(**kwargs)
+   - ✅ Mixed parameters: def func(a, b, *args, **kwargs)
+   - ✅ Type annotations: def func(*args: int, **kwargs: dict)
+   - ✅ With defaults: def func(a, b=10, *args)
+   - ✅ Proper enforcement: **kwargs must be last parameter
+   - ✅ Support for bare * separator (for keyword-only args, not fully implemented yet)
+   - ✅ Added 8 comprehensive tests covering all parameter forms
+   - ✅ All 152 parser tests passing (227 total workspace tests)
+
+10. ~~**DECORATORS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added @ token to lexer (TokenKind::At)
+    - ✅ Implemented decorator parsing before function/class definitions
+    - ✅ Simple decorators: @decorator
+    - ✅ Decorator calls: @decorator(args)
+    - ✅ Decorator with keyword args: @decorator(timeout=30)
+    - ✅ Attribute decorators: @module.decorator
+    - ✅ Multiple stacked decorators: @dec1\n@dec2\n@dec3
+    - ✅ Class decorators: @dataclass
+    - ✅ Added 8 comprehensive tests covering all decorator forms
+    - ✅ All 160 parser tests passing (235 total workspace tests)
+
+11. ~~**WALRUS OPERATOR (:=)**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added ColonEqual token (:=) to lexer (TokenKind::ColonEqual)
+    - ✅ Added NamedExpr variant to AST (ExpressionKind::NamedExpr)
+    - ✅ Implemented walrus operator parsing with proper precedence (Walrus level)
+    - ✅ Basic assignment expressions: x := 10
+    - ✅ In conditionals: if (n := len(data)) > 0:
+    - ✅ In while loops: while (line := file.readline()):
+    - ✅ In lists: [y := 5, y + 1, y + 2]
+    - ✅ In function calls: print(result := calculate())
+    - ✅ Nested walrus: (a := (b := 5))
+    - ✅ With expressions: total := x + y
+    - ✅ With comparisons: (n := len(data)) > 10
+    - ✅ Added 8 comprehensive tests covering all walrus operator forms
+    - ✅ All 168 parser tests passing (243 total workspace tests)
+
+12. ~~**ADDITIONAL NUMBER FORMATS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Binary literals: 0b1010, 0B1111_0000
+    - ✅ Octal literals: 0o755, 0O77_77
+    - ✅ Hexadecimal literals: 0xFF, 0xDEAD_BEEF, 0X1A2B
+    - ✅ Underscore separators in all number formats for readability
+    - ✅ Decimal with underscores: 1_000_000, 3.14_15_92
+    - ✅ Proper radix parsing using i64::from_str_radix
+    - ✅ Case-insensitive prefixes (0b/0B, 0o/0O, 0x/0X)
+    - ✅ Error handling for invalid digits and empty prefixes
+    - ✅ Added 9 comprehensive tests covering all number formats
+    - ✅ All 84 lexer tests passing (252 total workspace tests)
+
+13. ~~**F-STRINGS (FORMATTED STRING LITERALS)**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added FStringPart enum (Text/Expression variants)
+    - ✅ Added FString token type to lexer
+    - ✅ F-string prefix detection: f"..." and f'...' (case-insensitive)
+    - ✅ Triple-quoted f-strings: f"""..."""
+    - ✅ Embedded expressions: f"Hello {name}"
+    - ✅ Multiple expressions: f"{x} + {y} = {x + y}"
+    - ✅ Format specifiers: f"{value:.2f}"
+    - ✅ Escaped braces: f"{{literal braces}}"
+    - ✅ Complex expressions: f"Result: {func(a, b) * 2}"
+    - ✅ Escape sequences: f"Line 1\nLine 2: {value}"
+    - ✅ Error handling for unmatched braces
+    - ✅ Added FString variant to ExpressionKind
+    - ✅ Parser support for f-strings in all contexts
+    - ✅ Added 10 comprehensive lexer tests
+    - ✅ Added 8 comprehensive parser tests
+    - ✅ All 83 lexer tests passing, 176 parser tests passing (270 total workspace tests)
+
+14. ~~**RAW STRINGS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added RawString token type to lexer
+    - ✅ Raw string prefix detection: r"..." and r'...' (case-insensitive)
+    - ✅ Triple-quoted raw strings: r"""..."""
+    - ✅ Escape sequences preserved literally: r"\n" stays as "\n" (not newline)
+    - ✅ Backslashes preserved: r"C:\Users\name"
+    - ✅ Perfect for regex patterns: r"\d+\.\d+"
+    - ✅ Perfect for file paths: r"C:\path\to\file.txt"
+    - ✅ Perfect for LaTeX: r"\alpha + \beta"
+    - ✅ Added RawString variant to ExpressionKind
+    - ✅ Parser support for raw strings in all contexts
+    - ✅ Added 10 comprehensive lexer tests
+    - ✅ Added 7 comprehensive parser tests
+    - ✅ All 93 lexer tests passing, 183 parser tests passing (287 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-4. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Tuple literals and tuple unpacking
-   - Slice syntax (list[start:stop:step])
-   - Comprehensions (list/dict/set/generator)
-   - Lambda expressions
-   - Ternary/conditional expressions (x if cond else y)
-   - Keyword arguments in function calls
-   - *args and **kwargs in function parameters
+15. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+    - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
-5. Lexer enhancements (1-2 weeks):
+9. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-6. Begin semantic analysis phase (2-3 months):
-   - Create silk-semantic crate
-   - Symbol table management
-   - Type inference engine
-   - Basic type checking
+10. Begin semantic analysis phase (2-3 months):
+    - Create silk-semantic crate
+    - Symbol table management
+    - Type inference engine
+    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-7. Code generation foundation (2-3 months)
-8. Runtime library basics (1-2 months)
-9. Optimization passes (1-2 months)
+11. Code generation foundation (2-3 months)
+12. Runtime library basics (1-2 months)
+13. Optimization passes (1-2 months)
 
 ---
 
@@ -488,8 +614,9 @@ code = compile("print('hello')", "filename", "exec")
 my_list[1:3] = [10, 20]
 my_list[::2] = [0, 0, 0]
 
-# Ellipsis (...)
-... # Used in type hints and multi-dimensional slicing
+# ✅ Ellipsis (...) - IMPLEMENTED December 9, 2025
+... # Used in type hints, stub implementations, and placeholders
+# AST variant and parser support complete with 7 comprehensive tests
 
 # Unpacking
 a, *rest, b = [1, 2, 3, 4, 5]

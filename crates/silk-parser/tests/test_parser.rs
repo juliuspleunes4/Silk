@@ -1116,3 +1116,2149 @@ fn test_no_colon_makes_it_set() {
     }
 }
 
+// ============================================================================
+// Tuple Tests
+// ============================================================================
+
+#[test]
+fn test_empty_tuple() {
+    let expr = parse_expr("()").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 0, "Empty tuple should have 0 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_single_element_tuple() {
+    let expr = parse_expr("(42,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 1, "Single element tuple should have 1 element");
+            match &elements[0].kind {
+                ExpressionKind::Integer(42) => {},
+                _ => panic!("Expected integer 42"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_two_element_tuple() {
+    let expr = parse_expr("(1, 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2, "Two element tuple should have 2 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_multiple_element_tuple() {
+    let expr = parse_expr("(1, 2, 3, 4, 5)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 5, "Expected 5 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_trailing_comma() {
+    let expr = parse_expr("(1, 2, 3,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 3, "Expected 3 elements (trailing comma ignored)");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_strings() {
+    let expr = parse_expr(r#"("hello", "world")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "hello"),
+                _ => panic!("Expected string"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_expressions() {
+    let expr = parse_expr("(1 + 2, 3 * 4)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_nested_tuple() {
+    let expr = parse_expr("((1, 2), (3, 4))").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Tuple { elements: inner } => {
+                    assert_eq!(inner.len(), 2);
+                }
+                _ => panic!("Expected nested tuple"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_mixed_types() {
+    let expr = parse_expr(r#"(42, "hello", True, None)"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 4);
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_parenthesized_expression_not_tuple() {
+    let expr = parse_expr("(42)").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(42) => {}, // Should be just an integer, not a tuple
+        _ => panic!("Expected integer (parenthesized expression), got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_parenthesized_expression_complex() {
+    let expr = parse_expr("(1 + 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::BinaryOp { .. } => {}, // Should be binary op, not tuple
+        _ => panic!("Expected binary operation (parenthesized), got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_nested_parentheses_not_tuple() {
+    let expr = parse_expr("((42))").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(42) => {}, // Multiple parentheses don't make a tuple
+        _ => panic!("Expected integer, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_in_list() {
+    let expr = parse_expr("[(1, 2), (3, 4)]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Tuple { .. } => {},
+                _ => panic!("Expected tuple in list"),
+            }
+        }
+        _ => panic!("Expected list, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_single_element_tuple_in_expression() {
+    let expr = parse_expr("(x,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier"),
+            }
+        }
+        _ => panic!("Expected single-element tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_function_call() {
+    let expr = parse_expr("(foo(), bar())").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+// ============================================================================
+// Slice Tests
+// ============================================================================
+
+#[test]
+fn test_slice_start_stop() {
+    let expr = parse_expr("list[1:5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            match &value.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "list"),
+                _ => panic!("Expected identifier 'list'"),
+            }
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice as index, got {:?}", index.kind),
+            }
+        }
+        _ => panic!("Expected subscript, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_slice_start_stop_step() {
+    let expr = parse_expr("list[0:10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_only_stop() {
+    let expr = parse_expr("list[:5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_only_start() {
+    let expr = parse_expr("list[5:]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_all_empty() {
+    let expr = parse_expr("list[:]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_step_only() {
+    let expr = parse_expr("list[::2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_stop_and_step() {
+    let expr = parse_expr("list[:10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_start_and_step() {
+    let expr = parse_expr("list[5::2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_negative_indices() {
+    let expr = parse_expr("list[-5:-1]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, .. } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    // Check they are unary minus expressions
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::UnaryOp { op, .. } => {
+                            assert_eq!(*op, UnaryOperator::USub);
+                        }
+                        _ => panic!("Expected unary minus for negative index"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_expressions() {
+    let expr = parse_expr("list[x:y:z]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some());
+                    assert!(upper.is_some());
+                    assert!(step.is_some());
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected identifier x"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_computed_values() {
+    let expr = parse_expr("list[i+1:i+10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some());
+                    assert!(upper.is_some());
+                    assert!(step.is_some());
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::BinaryOp { .. } => {},
+                        _ => panic!("Expected binary operation"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_reverse() {
+    let expr = parse_expr("list[::-1]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none());
+                    assert!(upper.is_none());
+                    assert!(step.is_some(), "Step should be present for reverse");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_regular_subscript_still_works() {
+    let expr = parse_expr("list[5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            match &value.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "list"),
+                _ => panic!("Expected identifier"),
+            }
+            match &index.kind {
+                ExpressionKind::Integer(5) => {},
+                _ => panic!("Expected integer index, not slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_chained_subscript_with_slice() {
+    let expr = parse_expr("matrix[0][1:3]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            // Outer subscript should have a slice
+            match &index.kind {
+                ExpressionKind::Slice { .. } => {},
+                _ => panic!("Expected slice in second subscript"),
+            }
+            // Inner should be another subscript
+            match &value.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected nested subscript"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+// ============================================================================
+// Lambda Expression Tests
+// ============================================================================
+
+#[test]
+fn test_lambda_no_params() {
+    let expr = parse_expr("lambda: 42").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 0, "Lambda should have no parameters");
+            match &body.kind {
+                ExpressionKind::Integer(42) => {},
+                _ => panic!("Expected integer 42 in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_lambda_single_param() {
+    let expr = parse_expr("lambda x: x + 1").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1, "Lambda should have 1 parameter");
+            assert_eq!(params[0].name, "x");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_multiple_params() {
+    let expr = parse_expr("lambda x, y: x * y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2, "Lambda should have 2 parameters");
+            assert_eq!(params[0].name, "x");
+            assert_eq!(params[1].name, "y");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_three_params() {
+    let expr = parse_expr("lambda x, y, z: x + y + z").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, .. } => {
+            assert_eq!(params.len(), 3, "Lambda should have 3 parameters");
+            assert_eq!(params[0].name, "x");
+            assert_eq!(params[1].name, "y");
+            assert_eq!(params[2].name, "z");
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_string_body() {
+    let expr = parse_expr(r#"lambda name: "Hello, " + name"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            assert_eq!(params[0].name, "name");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_comparison() {
+    let expr = parse_expr("lambda x: x > 0").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            match &body.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_function_call() {
+    let expr = parse_expr("lambda x: foo(x)").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            match &body.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_in_function_call() {
+    let expr = parse_expr("map(lambda x: x * 2, numbers)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { func, args, .. } => {
+            match &func.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "map"),
+                _ => panic!("Expected identifier 'map'"),
+            }
+            assert_eq!(args.len(), 2, "Expected 2 arguments");
+            match &args[0].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda as first argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_lambda_in_list() {
+    let expr = parse_expr("[lambda x: x + 1, lambda x: x * 2]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in list"),
+            }
+            match &elements[1].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_lambda_with_complex_body() {
+    let expr = parse_expr("lambda x: x * 2 + 1").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body: _ } => {
+            assert_eq!(params.len(), 1);
+            // Body is a complex expression with multiple operations
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_nested_lambda() {
+    let expr = parse_expr("lambda x: lambda y: x + y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            assert_eq!(params[0].name, "x");
+            // Body should be another lambda
+            match &body.kind {
+                ExpressionKind::Lambda { params: inner_params, .. } => {
+                    assert_eq!(inner_params.len(), 1);
+                    assert_eq!(inner_params[0].name, "y");
+                }
+                _ => panic!("Expected nested lambda in body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_tuple_unpack() {
+    let expr = parse_expr("lambda x, y: (x, y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::Tuple { elements } => {
+                    assert_eq!(elements.len(), 2);
+                }
+                _ => panic!("Expected tuple in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_logical_ops() {
+    let expr = parse_expr("lambda x, y: x and y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::LogicalOp { .. } => {},
+                _ => panic!("Expected logical operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_subscript() {
+    let expr = parse_expr("lambda lst, i: lst[i]").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected subscript in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+// ============================================================================
+// Ternary/Conditional Expression Tests
+// ============================================================================
+
+#[test]
+fn test_ternary_basic() {
+    let expr = parse_expr("x if condition else y").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "condition"),
+                _ => panic!("Expected identifier 'condition' in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "y"),
+                _ => panic!("Expected identifier 'y' in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_ternary_with_literals() {
+    let expr = parse_expr("1 if True else 0").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::Integer(1) => {},
+                _ => panic!("Expected integer 1 in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Boolean(true) => {},
+                _ => panic!("Expected True in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Integer(0) => {},
+                _ => panic!("Expected integer 0 in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_comparison() {
+    let expr = parse_expr("positive if x > 0 else negative").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, .. } => {
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in test"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_expressions() {
+    let expr = parse_expr("x + 1 if x > 0 else x - 1").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_nested_ternary() {
+    let expr = parse_expr("a if x > 0 else b if x < 0 else c").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { orelse, .. } => {
+            // The orelse should be another ternary
+            match &orelse.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected nested ternary in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_in_function_call() {
+    let expr = parse_expr("foo(x if cond else y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in function argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_ternary_in_list() {
+    let expr = parse_expr("[x if x > 0 else 0]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_ternary_with_strings() {
+    let expr = parse_expr(r#""yes" if flag else "no""#).unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "yes"),
+                _ => panic!("Expected string in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "no"),
+                _ => panic!("Expected string in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_function_calls() {
+    let expr = parse_expr("foo() if condition else bar()").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_logical_ops() {
+    let expr = parse_expr("result if x > 0 and y > 0 else default").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, .. } => {
+            match &test.kind {
+                ExpressionKind::LogicalOp { .. } => {},
+                _ => panic!("Expected logical operation in test"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_in_assignment() {
+    let stmt = parse_stmt("result = positive if x > 0 else negative").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match &value.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment statement"),
+    }
+}
+
+#[test]
+fn test_ternary_with_subscript() {
+    let expr = parse_expr("lst[0] if lst else None").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, .. } => {
+            match &body.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected subscript in body"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_lambda() {
+    let expr = parse_expr("(lambda: x) if flag else (lambda: y)").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_max_pattern() {
+    let expr = parse_expr("a if a > b else b").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            // Common pattern: max(a, b) as ternary
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison"),
+            }
+            match &body.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "a"),
+                _ => panic!("Expected identifier a"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "b"),
+                _ => panic!("Expected identifier b"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+// ============================================================================
+// Keyword Argument Tests
+// ============================================================================
+
+#[test]
+fn test_function_call_with_keyword_arg() {
+    let expr = parse_expr("func(x=1)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 0);
+            assert_eq!(keywords.len(), 1);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_mixed_args() {
+    let expr = parse_expr("func(1, 2, x=3, y=4)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 2);
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+            assert_eq!(keywords[1].arg, Some("y".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_kwargs_unpack() {
+    let expr = parse_expr("func(**options)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 0);
+            assert_eq!(keywords.len(), 1);
+            assert_eq!(keywords[0].arg, None); // None means **kwargs
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_function_call_mixed_with_kwargs_unpack() {
+    let expr = parse_expr("func(1, x=2, **options)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 1);
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("x".to_string()));
+            assert_eq!(keywords[1].arg, None);
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_expression() {
+    let expr = parse_expr("func(x=a + b, y=c * 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            match &keywords[0].value.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_function_call() {
+    let expr = parse_expr("func(x=other())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+// ============================================================================
+// Function Parameter Tests (*args, **kwargs)
+// ============================================================================
+
+#[test]
+fn test_function_with_args_vararg() {
+    let stmt = parse_stmt("def func(*args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 0);
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+            assert!(params.kwarg.is_none());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_with_kwargs() {
+    let stmt = parse_stmt("def func(**kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 0);
+            assert!(params.vararg.is_none());
+            assert!(params.kwarg.is_some());
+            assert_eq!(params.kwarg.as_ref().unwrap().name, "kwargs");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_mixed_params_with_vararg() {
+    let stmt = parse_stmt("def func(a, b, *args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert_eq!(params.args[0].name, "a");
+            assert_eq!(params.args[1].name, "b");
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_mixed_params_with_kwargs() {
+    let stmt = parse_stmt("def func(a, b, **kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert!(params.vararg.is_none());
+            assert!(params.kwarg.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_all_param_types() {
+    let stmt = parse_stmt("def func(a, b, *args, **kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert_eq!(params.args[0].name, "a");
+            assert_eq!(params.args[1].name, "b");
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+            assert!(params.kwarg.is_some());
+            assert_eq!(params.kwarg.as_ref().unwrap().name, "kwargs");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_vararg_with_type_annotation() {
+    let stmt = parse_stmt("def func(*args: int):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert!(params.vararg.is_some());
+            let vararg = params.vararg.as_ref().unwrap();
+            assert_eq!(vararg.name, "args");
+            assert!(vararg.annotation.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_kwargs_with_type_annotation() {
+    let stmt = parse_stmt("def func(**kwargs: dict):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert!(params.kwarg.is_some());
+            let kwarg = params.kwarg.as_ref().unwrap();
+            assert_eq!(kwarg.name, "kwargs");
+            assert!(kwarg.annotation.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_with_defaults_and_vararg() {
+    let stmt = parse_stmt("def func(a, b=10, *args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert!(params.args[0].default.is_none());
+            assert!(params.args[1].default.is_some());
+            assert!(params.vararg.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+// ==================== Decorator Tests ====================
+
+#[test]
+fn test_simple_decorator() {
+    let stmt = parse_stmt("@decorator\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_call() {
+    let stmt = parse_stmt("@decorator(arg1, arg2)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { func, args, .. } => {
+                    match &func.kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "decorator"),
+                        _ => panic!("Expected identifier in call"),
+                    }
+                    assert_eq!(args.len(), 2);
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_multiple_decorators() {
+    let stmt = parse_stmt("@decorator1\n@decorator2\n@decorator3\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 3);
+            
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator1"),
+                _ => panic!("Expected identifier decorator"),
+            }
+            match &decorator_list[1].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator2"),
+                _ => panic!("Expected identifier decorator"),
+            }
+            match &decorator_list[2].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator3"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_arguments() {
+    let stmt = parse_stmt("@decorator(timeout=30)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { keywords, .. } => {
+                    assert_eq!(keywords.len(), 1);
+                    assert_eq!(keywords[0].arg.as_ref().unwrap(), "timeout");
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_attribute() {
+    let stmt = parse_stmt("@module.decorator\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Attribute { value, attr, .. } => {
+                    match &value.kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "module"),
+                        _ => panic!("Expected identifier"),
+                    }
+                    assert_eq!(attr, "decorator");
+                }
+                _ => panic!("Expected attribute decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_class_decorator() {
+    let stmt = parse_stmt("@dataclass\nclass MyClass:\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::ClassDef { name, decorator_list, .. } => {
+            assert_eq!(name, "MyClass");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "dataclass"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected class definition"),
+    }
+}
+
+#[test]
+fn test_class_multiple_decorators() {
+    let stmt = parse_stmt("@decorator1\n@decorator2\nclass MyClass:\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::ClassDef { name, decorator_list, .. } => {
+            assert_eq!(name, "MyClass");
+            assert_eq!(decorator_list.len(), 2);
+        }
+        _ => panic!("Expected class definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_complex_call() {
+    let stmt = parse_stmt("@decorator(1, 2, x=3, **opts)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { args, keywords, .. } => {
+                    assert_eq!(args.len(), 2);
+                    assert_eq!(keywords.len(), 2); // x=3 and **opts
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+// ==================== Walrus Operator Tests ====================
+
+#[test]
+fn test_walrus_basic() {
+    let expr = parse_expr("x := 10").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier target"),
+            }
+            match value.kind {
+                ExpressionKind::Integer(v) => assert_eq!(v, 10),
+                _ => panic!("Expected integer value"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_in_if() {
+    let stmt = parse_stmt("if x := get_value():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::If { test, .. } => {
+            match test.kind {
+                ExpressionKind::NamedExpr { target, value } => {
+                    match target.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected identifier"),
+                    }
+                    match value.kind {
+                        ExpressionKind::Call { .. } => {},
+                        _ => panic!("Expected call"),
+                    }
+                }
+                _ => panic!("Expected named expression in if test"),
+            }
+        }
+        _ => panic!("Expected if statement"),
+    }
+}
+
+#[test]
+fn test_walrus_in_while() {
+    let stmt = parse_stmt("while line := file.readline():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::While { test, .. } => {
+            match test.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in while test"),
+            }
+        }
+        _ => panic!("Expected while statement"),
+    }
+}
+
+#[test]
+fn test_walrus_in_list() {
+    let expr = parse_expr("[y := 5, y + 1, y + 2]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            match &elements[0].kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression as first element"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_walrus_with_expression() {
+    let expr = parse_expr("total := x + y").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "total"),
+                _ => panic!("Expected identifier"),
+            }
+            match value.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_nested() {
+    let expr = parse_expr("(a := (b := 5))").unwrap();
+    match expr.kind {
+        ExpressionKind::NamedExpr { target, value } => {
+            match target.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "a"),
+                _ => panic!("Expected identifier"),
+            }
+            match value.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected nested named expression"),
+            }
+        }
+        _ => panic!("Expected named expression"),
+    }
+}
+
+#[test]
+fn test_walrus_with_comparison() {
+    let expr = parse_expr("(n := len(data)) > 10").unwrap();
+    match expr.kind {
+        ExpressionKind::Compare { left, .. } => {
+            match left.kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in comparison"),
+            }
+        }
+        _ => panic!("Expected comparison"),
+    }
+}
+
+#[test]
+fn test_walrus_in_function_call() {
+    let expr = parse_expr("print(result := calculate())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::NamedExpr { .. } => {},
+                _ => panic!("Expected named expression in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+// ============================================================================
+// F-String Tests
+// ============================================================================
+
+#[test]
+fn test_fstring_basic() {
+    let expr = parse_expr(r#"f"Hello {name}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 2);
+        }
+        _ => panic!("Expected f-string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_fstring_multiple_expressions() {
+    let expr = parse_expr(r#"f"{x} + {y} = {x + y}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 5); // x, " + ", y, " = ", x+y
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_with_format_spec() {
+    let expr = parse_expr(r#"f"{value:.2f}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 1);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_in_assignment() {
+    let stmt = parse_stmt(r#"message = f"Hello {name}""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_fstring_in_function_call() {
+    let expr = parse_expr(r#"print(f"Value: {x}")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_fstring_only_text() {
+    let expr = parse_expr(r#"f"Just text, no expressions""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 1);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_complex_expression() {
+    let expr = parse_expr(r#"f"Result: {func(a, b) * 2}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 2);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_in_list() {
+    let expr = parse_expr(r#"[f"Item {i}", f"Value {v}"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in list"),
+            }
+            match &elements[1].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+// ============================================================================
+// Raw String Tests
+// ============================================================================
+
+#[test]
+fn test_raw_string_basic() {
+    let expr = parse_expr(r#"r"Hello\nWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"Hello\nWorld");
+        }
+        _ => panic!("Expected raw string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_raw_string_backslashes() {
+    let expr = parse_expr(r#"r"C:\Users\name\file.txt""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"C:\Users\name\file.txt");
+        }
+        _ => panic!("Expected raw string"),
+    }
+}
+
+#[test]
+fn test_raw_string_regex() {
+    let expr = parse_expr(r#"r"\d+\.\d+""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"\d+\.\d+");
+        }
+        _ => panic!("Expected raw string"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_assignment() {
+    let stmt = parse_stmt(r#"pattern = r"\w+""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::RawString(ref s) => assert_eq!(s, r"\w+"),
+                _ => panic!("Expected raw string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_function_call() {
+    let expr = parse_expr(r#"compile(r"[a-z]+")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::RawString(ref s) => assert_eq!(s, r"[a-z]+"),
+                _ => panic!("Expected raw string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_list() {
+    let expr = parse_expr(r#"[r"\n", r"\t", r"\r"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            for elem in &elements {
+                match &elem.kind {
+                    ExpressionKind::RawString(_) => {},
+                    _ => panic!("Expected raw string in list"),
+                }
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_raw_vs_regular_string_parser() {
+    let stmts = parse_program(r#"r"\n"
+"\n""#).unwrap();
+    
+    assert_eq!(stmts.len(), 2);
+    
+    // First should be raw string
+    match &stmts[0].kind {
+        StatementKind::Expr(expr) => {
+            match &expr.kind {
+                ExpressionKind::RawString(s) => assert_eq!(s, r"\n"),
+                _ => panic!("Expected raw string"),
+            }
+        }
+        _ => panic!("Expected expression statement"),
+    }
+    
+    // Second should be regular string
+    match &stmts[1].kind {
+        StatementKind::Expr(expr) => {
+            match &expr.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "\n"),
+                _ => panic!("Expected regular string"),
+            }
+        }
+        _ => panic!("Expected expression statement"),
+    }
+}
+
+// ============================================================================
+// Byte String Tests
+// ============================================================================
+
+#[test]
+fn test_byte_string_basic() {
+    let expr = parse_expr(r#"b"Hello""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Hello");
+        }
+        _ => panic!("Expected byte string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_byte_string_with_escapes() {
+    let expr = parse_expr(r#"b"Line1\nLine2""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Line1\nLine2");
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
+#[test]
+fn test_byte_string_hex_escape() {
+    let expr = parse_expr(r#"b"\x48\x69""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Hi");
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_assignment() {
+    let stmt = parse_stmt(r#"data = b"binary""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"binary"),
+                _ => panic!("Expected byte string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_function_call() {
+    let expr = parse_expr(r#"write(b"data")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"data"),
+                _ => panic!("Expected byte string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_list() {
+    let expr = parse_expr(r#"[b"a", b"b", b"c"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            for elem in &elements {
+                match &elem.kind {
+                    ExpressionKind::ByteString(_) => {},
+                    _ => panic!("Expected byte string in list"),
+                }
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_byte_string_empty() {
+    let expr = parse_expr(r#"b"""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes.len(), 0);
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
+// ============================================================================
+// Byte Raw String Tests (br"..." or rb"...")
+// ============================================================================
+
+#[test]
+fn test_byte_raw_string_basic_br() {
+    let expr = parse_expr(r#"br"Hello\nWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Raw string preserves \n literally (backslash and 'n')
+            assert_eq!(bytes, b"Hello\\nWorld");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_basic_rb() {
+    let expr = parse_expr(r#"rb"Hello\tWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Raw string preserves \t literally
+            assert_eq!(bytes, b"Hello\\tWorld");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_windows_path() {
+    let expr = parse_expr(r#"br"C:\Users\username\file.txt""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // All backslashes preserved
+            assert_eq!(bytes, b"C:\\Users\\username\\file.txt");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_regex_pattern() {
+    let expr = parse_expr(r#"br"\d+\.\d+""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Regex escapes preserved
+            assert_eq!(bytes, b"\\d+\\.\\d+");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_assignment() {
+    let stmt = parse_stmt(r#"pattern = br"\w+@\w+\.\w+""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref targets, ref value, .. } => {
+            assert_eq!(targets.len(), 1);
+            match value.kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"\\w+@\\w+\\.\\w+");
+                }
+                _ => panic!("Expected byte raw string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_function_call() {
+    let expr = parse_expr(r#"compile(br"[a-z]+\d+")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"[a-z]+\\d+");
+                }
+                _ => panic!("Expected byte raw string argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_list() {
+    let expr = parse_expr(r#"[br"path1\n", rb"path2\t", br"path3\r"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            
+            // First element: br"path1\n"
+            match elements[0].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"path1\\n");
+                }
+                _ => panic!("Expected byte raw string"),
+            }
+            
+            // Second element: rb"path2\t"
+            match elements[1].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"path2\\t");
+                }
+                _ => panic!("Expected byte raw string"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_empty() {
+    let expr = parse_expr(r#"br"""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes.len(), 0);
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_uppercase_variants() {
+    // Test BR
+    let expr = parse_expr(r#"BR"Test\n""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes, b"Test\\n");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+    
+    // Test RB
+    let expr = parse_expr(r#"RB"Test\t""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes, b"Test\\t");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+// ============================================================================
+// Ellipsis Literal Tests (...)
+// ============================================================================
+
+#[test]
+fn test_ellipsis_literal() {
+    let expr = parse_expr("...").unwrap();
+    match expr.kind {
+        ExpressionKind::Ellipsis => {},
+        _ => panic!("Expected ellipsis literal"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_assignment() {
+    let stmt = parse_stmt("x = ...").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref value, .. } => {
+            match value.kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_function_body() {
+    let stmt = parse_stmt("def foo():\n    ...").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { ref body, .. } => {
+            assert_eq!(body.len(), 1);
+            match body[0].kind {
+                StatementKind::Expr(ref expr) => {
+                    match expr.kind {
+                        ExpressionKind::Ellipsis => {},
+                        _ => panic!("Expected ellipsis in function body"),
+                    }
+                }
+                _ => panic!("Expected expression statement"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_list() {
+    let expr = parse_expr("[1, 2, ..., 5]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 4);
+            match elements[2].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_tuple() {
+    let expr = parse_expr("(1, ..., 3)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[1].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis in tuple"),
+            }
+        }
+        _ => panic!("Expected tuple"),
+    }
+}
+
+#[test]
+fn test_ellipsis_as_function_argument() {
+    let expr = parse_expr("func(...)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::Ellipsis => {},
+                _ => panic!("Expected ellipsis as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_ellipsis_in_return() {
+    let stmt = parse_stmt("return ...").unwrap();
+    match stmt.kind {
+        StatementKind::Return { ref value } => {
+            match value {
+                Some(expr) => {
+                    match expr.kind {
+                        ExpressionKind::Ellipsis => {},
+                        _ => panic!("Expected ellipsis in return"),
+                    }
+                }
+                None => panic!("Expected return value"),
+            }
+        }
+        _ => panic!("Expected return statement"),
+    }
+}
+
+// ============================================================================
+// NotImplemented Singleton Tests
+// ============================================================================
+
+#[test]
+fn test_notimplemented_literal() {
+    let expr = parse_expr("NotImplemented").unwrap();
+    match expr.kind {
+        ExpressionKind::NotImplemented => {},
+        _ => panic!("Expected NotImplemented literal"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_assignment() {
+    let stmt = parse_stmt("result = NotImplemented").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref value, .. } => {
+            match value.kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_return() {
+    let stmt = parse_stmt("return NotImplemented").unwrap();
+    match stmt.kind {
+        StatementKind::Return { ref value } => {
+            match value {
+                Some(expr) => {
+                    match expr.kind {
+                        ExpressionKind::NotImplemented => {},
+                        _ => panic!("Expected NotImplemented in return"),
+                    }
+                }
+                None => panic!("Expected return value"),
+            }
+        }
+        _ => panic!("Expected return statement"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_comparison() {
+    let expr = parse_expr("x == NotImplemented").unwrap();
+    match expr.kind {
+        ExpressionKind::Compare { ref comparators, .. } => {
+            assert_eq!(comparators.len(), 1);
+            match comparators[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in comparison"),
+            }
+        }
+        _ => panic!("Expected comparison"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_list() {
+    let expr = parse_expr("[1, NotImplemented, 3]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[1].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_function_call() {
+    let expr = parse_expr("process(NotImplemented)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_dict_value() {
+    let expr = parse_expr("{'key': NotImplemented}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { ref values, .. } => {
+            assert_eq!(values.len(), 1);
+            match values[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented as dict value"),
+            }
+        }
+        _ => panic!("Expected dict"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_tuple() {
+    let expr = parse_expr("(NotImplemented, None, True)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in tuple"),
+            }
+        }
+        _ => panic!("Expected tuple"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_conditional() {
+    let expr = parse_expr("NotImplemented if condition else value").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { ref body, .. } => {
+            match body.kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in conditional body"),
+            }
+        }
+        _ => panic!("Expected conditional expression"),
+    }
+}
+
+

@@ -8,19 +8,20 @@ use crate::{Parser, ParseResult, ParseError};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
     None = 0,
-    Or = 1,           // or
-    And = 2,          // and
-    Not = 3,          // not (prefix)
-    Comparison = 4,   // ==, !=, <, >, <=, >=, in, not in, is, is not
-    BitwiseOr = 5,    // |
-    BitwiseXor = 6,   // ^
-    BitwiseAnd = 7,   // &
-    Shift = 8,        // <<, >>
-    Addition = 9,     // +, -
-    Multiplication = 10, // *, /, //, %, @
-    Unary = 11,       // +, -, ~
-    Power = 12,       // **
-    Primary = 13,     // ., [], ()
+    Walrus = 1,       // := (named expression)
+    Or = 2,           // or
+    And = 3,          // and
+    Not = 4,          // not (prefix)
+    Comparison = 5,   // ==, !=, <, >, <=, >=, in, not in, is, is not
+    BitwiseOr = 6,    // |
+    BitwiseXor = 7,   // ^
+    BitwiseAnd = 8,   // &
+    Shift = 9,        // <<, >>
+    Addition = 10,    // +, -
+    Multiplication = 11, // *, /, //, %, @
+    Unary = 12,       // +, -, ~
+    Power = 13,       // **
+    Primary = 14,     // ., [], ()
 }
 
 impl Parser {
@@ -68,6 +69,26 @@ impl Parser {
                 self.advance();
                 ExpressionKind::String(value)
             }
+            TokenKind::RawString(value) => {
+                let value = value.clone();
+                self.advance();
+                ExpressionKind::RawString(value)
+            }
+            TokenKind::ByteString(bytes) => {
+                let bytes = bytes.clone();
+                self.advance();
+                ExpressionKind::ByteString(bytes)
+            }
+            TokenKind::ByteRawString(bytes) => {
+                let bytes = bytes.clone();
+                self.advance();
+                ExpressionKind::ByteRawString(bytes)
+            }
+            TokenKind::FString(parts) => {
+                let parts = parts.clone();
+                self.advance();
+                ExpressionKind::FString { parts }
+            }
             TokenKind::True => {
                 self.advance();
                 ExpressionKind::Boolean(true)
@@ -80,6 +101,14 @@ impl Parser {
                 self.advance();
                 ExpressionKind::None
             }
+            TokenKind::NotImplemented => {
+                self.advance();
+                ExpressionKind::NotImplemented
+            }
+            TokenKind::Ellipsis => {
+                self.advance();
+                ExpressionKind::Ellipsis
+            }
             
             // Identifier
             TokenKind::Identifier => {
@@ -88,12 +117,41 @@ impl Parser {
                 ExpressionKind::Identifier(name)
             }
             
-            // Grouping
+            // Tuple literal or grouping
             TokenKind::LeftParen => {
                 self.advance(); // consume '('
-                let expr = self.parse_expression()?;
-                self.expect(TokenKind::RightParen, "Expected ')' after expression")?;
-                return Ok(expr); // Return grouped expression directly
+                
+                // Empty tuple: ()
+                if self.check(TokenKind::RightParen) {
+                    self.advance();
+                    ExpressionKind::Tuple { elements: Vec::new() }
+                } else {
+                    // Parse first expression
+                    let first_expr = self.parse_expression()?;
+                    
+                    // Check for comma (makes it a tuple)
+                    if self.check(TokenKind::Comma) {
+                        self.advance(); // consume comma
+                        
+                        let mut elements = vec![first_expr];
+                        
+                        // Parse remaining elements
+                        while !self.check(TokenKind::RightParen) && !self.is_at_end() {
+                            elements.push(self.parse_expression()?);
+                            
+                            if !self.check(TokenKind::RightParen) {
+                                self.expect(TokenKind::Comma, "Expected ',' or ')' in tuple")?;
+                            }
+                        }
+                        
+                        self.expect(TokenKind::RightParen, "Expected ')' after tuple elements")?;
+                        ExpressionKind::Tuple { elements }
+                    } else {
+                        // No comma, just a parenthesized expression
+                        self.expect(TokenKind::RightParen, "Expected ')' after expression")?;
+                        return Ok(first_expr);
+                    }
+                }
             }
             
             // Unary operators
@@ -122,7 +180,7 @@ impl Parser {
                 }
             }
             
-            // List literal
+            // List literal (TODO: comprehensions)
             TokenKind::LeftBracket => {
                 self.advance(); // consume '['
                 let mut elements = Vec::new();
@@ -202,6 +260,41 @@ impl Parser {
                     self.expect(TokenKind::RightBrace, "Expected '}' after set elements")?;
                     ExpressionKind::Set { elements }
                 }
+            }
+            
+            // Lambda expression
+            TokenKind::Lambda => {
+                self.advance(); // consume 'lambda'
+                
+                let mut params = Vec::new();
+                
+                // Parse parameters (if any) - simple form without type annotations or defaults
+                if !self.check(TokenKind::Colon) {
+                    loop {
+                        let param_start = self.current_token().span.clone();
+                        let name = self.expect(TokenKind::Identifier, "Expected parameter name in lambda")?.lexeme;
+                        
+                        params.push(silk_ast::Parameter {
+                            name,
+                            annotation: None,  // Lambdas don't have type annotations
+                            default: None,     // Lambdas don't have default values in simple form
+                            span: param_start,
+                        });
+                        
+                        if self.check(TokenKind::Comma) {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                
+                self.expect(TokenKind::Colon, "Expected ':' after lambda parameters")?;
+                
+                // Parse body (single expression)
+                let body = Box::new(self.parse_expression()?);
+                
+                ExpressionKind::Lambda { params, body }
             }
             
             _ => {
@@ -354,6 +447,48 @@ impl Parser {
                 }
             }
             
+            // Named expression (walrus operator :=)
+            TokenKind::ColonEqual => {
+                self.advance(); // consume ':='
+                
+                // The left side must be an identifier
+                if !matches!(left.kind, ExpressionKind::Identifier(_)) {
+                    return Err(ParseError::InvalidSyntax(
+                        "Left side of := must be a simple identifier".to_string(),
+                        left.span.line,
+                        left.span.column,
+                    ));
+                }
+                
+                // Parse the value (right-associative, parse at Walrus precedence)
+                let value = Box::new(self.parse_precedence(Precedence::Walrus)?);
+                
+                ExpressionKind::NamedExpr {
+                    target: Box::new(left),
+                    value,
+                }
+            }
+            
+            // Ternary/conditional expression: body if test else orelse
+            TokenKind::If => {
+                self.advance(); // consume 'if'
+                
+                // Parse the test condition
+                let test = Box::new(self.parse_precedence(Precedence::Or.succ())?);
+                
+                // Expect 'else'
+                self.expect(TokenKind::Else, "Expected 'else' in conditional expression")?;
+                
+                // Parse the else value (at same precedence level to allow chaining)
+                let orelse = Box::new(self.parse_precedence(Precedence::None)?);
+                
+                ExpressionKind::IfExp {
+                    test,
+                    body: Box::new(left),  // The left side is the 'if true' value
+                    orelse,
+                }
+            }
+            
             // Postfix operators
             TokenKind::LeftParen => {
                 // Function call
@@ -386,6 +521,8 @@ impl Parser {
     /// Get precedence of current token
     fn get_precedence(&self) -> Precedence {
         match self.current_token().kind {
+            TokenKind::ColonEqual => Precedence::Walrus,
+            TokenKind::If => Precedence::Or,  // Ternary is at Or precedence level
             TokenKind::Or => Precedence::Or,
             TokenKind::And => Precedence::And,
             TokenKind::Equal | TokenKind::NotEqual | TokenKind::Less | TokenKind::Greater |
@@ -409,11 +546,73 @@ impl Parser {
         self.advance(); // consume '('
         
         let mut args = Vec::new();
-        let keywords = Vec::new();
+        let mut keywords = Vec::new();
+        let mut seen_keyword = false;
         
         while !self.check(TokenKind::RightParen) && !self.is_at_end() {
-            // TODO: Handle keyword arguments
-            args.push(self.parse_expression()?);
+            let arg_start = self.current_token().span.clone();
+            
+            // Check for **kwargs
+            if self.check(TokenKind::DoubleStar) {
+                self.advance(); // consume '**'
+                let value = self.parse_expression()?;
+                keywords.push(silk_ast::CallKeyword {
+                    arg: None, // None means **kwargs
+                    value,
+                    span: arg_start,
+                });
+                seen_keyword = true;
+            }
+            // Check if this is a keyword argument (identifier followed by '=', but not '==')
+            else if self.check(TokenKind::Identifier) {
+                // Look ahead to see if there's an '=' after the identifier
+                if let Some(next_tok) = self.peek_token(1) {
+                    if matches!(next_tok.kind, TokenKind::Assign) {
+                        // This is a keyword argument: name=value
+                        let name = self.current_token().lexeme.clone();
+                        self.advance(); // consume identifier
+                        self.advance(); // consume '='
+                        let value = self.parse_expression()?;
+                        keywords.push(silk_ast::CallKeyword {
+                            arg: Some(name),
+                            value,
+                            span: arg_start,
+                        });
+                        seen_keyword = true;
+                    } else {
+                        // Regular positional argument that starts with identifier
+                        if seen_keyword {
+                            return Err(ParseError::InvalidSyntax(
+                                "Positional argument cannot follow keyword argument".to_string(),
+                                self.current_token().span.line,
+                                self.current_token().span.column,
+                            ));
+                        }
+                        args.push(self.parse_expression()?);
+                    }
+                } else {
+                    // No next token, treat as positional
+                    if seen_keyword {
+                        return Err(ParseError::InvalidSyntax(
+                            "Positional argument cannot follow keyword argument".to_string(),
+                            self.current_token().span.line,
+                            self.current_token().span.column,
+                        ));
+                    }
+                    args.push(self.parse_expression()?);
+                }
+            }
+            // Regular positional argument
+            else {
+                if seen_keyword {
+                    return Err(ParseError::InvalidSyntax(
+                        "Positional argument cannot follow keyword argument".to_string(),
+                        self.current_token().span.line,
+                        self.current_token().span.column,
+                    ));
+                }
+                args.push(self.parse_expression()?);
+            }
             
             if !self.check(TokenKind::RightParen) {
                 self.expect(TokenKind::Comma, "Expected ',' or ')' in function call")?;
@@ -432,14 +631,65 @@ impl Parser {
     fn parse_subscript(&mut self, value: Expression) -> ParseResult<ExpressionKind> {
         self.advance(); // consume '['
         
-        let index = self.parse_expression()?;
+        // Check if this is a slice by looking for colons
+        // Slices can be: [start:stop:step], [start:stop], [:stop], [start:], [::step], etc.
         
-        self.expect(TokenKind::RightBracket, "Expected ']' after subscript")?;
+        // Parse first component (could be start of slice or just an index)
+        let first = if self.check(TokenKind::Colon) {
+            None // Empty start: [:stop]
+        } else {
+            Some(Box::new(self.parse_expression()?))
+        };
         
-        Ok(ExpressionKind::Subscript {
-            value: Box::new(value),
-            index: Box::new(index),
-        })
+        // Check for colon to determine if it's a slice
+        if self.check(TokenKind::Colon) {
+            self.advance(); // consume first ':'
+            
+            // Parse stop (optional)
+            let stop = if self.check(TokenKind::Colon) || self.check(TokenKind::RightBracket) {
+                None // Empty stop: [start:] or [start::step]
+            } else {
+                Some(Box::new(self.parse_expression()?))
+            };
+            
+            // Parse step (optional, requires second colon)
+            let step = if self.check(TokenKind::Colon) {
+                self.advance(); // consume second ':'
+                if self.check(TokenKind::RightBracket) {
+                    None // Empty step: [start:stop:]
+                } else {
+                    Some(Box::new(self.parse_expression()?))
+                }
+            } else {
+                None
+            };
+            
+            self.expect(TokenKind::RightBracket, "Expected ']' after slice")?;
+            
+            // Create a Slice expression as the index
+            let start = self.current_token().span.clone();
+            let slice_expr = Expression::new(
+                ExpressionKind::Slice {
+                    lower: first,
+                    upper: stop,
+                    step,
+                },
+                start,
+            );
+            
+            Ok(ExpressionKind::Subscript {
+                value: Box::new(value),
+                index: Box::new(slice_expr),
+            })
+        } else {
+            // Not a slice, just a regular subscript
+            self.expect(TokenKind::RightBracket, "Expected ']' after subscript")?;
+            
+            Ok(ExpressionKind::Subscript {
+                value: Box::new(value),
+                index: first.unwrap(), // Safe because we parsed it above
+            })
+        }
     }
     
     fn parse_attribute(&mut self, value: Expression) -> ParseResult<ExpressionKind> {

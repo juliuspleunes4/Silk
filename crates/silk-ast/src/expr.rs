@@ -1,6 +1,6 @@
 /// Expression AST nodes
 
-use silk_lexer::Span;
+use silk_lexer::{Span, FStringPart};
 use crate::{Type, Pattern};
 
 /// Expression node with source location
@@ -23,8 +23,16 @@ pub enum ExpressionKind {
     Integer(i64),
     Float(f64),
     String(String),
+    RawString(String),  // r"text\n" - escape sequences preserved
+    ByteString(Vec<u8>),  // b"bytes" - byte literal
+    ByteRawString(Vec<u8>),  // br"bytes\n" or rb"bytes\n" - raw byte literal
+    FString {
+        parts: Vec<FStringPart>,
+    },
     Boolean(bool),
     None,
+    NotImplemented,  // NotImplemented singleton
+    Ellipsis,  // ... literal
     
     // Identifiers
     Identifier(String),
@@ -141,6 +149,12 @@ pub enum ExpressionKind {
         orelse: Box<Expression>,
     },
     
+    // Named expression (walrus operator :=)
+    NamedExpr {
+        target: Box<Expression>,
+        value: Box<Expression>,
+    },
+    
     // Await expression
     Await {
         value: Box<Expression>,
@@ -153,12 +167,6 @@ pub enum ExpressionKind {
     
     // Yield from expression
     YieldFrom {
-        value: Box<Expression>,
-    },
-    
-    // Named expression (walrus operator :=)
-    NamedExpr {
-        target: Box<Expression>,
         value: Box<Expression>,
     },
 }

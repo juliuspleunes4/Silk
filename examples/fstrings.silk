@@ -1,0 +1,108 @@
+# F-String Example
+# Demonstrates Silk's support for Python 3.6+ formatted string literals
+
+# Basic f-string with variable interpolation
+name = "Alice"
+greeting = f"Hello, {name}!"
+print(greeting)  # Output: Hello, Alice!
+
+# Multiple expressions in one f-string
+x = 10
+y = 20
+result = f"{x} + {y} = {x + y}"
+print(result)  # Output: 10 + 20 = 30
+
+# Format specifiers for numbers
+pi = 3.14159265359
+formatted_pi = f"Pi to 2 decimal places: {pi:.2f}"
+print(formatted_pi)  # Output: Pi to 2 decimal places: 3.14
+
+# Format specifiers for integers
+number = 42
+padded = f"Padded number: {number:05d}"
+print(padded)  # Output: Padded number: 00042
+
+# Complex expressions in f-strings
+def calculate(a, b):
+    return a * b + b
+
+values = [1, 2, 3, 4, 5]
+summary = f"Sum: {sum(values)}, Average: {sum(values) / len(values):.1f}"
+print(summary)  # Output: Sum: 15, Average: 3.0
+
+# F-strings with function calls
+def get_status():
+    return "active"
+
+status_message = f"System status: {get_status().upper()}"
+print(status_message)  # Output: System status: ACTIVE
+
+# Escaped braces (literal braces)
+template = f"Use {{curly braces}} for variables: {{name}}"
+print(template)  # Output: Use {curly braces} for variables: {name}
+
+# F-strings with escape sequences
+multiline = f"First line\nSecond line: {x}\tTabbed: {y}"
+print(multiline)
+# Output:
+# First line
+# Second line: 10	Tabbed: 20
+
+# F-strings in various contexts
+# In lists
+messages = [f"Item {i}: {i * i}" for i in range(1, 4)]
+print(messages)  # Output: ['Item 1: 1', 'Item 2: 4', 'Item 3: 9']
+
+# In function calls
+def display(msg):
+    print(f"[INFO] {msg}")
+
+display(f"Processing {len(values)} values")  # Output: [INFO] Processing 5 values
+
+# In assignments
+width = 10
+height = 20
+dimensions = f"Width: {width}, Height: {height}, Area: {width * height}"
+
+# Nested expressions
+data = [1, 2, 3]
+report = f"Data: {data}, Max: {max(data) if data else 'N/A'}"
+print(report)  # Output: Data: [1, 2, 3], Max: 3
+
+# F-strings with method calls
+text = "hello world"
+capitalized = f"Capitalized: {text.upper()}"
+print(capitalized)  # Output: Capitalized: HELLO WORLD
+
+# Triple-quoted f-strings
+long_message = f"""
+This is a long message
+with multiple lines.
+Value of x: {x}
+Value of y: {y}
+"""
+print(long_message)
+
+# Case-insensitive prefix (F instead of f)
+F_string_example = F"This also works with uppercase F: {x}"
+print(F_string_example)  # Output: This also works with uppercase F: 10
+
+# Practical example: formatted table
+products = [
+    ("Apple", 1.20, 5),
+    ("Banana", 0.50, 12),
+    ("Orange", 0.80, 8),
+]
+
+print(f"{'Product':<10} {'Price':>8} {'Qty':>5} {'Total':>8}")
+print("-" * 35)
+for name, price, qty in products:
+    total = price * qty
+    print(f"{name:<10} ${price:>7.2f} {qty:>5} ${total:>7.2f}")
+
+# Output:
+# Product       Price   Qty    Total
+# -----------------------------------
+# Apple       $   1.20     5 $   6.00
+# Banana      $   0.50    12 $   6.00
+# Orange      $   0.80     8 $   6.40

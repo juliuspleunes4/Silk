@@ -3,7 +3,7 @@
 /// Converts source code text into a stream of tokens.
 
 use crate::error::{LexError, LexResult};
-use crate::token::{Span, Token, TokenKind};
+use crate::token::{Span, Token, TokenKind, FStringPart};
 
 pub struct Lexer {
     input: Vec<char>,
@@ -340,6 +340,48 @@ impl Lexer {
         let start_pos = self.position;
         let start_col = self.column;
         
+        // Check for byte raw string prefix (br"..." or rb"...")
+        if self.position + 2 < self.input.len() {
+            let ch1 = self.current_char().to_ascii_lowercase();
+            let ch2 = self.input[self.position + 1].to_ascii_lowercase();
+            let ch3 = self.input[self.position + 2];
+            
+            if ((ch1 == 'b' && ch2 == 'r') || (ch1 == 'r' && ch2 == 'b'))
+                && (ch3 == '"' || ch3 == '\'') {
+                return self.lex_byte_raw_string();
+            }
+        }
+        
+        // Check for byte string prefix (b"..." or b'...')
+        if (self.current_char() == 'b' || self.current_char() == 'B') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_byte_string();
+            }
+        }
+        
+        // Check for raw string prefix (r"..." or r'...')
+        if (self.current_char() == 'r' || self.current_char() == 'R') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_raw_string();
+            }
+        }
+        
+        // Check for f-string prefix (f"..." or f'...')
+        if (self.current_char() == 'f' || self.current_char() == 'F') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_fstring();
+            }
+        }
+        
         while !self.is_at_end() {
             let ch = self.current_char();
             if ch.is_alphanumeric() || ch == '_' {
@@ -366,13 +408,121 @@ impl Lexer {
         let start_col = self.column;
         let start_line = self.line;
         
-        // TODO: Handle binary (0b), octal (0o), hex (0x) prefixes
-        // For now, just handle decimal integers and floats
-        
         let mut is_float = false;
         
-        // Read digits
-        while !self.is_at_end() && self.current_char().is_ascii_digit() {
+        // Check for special prefixes: 0b (binary), 0o (octal), 0x (hex)
+        if self.current_char() == '0' && !self.is_at_end() {
+            if let Some(next) = self.peek_char(1) {
+                match next {
+                    'b' | 'B' => {
+                        // Binary number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'b' or 'B'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && matches!(self.current_char(), '0' | '1' | '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 2) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    'o' | 'O' => {
+                        // Octal number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'o' or 'O'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && matches!(self.current_char(), '0'..='7' | '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 8) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    'x' | 'X' => {
+                        // Hexadecimal number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'x' or 'X'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && (self.current_char().is_ascii_hexdigit() || self.current_char() == '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 16) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    _ => {
+                        // Continue with normal decimal parsing
+                    }
+                }
+            }
+        }
+        
+        // Decimal number parsing (integers and floats)
+        // Read digits (allowing underscores for readability)
+        while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
             self.advance();
         }
         
@@ -383,7 +533,7 @@ impl Lexer {
                     is_float = true;
                     self.advance(); // consume '.'
                     
-                    while !self.is_at_end() && self.current_char().is_ascii_digit() {
+                    while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
                         self.advance();
                     }
                 }
@@ -406,16 +556,18 @@ impl Lexer {
                 }
                 
                 // Exponent digits
-                while !self.is_at_end() && self.current_char().is_ascii_digit() {
+                while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
                     self.advance();
                 }
             }
         }
         
         let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        // Remove underscores for parsing
+        let clean_lexeme: String = lexeme.chars().filter(|&c| c != '_').collect();
         
         let kind = if is_float {
-            match lexeme.parse::<f64>() {
+            match clean_lexeme.parse::<f64>() {
                 Ok(val) => TokenKind::Float(val),
                 Err(_) => {
                     return Err(LexError::InvalidNumber(
@@ -426,7 +578,7 @@ impl Lexer {
                 }
             }
         } else {
-            match lexeme.parse::<i64>() {
+            match clean_lexeme.parse::<i64>() {
                 Ok(val) => TokenKind::Integer(val),
                 Err(_) => {
                     return Err(LexError::InvalidNumber(
@@ -440,6 +592,400 @@ impl Lexer {
         
         Ok(Token {
             kind,
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_byte_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'b' or 'B'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted byte strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut bytes = Vec::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        bytes.push(self.advance() as u8);
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\\' && !is_triple {
+                // Handle escape sequences
+                self.advance();
+                if self.is_at_end() {
+                    return Err(LexError::UnterminatedString(start_line, start_col));
+                }
+                
+                let escaped = self.advance();
+                let byte_val = match escaped {
+                    'n' => b'\n',
+                    'r' => b'\r',
+                    't' => b'\t',
+                    '\\' => b'\\',
+                    '\'' => b'\'',
+                    '"' => b'"',
+                    '0' => b'\0',
+                    'x' => {
+                        // Hex escape: \xHH
+                        if self.position + 2 > self.input.len() {
+                            return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                        }
+                        let hex1 = self.advance();
+                        let hex2 = self.advance();
+                        let hex_str = format!("{}{}", hex1, hex2);
+                        match u8::from_str_radix(&hex_str, 16) {
+                            Ok(val) => val,
+                            Err(_) => return Err(LexError::InvalidEscape('x', self.line, self.column)),
+                        }
+                    }
+                    _ => {
+                        return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                    }
+                };
+                bytes.push(byte_val);
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Only ASCII characters allowed in byte strings
+                if !ch.is_ascii() {
+                    return Err(LexError::InvalidByteString(
+                        "Non-ASCII character in byte string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+                bytes.push(self.advance() as u8);
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::ByteString(bytes),
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_raw_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'r' or 'R'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted raw strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut value = String::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        value.push(self.advance());
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Raw strings: preserve everything literally, including backslashes
+                value.push(self.advance());
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::RawString(value),
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_byte_raw_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        // Consume prefix (br/rb/BR/RB/Br/etc.)
+        self.advance(); // first char (b/r)
+        self.advance(); // second char (r/b)
+        let quote = self.advance(); // opening quote
+        
+        // Check for triple-quoted byte raw strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut bytes = Vec::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        // Only ASCII characters allowed in byte strings
+                        if !ch.is_ascii() {
+                            return Err(LexError::InvalidByteString(
+                                "Non-ASCII character in byte raw string".to_string(),
+                                self.line,
+                                self.column,
+                            ));
+                        }
+                        bytes.push(self.advance() as u8);
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Only ASCII characters allowed in byte strings
+                if !ch.is_ascii() {
+                    return Err(LexError::InvalidByteString(
+                        "Non-ASCII character in byte raw string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+                // Raw strings: preserve everything literally, including backslashes
+                bytes.push(self.advance() as u8);
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::ByteRawString(bytes),
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_fstring(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'f' or 'F'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted f-strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut parts = Vec::new();
+        let mut current_text = String::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        if !current_text.is_empty() {
+                            parts.push(FStringPart::Text(current_text.clone()));
+                        }
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        current_text.push(self.advance());
+                    }
+                } else {
+                    if !current_text.is_empty() {
+                        parts.push(FStringPart::Text(current_text.clone()));
+                    }
+                    self.advance();
+                    break;
+                }
+            } else if ch == '{' {
+                // Check for escaped brace {{
+                if self.peek_char(1) == Some('{') {
+                    current_text.push('{');
+                    self.advance();
+                    self.advance();
+                } else {
+                    // Start of expression
+                    if !current_text.is_empty() {
+                        parts.push(FStringPart::Text(current_text.clone()));
+                        current_text.clear();
+                    }
+                    
+                    self.advance(); // Consume {
+                    let mut expr_code = String::new();
+                    let mut brace_depth = 1;
+                    let mut format_spec = None;
+                    
+                    // Read expression until closing }
+                    loop {
+                        if self.is_at_end() {
+                            return Err(LexError::UnterminatedString(start_line, start_col));
+                        }
+                        
+                        let expr_ch = self.current_char();
+                        
+                        if expr_ch == '{' {
+                            brace_depth += 1;
+                            expr_code.push(self.advance());
+                        } else if expr_ch == '}' {
+                            brace_depth -= 1;
+                            if brace_depth == 0 {
+                                self.advance(); // Consume closing }
+                                break;
+                            }
+                            expr_code.push(self.advance());
+                        } else if expr_ch == ':' && brace_depth == 1 {
+                            // Format specifier
+                            self.advance(); // Consume :
+                            let mut spec = String::new();
+                            loop {
+                                if self.is_at_end() {
+                                    return Err(LexError::UnterminatedString(start_line, start_col));
+                                }
+                                let spec_ch = self.current_char();
+                                if spec_ch == '}' {
+                                    break;
+                                }
+                                spec.push(self.advance());
+                            }
+                            format_spec = Some(spec);
+                            self.advance(); // Consume closing }
+                            break;
+                        } else {
+                            expr_code.push(self.advance());
+                        }
+                    }
+                    
+                    parts.push(FStringPart::Expression {
+                        code: expr_code.trim().to_string(),
+                        format_spec,
+                    });
+                }
+            } else if ch == '}' {
+                // Check for escaped brace }}
+                if self.peek_char(1) == Some('}') {
+                    current_text.push('}');
+                    self.advance();
+                    self.advance();
+                } else {
+                    return Err(LexError::InvalidFString(
+                        "Unmatched '}' in f-string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+            } else if ch == '\\' && !is_triple {
+                // Handle escape sequences
+                self.advance();
+                if self.is_at_end() {
+                    return Err(LexError::UnterminatedString(start_line, start_col));
+                }
+                
+                let escaped = self.advance();
+                let escaped_char = match escaped {
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    '\\' => '\\',
+                    '\'' => '\'',
+                    '"' => '"',
+                    '0' => '\0',
+                    _ => {
+                        return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                    }
+                };
+                current_text.push(escaped_char);
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                current_text.push(self.advance());
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::FString(parts),
             lexeme,
             span: Span::new(start_pos, self.position, start_line, start_col),
         })
@@ -537,7 +1083,14 @@ impl Lexer {
             '}' => TokenKind::RightBrace,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            ':' => TokenKind::Colon,
+            ':' => {
+                if self.peek_char(0) == Some('=') {
+                    self.advance();
+                    TokenKind::ColonEqual
+                } else {
+                    TokenKind::Colon
+                }
+            }
             '~' => TokenKind::Tilde,
             
             '+' => {
@@ -692,6 +1245,8 @@ impl Lexer {
                     TokenKind::Dot
                 }
             }
+            
+            '@' => TokenKind::At,
             
             _ => {
                 return Err(LexError::UnexpectedCharacter(ch, self.line, start_col));
