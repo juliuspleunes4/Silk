@@ -11,8 +11,10 @@ pub mod analyzer;
 pub mod error;
 pub mod scope;
 pub mod symbol_table;
+pub mod types;
 
 pub use analyzer::SemanticAnalyzer;
 pub use error::{SemanticError, SemanticResult};
 pub use scope::{Scope, ScopeKind};
 pub use symbol_table::{Symbol, SymbolKind, SymbolTable};
+pub use types::Type;

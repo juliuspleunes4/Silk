@@ -114,19 +114,21 @@ fn test_function_redefinition_error() {
 
 #[test]
 fn test_symbol_with_type_info() {
+    use silk_semantic::Type;
+    
     let mut table = SymbolTable::new();
     
     let symbol = Symbol::with_type(
         "x".to_string(),
         SymbolKind::Variable,
         make_span(1, 1),
-        "int".to_string()
+        Type::Int
     );
     
     table.define_symbol(symbol).unwrap();
     
     let resolved = table.resolve_symbol("x").unwrap();
-    assert_eq!(resolved.type_info, Some("int".to_string()));
+    assert_eq!(resolved.ty, Type::Int);
 }
 
 #[test]
