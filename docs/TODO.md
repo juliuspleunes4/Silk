@@ -275,6 +275,12 @@
     - ✅ All 467 tests passing (115 lexer + 11 unit + 255 parser + 17 symbol table + 28 analyzer + 41 name resolution)
 
 18. **TYPE CHECKING** ⏳ NEXT
+    - 🔴 **CRITICAL BLOCKER**: Fix scope persistence between two-pass analysis
+      - Current issue: Pass 2 creates NEW scopes instead of reusing Pass 1 scopes
+      - This causes parameters to be redefined redundantly in Pass 2
+      - Options: (A) Single-pass refactor, (B) Store scope indices, (C) Persist scope tree
+      - Priority: MUST FIX before extending semantic analysis
+      - Impact: Without this fix, adding type checking will compound architectural issues
     - Implement type inference engine
     - Type annotation validation
     - Function return type checking
