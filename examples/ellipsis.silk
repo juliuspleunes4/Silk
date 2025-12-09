@@ -1,0 +1,46 @@
+# Ellipsis Literal Examples
+# The ellipsis (...) is used for type hints, stubs, and placeholders
+
+# 1. Stub implementations - common in abstract classes or interfaces
+def abstract_method():
+    ...
+
+def not_yet_implemented():
+    ...
+
+# 2. Type hints - variable-length tuples
+def process_args(values: tuple[int, ...]) -> None:
+    ...
+
+def format_strings(items: tuple[str, ...]) -> str:
+    ...
+
+# 3. Placeholder values - configuration or constants to be defined
+API_KEY = ...
+DATABASE_URL = ...
+SECRET_TOKEN = ...
+
+# 4. In collections - partial data representation
+partial_list = [1, 2, 3, ..., 100]
+coordinates = (x, y, ...)
+incomplete_data = {
+    "name": "example",
+    "value": ...,
+}
+
+# 5. Function arguments - placeholder for unspecified values
+def configure(host: str, port: int, options=...):
+    ...
+
+# 6. Return statements - stub return values
+def get_config():
+    return ...
+
+def fetch_data():
+    return ...
+
+# 7. Multiple ellipsis in expression contexts
+def stub_function(a, b, c):
+    x = ...
+    y = ...
+    return ...

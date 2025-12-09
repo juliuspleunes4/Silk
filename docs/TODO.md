@@ -45,7 +45,7 @@
     - Pattern matching (match/case with patterns and guards) ✅
     - global, nonlocal, assert, del, raise statements ✅
   - ParseError types with 8 error variants ✅
-  - **199 tests passing** covering all implemented features ✅
+  - **206 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
   - Function parameter parsing with type annotations, defaults, *args, **kwargs ✅
   - Type annotation parsing (simple types and generics) ✅
@@ -54,6 +54,7 @@
   - Lambda expressions ✅
   - Ternary/conditional expressions ✅
   - Walrus operator (named expressions) ✅
+  - Ellipsis literal (...) for type hints and stubs ✅
   - **Known Limitations**:
     - List/dict/set comprehensions not implemented
     - Generator expressions not implemented
@@ -612,8 +613,9 @@ code = compile("print('hello')", "filename", "exec")
 my_list[1:3] = [10, 20]
 my_list[::2] = [0, 0, 0]
 
-# Ellipsis (...)
-... # Used in type hints and multi-dimensional slicing
+# ✅ Ellipsis (...) - IMPLEMENTED December 9, 2025
+... # Used in type hints, stub implementations, and placeholders
+# AST variant and parser support complete with 7 comprehensive tests
 
 # Unpacking
 a, *rest, b = [1, 2, 3, 4, 5]
