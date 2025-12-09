@@ -366,13 +366,121 @@ impl Lexer {
         let start_col = self.column;
         let start_line = self.line;
         
-        // TODO: Handle binary (0b), octal (0o), hex (0x) prefixes
-        // For now, just handle decimal integers and floats
-        
         let mut is_float = false;
         
-        // Read digits
-        while !self.is_at_end() && self.current_char().is_ascii_digit() {
+        // Check for special prefixes: 0b (binary), 0o (octal), 0x (hex)
+        if self.current_char() == '0' && !self.is_at_end() {
+            if let Some(next) = self.peek_char(1) {
+                match next {
+                    'b' | 'B' => {
+                        // Binary number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'b' or 'B'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && matches!(self.current_char(), '0' | '1' | '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 2) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    'o' | 'O' => {
+                        // Octal number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'o' or 'O'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && matches!(self.current_char(), '0'..='7' | '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 8) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    'x' | 'X' => {
+                        // Hexadecimal number
+                        self.advance(); // consume '0'
+                        self.advance(); // consume 'x' or 'X'
+                        
+                        let digits_start = self.position;
+                        while !self.is_at_end() && (self.current_char().is_ascii_hexdigit() || self.current_char() == '_') {
+                            self.advance();
+                        }
+                        
+                        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+                        let digits: String = self.input[digits_start..self.position]
+                            .iter()
+                            .filter(|&&c| c != '_')
+                            .collect();
+                        
+                        if digits.is_empty() {
+                            return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                        }
+                        
+                        match i64::from_str_radix(&digits, 16) {
+                            Ok(val) => {
+                                return Ok(Token {
+                                    kind: TokenKind::Integer(val),
+                                    lexeme,
+                                    span: Span::new(start_pos, self.position, start_line, start_col),
+                                });
+                            }
+                            Err(_) => {
+                                return Err(LexError::InvalidNumber(start_line, start_col, lexeme));
+                            }
+                        }
+                    }
+                    _ => {
+                        // Continue with normal decimal parsing
+                    }
+                }
+            }
+        }
+        
+        // Decimal number parsing (integers and floats)
+        // Read digits (allowing underscores for readability)
+        while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
             self.advance();
         }
         
@@ -383,7 +491,7 @@ impl Lexer {
                     is_float = true;
                     self.advance(); // consume '.'
                     
-                    while !self.is_at_end() && self.current_char().is_ascii_digit() {
+                    while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
                         self.advance();
                     }
                 }
@@ -406,16 +514,18 @@ impl Lexer {
                 }
                 
                 // Exponent digits
-                while !self.is_at_end() && self.current_char().is_ascii_digit() {
+                while !self.is_at_end() && (self.current_char().is_ascii_digit() || self.current_char() == '_') {
                     self.advance();
                 }
             }
         }
         
         let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        // Remove underscores for parsing
+        let clean_lexeme: String = lexeme.chars().filter(|&c| c != '_').collect();
         
         let kind = if is_float {
-            match lexeme.parse::<f64>() {
+            match clean_lexeme.parse::<f64>() {
                 Ok(val) => TokenKind::Float(val),
                 Err(_) => {
                     return Err(LexError::InvalidNumber(
@@ -426,7 +536,7 @@ impl Lexer {
                 }
             }
         } else {
-            match lexeme.parse::<i64>() {
+            match clean_lexeme.parse::<i64>() {
                 Ok(val) => TokenKind::Integer(val),
                 Err(_) => {
                     return Err(LexError::InvalidNumber(

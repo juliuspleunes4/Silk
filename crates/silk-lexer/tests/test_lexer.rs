@@ -190,14 +190,16 @@ fn test_integers_basic() {
 
 #[test]
 fn test_integers_with_underscores() {
-    // TODO: Underscores in numeric literals not yet implemented
     let source = "1_000 1_000_000 1_2_3_4_5";
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize().unwrap();
     
-    // Currently parses as "1" only (underscore stops parsing)
-    assert!(matches!(tokens[0].kind, TokenKind::Integer(_)));
-    assert_eq!(tokens[0].lexeme, "1");
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(1000)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(1000000)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(12345)));
+    
+    assert_eq!(tokens[0].lexeme, "1_000");
+    assert_eq!(tokens[1].lexeme, "1_000_000");
 }
 
 #[test]
@@ -944,4 +946,142 @@ fn test_unexpected_character_backslash() {
     
     // Backslash outside string should error
     assert!(result.is_err());
+}
+
+// ========== NUMBER FORMAT TESTS (BINARY, OCTAL, HEX) ==========
+
+#[test]
+fn test_binary_numbers() {
+    let source = "0b0 0b1 0b1010 0b1111_0000 0B1010";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(0)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(1)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(10))); // 0b1010 = 10
+    assert!(matches!(tokens[3].kind, TokenKind::Integer(240))); // 0b1111_0000 = 240
+    assert!(matches!(tokens[4].kind, TokenKind::Integer(10))); // 0B1010 = 10
+    
+    assert_eq!(tokens[0].lexeme, "0b0");
+    assert_eq!(tokens[2].lexeme, "0b1010");
+    assert_eq!(tokens[3].lexeme, "0b1111_0000");
+}
+
+#[test]
+fn test_octal_numbers() {
+    let source = "0o0 0o7 0o10 0o755 0o77_77 0O755";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(0)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(7)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(8))); // 0o10 = 8
+    assert!(matches!(tokens[3].kind, TokenKind::Integer(493))); // 0o755 = 493
+    assert!(matches!(tokens[4].kind, TokenKind::Integer(4095))); // 0o77_77 = 4095
+    assert!(matches!(tokens[5].kind, TokenKind::Integer(493))); // 0O755 = 493
+    
+    assert_eq!(tokens[0].lexeme, "0o0");
+    assert_eq!(tokens[3].lexeme, "0o755");
+    assert_eq!(tokens[4].lexeme, "0o77_77");
+}
+
+#[test]
+fn test_hexadecimal_numbers() {
+    let source = "0x0 0x9 0xa 0xF 0x10 0xFF 0xDEAD_BEEF 0X1A2B";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(0)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(9)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(10))); // 0xa = 10
+    assert!(matches!(tokens[3].kind, TokenKind::Integer(15))); // 0xF = 15
+    assert!(matches!(tokens[4].kind, TokenKind::Integer(16))); // 0x10 = 16
+    assert!(matches!(tokens[5].kind, TokenKind::Integer(255))); // 0xFF = 255
+    assert!(matches!(tokens[6].kind, TokenKind::Integer(3735928559))); // 0xDEAD_BEEF
+    assert!(matches!(tokens[7].kind, TokenKind::Integer(6699))); // 0X1A2B = 6699
+    
+    assert_eq!(tokens[0].lexeme, "0x0");
+    assert_eq!(tokens[5].lexeme, "0xFF");
+    assert_eq!(tokens[6].lexeme, "0xDEAD_BEEF");
+}
+
+#[test]
+fn test_number_format_mixed() {
+    let source = "42 0b101010 0o52 0x2A";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    // All represent the number 42 in different bases
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(42)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(42)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(42)));
+    assert!(matches!(tokens[3].kind, TokenKind::Integer(42)));
+}
+
+#[test]
+fn test_invalid_binary_number() {
+    let source = "0b2"; // Invalid binary digit
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    // 0b prefix with no valid binary digits should error
+    assert!(result.is_err());
+    assert!(matches!(result, Err(LexError::InvalidNumber(_, _, _))));
+}
+
+#[test]
+fn test_invalid_octal_number() {
+    let source = "0o8"; // Invalid octal digit
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    // 0o prefix with no valid octal digits should error
+    assert!(result.is_err());
+    assert!(matches!(result, Err(LexError::InvalidNumber(_, _, _))));
+}
+
+#[test]
+fn test_empty_prefix_numbers() {
+    let source = "0b 0o 0x"; // Prefix without digits
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    // Should error - empty number after prefix
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_decimal_with_underscores() {
+    let source = "1_000_000 123_456 1_2_3";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert!(matches!(tokens[0].kind, TokenKind::Integer(1_000_000)));
+    assert!(matches!(tokens[1].kind, TokenKind::Integer(123_456)));
+    assert!(matches!(tokens[2].kind, TokenKind::Integer(123)));
+    
+    assert_eq!(tokens[0].lexeme, "1_000_000");
+    assert_eq!(tokens[1].lexeme, "123_456");
+}
+
+#[test]
+fn test_float_with_underscores() {
+    let source = "1_000.5 3.14_15_92 1e1_0";
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::Float(val) = tokens[0].kind {
+        assert!((val - 1000.5).abs() < 0.0001);
+    } else {
+        panic!("Expected float");
+    }
+    
+    if let TokenKind::Float(val) = tokens[1].kind {
+        assert!((val - 3.141592).abs() < 0.0001);
+    } else {
+        panic!("Expected float");
+    }
+    
+    assert_eq!(tokens[0].lexeme, "1_000.5");
+    assert_eq!(tokens[1].lexeme, "3.14_15_92");
 }

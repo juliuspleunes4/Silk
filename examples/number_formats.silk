@@ -1,0 +1,48 @@
+# Number Formats Example
+# Demonstrates Silk's support for various numeric literal formats
+
+# Binary literals (base 2)
+binary_value = 0b1010  # 10 in decimal
+binary_with_underscore = 0b1111_0000  # 240 in decimal
+large_binary = 0B1010_1010_1010_1010  # 43690 in decimal
+
+# Octal literals (base 8)
+octal_permissions = 0o755  # Common Unix file permission (493 in decimal)
+octal_with_underscore = 0o77_77  # 4095 in decimal
+large_octal = 0O7777_7777  # 16777215 in decimal
+
+# Hexadecimal literals (base 16)
+hex_value = 0xFF  # 255 in decimal
+hex_address = 0xDEAD_BEEF  # 3735928559 in decimal
+hex_color = 0x1A2B3C  # RGB color (1714236 in decimal)
+large_hex = 0XFEED_FACE  # 4277009102 in decimal
+
+# Decimal with underscores for readability
+million = 1_000_000
+billion = 1_000_000_000
+large_number = 123_456_789
+
+# Float with underscores
+pi_precise = 3.14_15_92_65_35_89
+scientific_with_underscore = 1.23e1_0  # 1.23 × 10^10
+
+# Mixed formats in expressions
+result = 0xFF + 0b1010 + 0o755 + 1_000  # 255 + 10 + 493 + 1000 = 1758
+
+# All these formats work with standard operators
+bit_mask = 0xFF & 0b1111_0000  # 240
+shifted = 0x10 << 4  # 256
+octal_sum = 0o10 + 0o20  # 8 + 16 = 24
+
+# Example: Converting between bases mentally
+decimal_42 = 42
+binary_42 = 0b101010
+octal_42 = 0o52
+hex_42 = 0x2A
+# All represent the same value: 42
+
+print("Binary:", binary_value, binary_with_underscore)
+print("Octal:", octal_permissions, octal_with_underscore)
+print("Hexadecimal:", hex_value, hex_address)
+print("Decimals with underscores:", million, billion)
+print("Result of mixed formats:", result)

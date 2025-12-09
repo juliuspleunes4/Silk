@@ -60,10 +60,10 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~93% complete! Core statements functional, most expressions working
-  - Lexer ✅ (100% - all core features including indentation tracking)
+- **Phase 1: Foundation** - ~94% complete! Core statements functional, most expressions working
+  - Lexer ✅ (100% - all core features including binary/octal/hex numbers, underscores, indentation)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (92% - all statements complete, most expressions work)
+  - Parser 🟡 (93% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
     - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary, walrus)
     - ✅ Complete: Function params with *args/**kwargs support
@@ -181,8 +181,20 @@
     - ✅ Added 8 comprehensive tests covering all walrus operator forms
     - ✅ All 168 parser tests passing (243 total workspace tests)
 
+12. ~~**ADDITIONAL NUMBER FORMATS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Binary literals: 0b1010, 0B1111_0000
+    - ✅ Octal literals: 0o755, 0O77_77
+    - ✅ Hexadecimal literals: 0xFF, 0xDEAD_BEEF, 0X1A2B
+    - ✅ Underscore separators in all number formats for readability
+    - ✅ Decimal with underscores: 1_000_000, 3.14_15_92
+    - ✅ Proper radix parsing using i64::from_str_radix
+    - ✅ Case-insensitive prefixes (0b/0B, 0o/0O, 0x/0X)
+    - ✅ Error handling for invalid digits and empty prefixes
+    - ✅ Added 9 comprehensive tests covering all number formats
+    - ✅ All 84 lexer tests passing (252 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-12. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+13. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
     - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):
