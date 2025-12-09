@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - NotImplemented Singleton - December 9, 2025
+**Implemented NotImplemented singleton literal** - adds Python's `NotImplemented` constant for rich comparison method returns.
+
+**Lexer Enhancement (silk-lexer)** - NotImplemented Keyword ✅:
+- ✅ Added NotImplemented keyword token: `TokenKind::NotImplemented`
+- ✅ Case-sensitive keyword matching (must be `NotImplemented`, not `notimplemented`)
+- ✅ Properly categorized as keyword in is_keyword() check
+- ✅ Added to keyword() lookup function
+
+**AST Enhancement (silk-ast)** - NotImplemented Expression ✅:
+- ✅ Added NotImplemented variant to ExpressionKind enum: `NotImplemented,  // NotImplemented singleton`
+- ✅ Represents the `NotImplemented` constant used in Python for:
+  - Rich comparison methods: `def __eq__(self, other): return NotImplemented`
+  - Binary operation methods: `def __add__(self, other): return NotImplemented`
+  - Fallback value when operation is not supported for given types
+
+**Parser Enhancement (silk-parser)** - NotImplemented Parsing ✅:
+- ✅ Added NotImplemented literal parsing in parse_primary()
+- ✅ Maps TokenKind::NotImplemented → ExpressionKind::NotImplemented
+- ✅ Valid in all expression contexts (comparisons, returns, collections, etc.)
+- ✅ Added 9 comprehensive tests:
+  - test_notimplemented_literal: Basic `NotImplemented` expression
+  - test_notimplemented_in_assignment: `result = NotImplemented`
+  - test_notimplemented_in_return: `return NotImplemented`
+  - test_notimplemented_in_comparison: `x == NotImplemented`
+  - test_notimplemented_in_list: `[1, NotImplemented, 3]`
+  - test_notimplemented_in_function_call: `process(NotImplemented)`
+  - test_notimplemented_in_dict_value: `{'key': NotImplemented}`
+  - test_notimplemented_in_tuple: `(NotImplemented, None, True)`
+  - test_notimplemented_in_conditional: `NotImplemented if condition else value`
+- ✅ All 215 parser tests passing (341 total workspace tests)
+
+**Common Use Cases**:
+```python
+# Rich comparison methods
+class MyClass:
+    def __eq__(self, other):
+        if not isinstance(other, MyClass):
+            return NotImplemented
+        return self.value == other.value
+
+# Binary operations
+class Vector:
+    def __add__(self, other):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return Vector(self.x + other.x, self.y + other.y)
+
+# Type checking
+if result is NotImplemented:
+    # Fallback to alternative implementation
+    pass
+```
+
 ### ✅ FEATURE - Ellipsis Literal (...) - December 9, 2025
 **Implemented ellipsis literal expression** - adds Python's `...` literal for type hints, stub implementations, and placeholder values.
 

@@ -3126,4 +3126,139 @@ fn test_ellipsis_in_return() {
     }
 }
 
+// ============================================================================
+// NotImplemented Singleton Tests
+// ============================================================================
+
+#[test]
+fn test_notimplemented_literal() {
+    let expr = parse_expr("NotImplemented").unwrap();
+    match expr.kind {
+        ExpressionKind::NotImplemented => {},
+        _ => panic!("Expected NotImplemented literal"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_assignment() {
+    let stmt = parse_stmt("result = NotImplemented").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref value, .. } => {
+            match value.kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_return() {
+    let stmt = parse_stmt("return NotImplemented").unwrap();
+    match stmt.kind {
+        StatementKind::Return { ref value } => {
+            match value {
+                Some(expr) => {
+                    match expr.kind {
+                        ExpressionKind::NotImplemented => {},
+                        _ => panic!("Expected NotImplemented in return"),
+                    }
+                }
+                None => panic!("Expected return value"),
+            }
+        }
+        _ => panic!("Expected return statement"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_comparison() {
+    let expr = parse_expr("x == NotImplemented").unwrap();
+    match expr.kind {
+        ExpressionKind::Compare { ref comparators, .. } => {
+            assert_eq!(comparators.len(), 1);
+            match comparators[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in comparison"),
+            }
+        }
+        _ => panic!("Expected comparison"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_list() {
+    let expr = parse_expr("[1, NotImplemented, 3]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[1].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_function_call() {
+    let expr = parse_expr("process(NotImplemented)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_dict_value() {
+    let expr = parse_expr("{'key': NotImplemented}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { ref values, .. } => {
+            assert_eq!(values.len(), 1);
+            match values[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented as dict value"),
+            }
+        }
+        _ => panic!("Expected dict"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_tuple() {
+    let expr = parse_expr("(NotImplemented, None, True)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            match elements[0].kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in tuple"),
+            }
+        }
+        _ => panic!("Expected tuple"),
+    }
+}
+
+#[test]
+fn test_notimplemented_in_conditional() {
+    let expr = parse_expr("NotImplemented if condition else value").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { ref body, .. } => {
+            match body.kind {
+                ExpressionKind::NotImplemented => {},
+                _ => panic!("Expected NotImplemented in conditional body"),
+            }
+        }
+        _ => panic!("Expected conditional expression"),
+    }
+}
+
 

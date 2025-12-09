@@ -31,6 +31,7 @@ pub enum ExpressionKind {
     },
     Boolean(bool),
     None,
+    NotImplemented,  // NotImplemented singleton
     Ellipsis,  // ... literal
     
     // Identifiers

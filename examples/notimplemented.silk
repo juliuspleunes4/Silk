@@ -1,0 +1,66 @@
+# NotImplemented Singleton Examples
+# The NotImplemented constant is used in rich comparison and binary operation methods
+
+# 1. Rich comparison methods - return NotImplemented when comparison not supported
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __eq__(self, other):
+        if not isinstance(other, Point):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y
+    
+    def __lt__(self, other):
+        if not isinstance(other, Point):
+            return NotImplemented
+        return (self.x ** 2 + self.y ** 2) < (other.x ** 2 + other.y ** 2)
+
+# 2. Binary operation methods - return NotImplemented for unsupported types
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return Vector(self.x * other, self.y * other)
+        return NotImplemented
+
+# 3. Checking for NotImplemented in conditional logic
+def safe_compare(a, b):
+    result = a.__eq__(b)
+    if result is NotImplemented:
+        return False
+    return result
+
+# 4. Using NotImplemented in custom operations
+class CustomNumber:
+    def __init__(self, value):
+        self.value = value
+    
+    def __radd__(self, other):
+        # Reverse add - called when left operand doesn't support operation
+        if isinstance(other, int):
+            return CustomNumber(other + self.value)
+        return NotImplemented
+
+# 5. Type checking with NotImplemented
+def process_result(result):
+    if result is NotImplemented:
+        return "Operation not supported"
+    return result
+
+# 6. NotImplemented in collections
+fallback_values = [None, NotImplemented, False, 0]
+
+# 7. Returning NotImplemented from comparison chains
+class Comparable:
+    def __eq__(self, other):
+        return NotImplemented if not isinstance(other, Comparable) else True

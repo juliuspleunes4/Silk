@@ -69,6 +69,7 @@ pub enum TokenKind {
     None,
     Nonlocal,
     Not,
+    NotImplemented,
     Or,
     Pass,
     Raise,
@@ -186,6 +187,7 @@ impl TokenKind {
                 | TokenKind::None
                 | TokenKind::Nonlocal
                 | TokenKind::Not
+                | TokenKind::NotImplemented
                 | TokenKind::Or
                 | TokenKind::Pass
                 | TokenKind::Raise
@@ -229,6 +231,7 @@ impl TokenKind {
             "None" => Some(TokenKind::None),
             "nonlocal" => Some(TokenKind::Nonlocal),
             "not" => Some(TokenKind::Not),
+            "NotImplemented" => Some(TokenKind::NotImplemented),
             "or" => Some(TokenKind::Or),
             "pass" => Some(TokenKind::Pass),
             "raise" => Some(TokenKind::Raise),

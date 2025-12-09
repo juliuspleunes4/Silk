@@ -101,6 +101,10 @@ impl Parser {
                 self.advance();
                 ExpressionKind::None
             }
+            TokenKind::NotImplemented => {
+                self.advance();
+                ExpressionKind::NotImplemented
+            }
             TokenKind::Ellipsis => {
                 self.advance();
                 ExpressionKind::Ellipsis
