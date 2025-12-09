@@ -725,42 +725,113 @@ impl Parser {
     /// Parse function parameters
     fn parse_function_params(&mut self) -> ParseResult<FunctionParams> {
         let mut args = Vec::new();
-        let vararg = None;  // TODO: Implement *args
+        let mut vararg = None;
         let kwonlyargs = Vec::new();  // TODO: Implement keyword-only args
-        let kwarg = None;  // TODO: Implement **kwargs
+        let mut kwarg = None;
         
-        // Parse regular parameters
+        // Parse parameters
         while !self.check(TokenKind::RightParen) && !self.is_at_end() {
             let param_start = self.current_token().span.clone();
-            let name = self.expect(TokenKind::Identifier, "Expected parameter name")?.lexeme;
             
-            // Parse type annotation
-            let annotation = if self.check(TokenKind::Colon) {
-                self.advance();
-                Some(self.parse_type()?)
-            } else {
-                None
-            };
-            
-            // Parse default value
-            let default = if self.check(TokenKind::Assign) {
-                self.advance();
-                Some(self.parse_expression()?)
-            } else {
-                None
-            };
-            
-            args.push(FunctionArg {
-                name,
-                annotation,
-                default,
-                span: param_start,
-            });
-            
-            if self.check(TokenKind::Comma) {
-                self.advance();
-            } else {
+            // Check for **kwargs
+            if self.check(TokenKind::DoubleStar) {
+                self.advance(); // consume '**'
+                let name = self.expect(TokenKind::Identifier, "Expected parameter name after '**'")?.lexeme;
+                
+                // Parse optional type annotation
+                let annotation = if self.check(TokenKind::Colon) {
+                    self.advance();
+                    Some(self.parse_type()?)
+                } else {
+                    None
+                };
+                
+                kwarg = Some(FunctionArg {
+                    name,
+                    annotation,
+                    default: None, // **kwargs cannot have default
+                    span: param_start,
+                });
+                
+                // **kwargs must be last parameter
+                if self.check(TokenKind::Comma) {
+                    self.advance();
+                    if !self.check(TokenKind::RightParen) {
+                        return Err(ParseError::InvalidSyntax(
+                            "**kwargs must be the last parameter".to_string(),
+                            self.current_token().span.line,
+                            self.current_token().span.column,
+                        ));
+                    }
+                }
                 break;
+            }
+            // Check for *args
+            else if self.check(TokenKind::Star) {
+                self.advance(); // consume '*'
+                
+                // Check if this is just a separator (bare *)
+                if self.check(TokenKind::Comma) || self.check(TokenKind::RightParen) {
+                    // Bare * means keyword-only args follow (not implemented yet)
+                    if self.check(TokenKind::Comma) {
+                        self.advance();
+                    }
+                    continue;
+                }
+                
+                let name = self.expect(TokenKind::Identifier, "Expected parameter name after '*'")?.lexeme;
+                
+                // Parse optional type annotation
+                let annotation = if self.check(TokenKind::Colon) {
+                    self.advance();
+                    Some(self.parse_type()?)
+                } else {
+                    None
+                };
+                
+                vararg = Some(FunctionArg {
+                    name,
+                    annotation,
+                    default: None, // *args cannot have default
+                    span: param_start,
+                });
+                
+                if self.check(TokenKind::Comma) {
+                    self.advance();
+                }
+            }
+            // Regular parameter
+            else {
+                let name = self.expect(TokenKind::Identifier, "Expected parameter name")?.lexeme;
+                
+                // Parse type annotation
+                let annotation = if self.check(TokenKind::Colon) {
+                    self.advance();
+                    Some(self.parse_type()?)
+                } else {
+                    None
+                };
+                
+                // Parse default value
+                let default = if self.check(TokenKind::Assign) {
+                    self.advance();
+                    Some(self.parse_expression()?)
+                } else {
+                    None
+                };
+                
+                args.push(FunctionArg {
+                    name,
+                    annotation,
+                    default,
+                    span: param_start,
+                });
+                
+                if self.check(TokenKind::Comma) {
+                    self.advance();
+                } else {
+                    break;
+                }
             }
         }
         

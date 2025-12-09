@@ -1,0 +1,51 @@
+# Function Parameters Example
+# Demonstrates *args and **kwargs in function definitions
+
+# Basic *args - accepts variable number of positional arguments
+def sum_all(*numbers):
+    total = 0
+    for n in numbers:
+        total = total + n
+    return total
+
+result1 = sum_all(1, 2, 3, 4, 5)
+
+# Basic **kwargs - accepts variable number of keyword arguments
+def print_info(**details):
+    for key in details:
+        print(key, ":", details[key])
+
+print_info(name="Silk", version="0.1.0", language="Python")
+
+# Mixed parameters
+def greet(greeting, *names, punctuation="!"):
+    message = greeting
+    for name in names:
+        message = message + " " + name
+    message = message + punctuation
+    return message
+
+result2 = greet("Hello", "Alice", "Bob", "Charlie")
+result3 = greet("Hey", "World", punctuation="...")
+
+# All parameter types combined
+def complex_function(required, optional=10, *args, keyword_only=True, **kwargs):
+    print("Required:", required)
+    print("Optional:", optional)
+    print("Args:", args)
+    print("Keyword-only:", keyword_only)
+    print("Kwargs:", kwargs)
+
+complex_function(1, 2, 3, 4, keyword_only=False, extra="data", more="stuff")
+
+# Type annotations with variadic parameters
+def typed_varargs(*numbers: int, **options: str):
+    pass
+
+# With defaults before *args
+def with_defaults(a, b=5, c=10, *rest):
+    return (a, b, c, rest)
+
+result4 = with_defaults(1)
+result5 = with_defaults(1, 2)
+result6 = with_defaults(1, 2, 3, 4, 5, 6)

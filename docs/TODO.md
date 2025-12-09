@@ -60,14 +60,15 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~90% complete! Core statements functional, most expressions working
+- **Phase 1: Foundation** - ~91% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (89% - all statements complete, most expressions work)
+  - Parser 🟡 (90% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
     - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
+    - ✅ Complete: Function params with *args/**kwargs support
     - ❌ Missing: comprehensions
-    - ⚠️ Partial: Function params (no *args/**kwargs), decorators (placeholder)
+    - ⚠️ Partial: Decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
   - Runtime ❌ (0% - not started)
@@ -142,10 +143,20 @@
    - ✅ Added 6 comprehensive tests covering all keyword argument forms
    - ✅ All 144 parser tests passing (219 total workspace tests)
 
+9. ~~***ARGS AND **KWARGS IN FUNCTION PARAMETERS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented *args parsing: def func(*args)
+   - ✅ Implemented **kwargs parsing: def func(**kwargs)
+   - ✅ Mixed parameters: def func(a, b, *args, **kwargs)
+   - ✅ Type annotations: def func(*args: int, **kwargs: dict)
+   - ✅ With defaults: def func(a, b=10, *args)
+   - ✅ Proper enforcement: **kwargs must be last parameter
+   - ✅ Support for bare * separator (for keyword-only args, not fully implemented yet)
+   - ✅ Added 8 comprehensive tests covering all parameter forms
+   - ✅ All 152 parser tests passing (227 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-9. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Comprehensions (list/dict/set/generator) - complex, needs careful design
-   - *args and **kwargs in function parameters
+10. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+    - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats

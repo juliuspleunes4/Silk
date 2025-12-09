@@ -2150,4 +2150,123 @@ fn test_keyword_with_function_call() {
     }
 }
 
+// ============================================================================
+// Function Parameter Tests (*args, **kwargs)
+// ============================================================================
+
+#[test]
+fn test_function_with_args_vararg() {
+    let stmt = parse_stmt("def func(*args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 0);
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+            assert!(params.kwarg.is_none());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_with_kwargs() {
+    let stmt = parse_stmt("def func(**kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 0);
+            assert!(params.vararg.is_none());
+            assert!(params.kwarg.is_some());
+            assert_eq!(params.kwarg.as_ref().unwrap().name, "kwargs");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_mixed_params_with_vararg() {
+    let stmt = parse_stmt("def func(a, b, *args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert_eq!(params.args[0].name, "a");
+            assert_eq!(params.args[1].name, "b");
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_mixed_params_with_kwargs() {
+    let stmt = parse_stmt("def func(a, b, **kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert!(params.vararg.is_none());
+            assert!(params.kwarg.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_all_param_types() {
+    let stmt = parse_stmt("def func(a, b, *args, **kwargs):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert_eq!(params.args[0].name, "a");
+            assert_eq!(params.args[1].name, "b");
+            assert!(params.vararg.is_some());
+            assert_eq!(params.vararg.as_ref().unwrap().name, "args");
+            assert!(params.kwarg.is_some());
+            assert_eq!(params.kwarg.as_ref().unwrap().name, "kwargs");
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_vararg_with_type_annotation() {
+    let stmt = parse_stmt("def func(*args: int):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert!(params.vararg.is_some());
+            let vararg = params.vararg.as_ref().unwrap();
+            assert_eq!(vararg.name, "args");
+            assert!(vararg.annotation.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_kwargs_with_type_annotation() {
+    let stmt = parse_stmt("def func(**kwargs: dict):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert!(params.kwarg.is_some());
+            let kwarg = params.kwarg.as_ref().unwrap();
+            assert_eq!(kwarg.name, "kwargs");
+            assert!(kwarg.annotation.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_function_with_defaults_and_vararg() {
+    let stmt = parse_stmt("def func(a, b=10, *args):\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { params, .. } => {
+            assert_eq!(params.args.len(), 2);
+            assert!(params.args[0].default.is_none());
+            assert!(params.args[1].default.is_some());
+            assert!(params.vararg.is_some());
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
 
