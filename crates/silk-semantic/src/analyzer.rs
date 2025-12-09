@@ -93,13 +93,17 @@ impl SemanticAnalyzer {
                 // Validate the value expression first
                 self.analyze_expression(value);
                 
+                // Infer type from the value
+                let inferred_type = self.infer_type(value);
+                
                 // Define the target variables
                 for target in targets {
                     if let ExpressionKind::Identifier(name) = &target.kind {
-                        let symbol = Symbol::new(
+                        let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
                             target.span.clone(),
+                            inferred_type.clone(),
                         );
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
                             self.errors.push(err);
@@ -597,12 +601,16 @@ impl SemanticAnalyzer {
             ExpressionKind::NamedExpr { target, value } => {
                 self.analyze_expression(value);
                 
+                // Infer type from the value
+                let inferred_type = self.infer_type(value);
+                
                 // Define the target variable
                 if let ExpressionKind::Identifier(name) = &target.kind {
-                    let symbol = Symbol::new(
+                    let symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Variable,
                         target.span.clone(),
+                        inferred_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
@@ -612,6 +620,36 @@ impl SemanticAnalyzer {
 
             // Literals don't need validation
             _ => {}
+        }
+    }
+
+    /// Infer the type of an expression
+    /// 
+    /// Returns the inferred type based on the expression kind.
+    /// For now, this handles simple cases like literals.
+    fn infer_type(&self, expr: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        
+        match &expr.kind {
+            // Literal types
+            ExpressionKind::Integer(_) => Type::Int,
+            ExpressionKind::Float(_) => Type::Float,
+            ExpressionKind::String(_) | ExpressionKind::RawString(_) | ExpressionKind::FString { .. } => Type::Str,
+            ExpressionKind::Boolean(_) => Type::Bool,
+            ExpressionKind::None => Type::None,
+            
+            // For identifiers, look up their type in the symbol table
+            ExpressionKind::Identifier(name) => {
+                if let Some(symbol) = self.symbol_table.resolve_symbol(name) {
+                    symbol.ty.clone()
+                } else {
+                    Type::Unknown
+                }
+            }
+            
+            // For now, other expressions return Unknown
+            // TODO: Infer types for binary ops, calls, etc.
+            _ => Type::Unknown,
         }
     }
 
