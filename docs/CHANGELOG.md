@@ -7,9 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🎯 ARCHITECTURE FIX - Single-Pass Semantic Analysis - December 9, 2025
+
+**Refactored semantic analyzer from two-pass to single-pass architecture**, eliminating scope persistence issues.
+
+**Problem Solved**:
+- Two-pass architecture had fundamental flaw: Pass 2 created new scopes instead of reusing Pass 1 scopes
+- This caused parameters to be redundantly redefined in Pass 2
+- Led to technical debt and complexity in extending semantic analysis
+
+**Solution - Single-Pass with Pre-Pass**:
+1. **Lightweight pre-pass**: Collect only function/class names for forward references  
+2. **Main pass**: Define symbols and validate references in one traversal
+3. **Natural scope persistence**: Scopes created once, used throughout analysis
+
+**Benefits**:
+- ✅ Cleaner architecture - eliminates redundant parameter definitions
+- ✅ Simpler mental model - one traversal instead of two
+- ✅ Forward references work correctly (Python compatibility)
+- ✅ Better foundation for type checking (next phase)
+- ✅ Less code, easier to maintain
+
+### 🎨 Decorator and Base Class Validation - December 9, 2025
+
+**Implemented comprehensive validation for decorators and base classes**.
+
+**Issue**: Decorator expressions and base class expressions were completely ignored during semantic analysis, allowing undefined variables to go undetected:
+- `@undefined_decorator` on functions would not raise an error
+- `@undefined_decorator` on classes would not raise an error  
+- `class MyClass(UndefinedBase):` would not raise an error
+- Forward references in decorators/bases were not validated
+
+**Fix**:
+- Decorator expressions now analyzed **before** entering function/class scope
+- Base class expressions now analyzed **before** entering class scope
+- Correctly matches Python behavior: decorators and bases evaluated in outer scope
+- Supports forward references (decorator/base defined later in module)
+- Validates all decorator forms:
+  - Simple decorators: `@decorator`
+  - Decorator calls: `@decorator(args)`
+  - Attribute decorators: `@module.decorator`
+  - Multiple stacked decorators
+
+**Tests Added**: 24 new comprehensive tests in `test_decorators_bases.rs`
+- Function decorator validation (undefined, defined, forward ref, attributes, multiple) ✅
+- Class decorator validation (undefined, defined, forward ref) ✅
+- Base class validation (undefined, defined, forward ref, multiple) ✅
+- Keyword argument validation (metaclass, undefined, defined, forward ref) ✅
+- Combined decorator + base class + keyword validation ✅
+
+**Note**: This resolves the limitation documented in the architecture fix changelog entry.
+
+### 🔍 Parameter Default Value Validation - December 9, 2025
+
+**Fixed parameter default value scoping** to match Python semantics.
+
+**Issue**: Default parameter values were not being validated before entering function scope, allowing:
+- Undefined variables in defaults to go undetected
+- Incorrect assumption that defaults could reference parameters
+- Inconsistent handling between lambda and function parameters
+
+**Fix**:
+- Default expressions now analyzed **before** entering function/lambda scope
+- Correctly matches Python behavior: defaults evaluated in outer scope, not function scope
+- Applied consistently to all parameter types:
+  - Regular function parameters
+  - Keyword-only parameters  
+  - Lambda parameters (ready for when parser supports them)
+
+**Tests Added**: 6 new comprehensive tests in `test_parameter_defaults.rs`
+- Validates outer scope variable access ✅
+- Detects undefined variables in defaults ✅
+- Prevents parameters from referencing other parameters in defaults ✅
+- Tests nested function defaults ✅
+- Tests complex expressions in defaults ✅
+
+**New Test Coverage** - Added 14 forward reference tests:
+- Function calling function defined later
+- Class referencing class defined later
+- Mutual recursion between functions
+- Decorator/base class forward references (limited: only simple name references collected in pre-pass; full decorator/base class expression validation not yet implemented)
+- Nested function scope validation
+- Comprehension scope persistence
+
+**Total Test Count**: **514 tests** (115 lexer + 11 unit + 255 parser + 133 semantic)
+- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases/keywords
+
+---
+
 ### 🚀 PHASE 2 - Semantic Analysis Foundation - December 9, 2025
 
-**Implemented complete symbol table and two-pass semantic analyzer** with comprehensive testing (86 tests total).
+**Implemented complete symbol table and semantic analyzer** with comprehensive testing (89 tests total).
 
 **New Crate: silk-semantic**
 - Symbol table with scope stack management

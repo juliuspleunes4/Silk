@@ -57,6 +57,7 @@
   - Ellipsis literal (...) for type hints and stubs ✅
   - NotImplemented singleton for rich comparison methods ✅
   - **Known Limitations**:
+    - Lambda parameter defaults not supported by parser (semantic analyzer ready)
     - List/dict/set comprehensions not implemented
     - Generator expressions not implemented
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
@@ -73,11 +74,13 @@
     - ✅ Complete: Function params with *args/**kwargs support
     - ✅ Complete: Decorators for functions and classes
     - ✅ Complete: List/dict/set/generator comprehensions with multiple generators and filters
-- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (70% complete)**
+- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (75% complete)**
   - Symbol Table ✅ (100% - scope stack, define/resolve, 17 tests)
-  - AST Visitor ✅ (100% - two-pass analyzer, 656 lines)
+  - AST Visitor ✅ (100% - single-pass analyzer with pre-pass, ~600 lines)
   - Symbol Collection ✅ (100% - assignments, functions, classes, imports, 28 tests)
-  - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 41 tests)
+  - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 44 tests)
+  - Forward References ✅ (100% - function/class forward refs, mutual recursion, 14 tests)
+  - Architecture ✅ (100% - single-pass refactor complete)
   - Type Checking ❌ (0% - **NEXT**)
   - Control Flow Analysis ❌ (0% - future)
 - Code Generation ❌ (0% - future)
@@ -260,27 +263,42 @@
     - ✅ All 414 tests passing (115 lexer + 11 unit + 255 parser + 17 symbol table + 16 misc)
 
 17. ~~**AST VISITOR & SEMANTIC ANALYZER**~~ ✅ DONE (December 9, 2025)
-    - ✅ Implemented SemanticAnalyzer struct with two-pass analysis
-    - ✅ Pass 1: Symbol collection from AST (assignments, functions, classes, imports, parameters)
-    - ✅ Pass 2: Name resolution and reference validation
+    - ✅ Implemented SemanticAnalyzer struct with single-pass analysis
+    - ✅ Pre-pass: Collect function/class names for forward references
+    - ✅ Main pass: Define symbols and validate references in one traversal
     - ✅ Handles all statement types (if/while/for/try/with/match/function/class)
     - ✅ Handles all expression types (binary ops, calls, subscripts, comprehensions, lambda)
     - ✅ Comprehension scope management (list/dict/set/generator)
     - ✅ Lambda parameter scoping
     - ✅ Walrus operator variable definition
     - ✅ Context validation (return/break/continue in correct scopes)
+    - ✅ Forward references work correctly (Python-compatible)
     - ✅ Error collection and reporting
-    - ✅ Added 28 tests for symbol collection
-    - ✅ Added 41 tests for name resolution
-    - ✅ All 467 tests passing (115 lexer + 11 unit + 255 parser + 17 symbol table + 28 analyzer + 41 name resolution)
+    - ✅ Added 28 tests for analyzer
+    - ✅ Added 14 tests for forward references
+    - ✅ Added 44 tests for name resolution
+    - ✅ All 484 tests passing (115 lexer + 11 unit + 255 parser + 103 semantic)
 
-18. **TYPE CHECKING** ⏳ NEXT
-    - 🔴 **CRITICAL BLOCKER**: Fix scope persistence between two-pass analysis
-      - Current issue: Pass 2 creates NEW scopes instead of reusing Pass 1 scopes
-      - This causes parameters to be redefined redundantly in Pass 2
-      - Options: (A) Single-pass refactor, (B) Store scope indices, (C) Persist scope tree
-      - Priority: MUST FIX before extending semantic analysis
-      - Impact: Without this fix, adding type checking will compound architectural issues
+18. ~~**ARCHITECTURE FIX - Single-Pass Refactor**~~ ✅ DONE (December 9, 2025)
+    - ✅ **RESOLVED**: Eliminated scope persistence issue completely
+    - ✅ Refactored from two-pass to single-pass with pre-pass architecture
+    - ✅ Scopes now created once and persist naturally throughout analysis
+    - ✅ No more redundant parameter definitions
+    - ✅ Cleaner foundation for type checking
+    - ✅ Forward references handled correctly
+    - ✅ All 484 tests passing with new architecture
+
+19. ~~**DECORATOR AND BASE CLASS VALIDATION**~~ ✅ DONE (December 9, 2025)
+    - ✅ Validate decorator expressions for undefined variables
+    - ✅ Validate base class expressions for undefined variables
+    - ✅ Validate class keyword arguments (e.g., `metaclass=...`)
+    - ✅ Test complex decorator expressions (e.g., `@module.decorator`, `@decorator(args)`)
+    - ✅ Test complex base class expressions (e.g., `Module().Inner`)
+    - ✅ Test keyword arguments (metaclass with undefined/defined/forward refs)
+    - ✅ Added 24 comprehensive tests covering all decorator, base class, and keyword scenarios
+    - ✅ All 514 tests passing (115 lexer + 11 unit + 255 parser + 133 semantic)
+
+20. **TYPE CHECKING** ⏳ NEXT
     - Implement type inference engine
     - Type annotation validation
     - Function return type checking
