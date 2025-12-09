@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 silk-ast = { path = "../silk-ast" }
 silk-lexer = { path = "../silk-lexer" }
-thiserror = "2.0"
+thiserror.workspace = true
 
 [dev-dependencies]
 silk-parser = { path = "../silk-parser" }

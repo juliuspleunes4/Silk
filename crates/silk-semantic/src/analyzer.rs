@@ -76,20 +76,20 @@ impl SemanticAnalyzer {
             }
 
             // Augmented assignment: x += value
+            // Augmented assignment requires the variable to already exist (x += 5 is x = x + 5)
             StatementKind::AugAssign { target, .. } => {
                 if let ExpressionKind::Identifier(name) = &target.kind {
-                    // Check if variable exists, define if not (Python allows this)
+                    // Check if variable exists; error if not
                     if self.symbol_table.resolve_symbol(name).is_none() {
-                        let symbol = Symbol::new(
-                            name.clone(),
-                            SymbolKind::Variable,
-                            target.span.clone(),
-                        );
-                        if let Err(err) = self.symbol_table.define_symbol(symbol) {
-                            self.errors.push(err);
-                        }
+                        self.errors.push(SemanticError::UndefinedVariable {
+                            name: name.clone(),
+                            line: target.span.line,
+                            column: target.span.column,
+                            span: target.span.clone(),
+                        });
                     }
                 }
+                // TODO: Handle attribute/subscript augmented assignment
             }
 
             // Function definition

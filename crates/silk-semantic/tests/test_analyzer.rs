@@ -56,8 +56,10 @@ x += 5
 fn test_collect_augmented_assignment_undefined() {
     let source = "x += 5";
     let result = analyze(source);
-    // Python allows this, it defines x
-    assert!(result.is_ok(), "Augmented assignment defines variable if not exists");
+    // Augmented assignment requires variable to be defined (x += 5 is x = x + 5)
+    assert!(result.is_err(), "Augmented assignment should error if variable undefined");
+    let errors = result.unwrap_err();
+    assert!(matches!(errors[0], SemanticError::UndefinedVariable { .. }));
 }
 
 #[test]
