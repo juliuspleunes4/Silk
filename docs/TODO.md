@@ -53,7 +53,6 @@
   - **Known Limitations**:
     - List/dict/set comprehensions not implemented
     - Lambda expressions not implemented
-    - Slice syntax not implemented (only single subscripts)
     - Ternary/conditional expressions not implemented
     - Keyword arguments in function calls not implemented
     - Decorators have placeholder implementation only
@@ -62,13 +61,13 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~85% complete! Core statements functional, basic expressions working
+- **Phase 1: Foundation** - ~87% complete! Core statements functional, basic expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (83% - all statements complete, most expressions work)
+  - Parser 🟡 (85% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples)
-    - ❌ Missing: comprehensions, lambda, slices, ternary
+    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices)
+    - ❌ Missing: comprehensions, lambda, ternary
     - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
@@ -105,30 +104,38 @@
    - ✅ Support for nested tuples, trailing commas, mixed types
    - ✅ Added 15 comprehensive tests covering all scenarios
 
+5. ~~**SLICE SYNTAX**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented slice parsing: list[start:stop:step]
+   - ✅ All optional components: list[:stop], list[start:], list[::step], list[:]
+   - ✅ Support for negative indices: list[-5:-1]
+   - ✅ Support for expressions: list[i:i+10:2]
+   - ✅ Reverse slicing: list[::-1]
+   - ✅ Slices work correctly as subscript indices
+   - ✅ Added 14 comprehensive tests covering all slice forms
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-5. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Slice syntax (list[start:stop:step])
+6. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
    - Comprehensions (list/dict/set/generator)
    - Lambda expressions
    - Ternary/conditional expressions (x if cond else y)
    - Keyword arguments in function calls
    - *args and **kwargs in function parameters
    
-6. Lexer enhancements (1-2 weeks):
+7. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-7. Begin semantic analysis phase (2-3 months):
+8. Begin semantic analysis phase (2-3 months):
    - Create silk-semantic crate
    - Symbol table management
    - Type inference engine
    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-8. Code generation foundation (2-3 months)
-9. Runtime library basics (1-2 months)
-10. Optimization passes (1-2 months)
+9. Code generation foundation (2-3 months)
+10. Runtime library basics (1-2 months)
+11. Optimization passes (1-2 months)
 
 ---
 

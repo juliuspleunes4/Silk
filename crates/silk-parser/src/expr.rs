@@ -461,14 +461,65 @@ impl Parser {
     fn parse_subscript(&mut self, value: Expression) -> ParseResult<ExpressionKind> {
         self.advance(); // consume '['
         
-        let index = self.parse_expression()?;
+        // Check if this is a slice by looking for colons
+        // Slices can be: [start:stop:step], [start:stop], [:stop], [start:], [::step], etc.
         
-        self.expect(TokenKind::RightBracket, "Expected ']' after subscript")?;
+        // Parse first component (could be start of slice or just an index)
+        let first = if self.check(TokenKind::Colon) {
+            None // Empty start: [:stop]
+        } else {
+            Some(Box::new(self.parse_expression()?))
+        };
         
-        Ok(ExpressionKind::Subscript {
-            value: Box::new(value),
-            index: Box::new(index),
-        })
+        // Check for colon to determine if it's a slice
+        if self.check(TokenKind::Colon) {
+            self.advance(); // consume first ':'
+            
+            // Parse stop (optional)
+            let stop = if self.check(TokenKind::Colon) || self.check(TokenKind::RightBracket) {
+                None // Empty stop: [start:] or [start::step]
+            } else {
+                Some(Box::new(self.parse_expression()?))
+            };
+            
+            // Parse step (optional, requires second colon)
+            let step = if self.check(TokenKind::Colon) {
+                self.advance(); // consume second ':'
+                if self.check(TokenKind::RightBracket) {
+                    None // Empty step: [start:stop:]
+                } else {
+                    Some(Box::new(self.parse_expression()?))
+                }
+            } else {
+                None
+            };
+            
+            self.expect(TokenKind::RightBracket, "Expected ']' after slice")?;
+            
+            // Create a Slice expression as the index
+            let start = self.current_token().span.clone();
+            let slice_expr = Expression::new(
+                ExpressionKind::Slice {
+                    lower: first,
+                    upper: stop,
+                    step,
+                },
+                start,
+            );
+            
+            Ok(ExpressionKind::Subscript {
+                value: Box::new(value),
+                index: Box::new(slice_expr),
+            })
+        } else {
+            // Not a slice, just a regular subscript
+            self.expect(TokenKind::RightBracket, "Expected ']' after subscript")?;
+            
+            Ok(ExpressionKind::Subscript {
+                value: Box::new(value),
+                index: first.unwrap(), // Safe because we parsed it above
+            })
+        }
     }
     
     fn parse_attribute(&mut self, value: Expression) -> ParseResult<ExpressionKind> {

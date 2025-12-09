@@ -1309,3 +1309,279 @@ fn test_tuple_with_function_call() {
     }
 }
 
+// ============================================================================
+// Slice Tests
+// ============================================================================
+
+#[test]
+fn test_slice_start_stop() {
+    let expr = parse_expr("list[1:5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            match &value.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "list"),
+                _ => panic!("Expected identifier 'list'"),
+            }
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice as index, got {:?}", index.kind),
+            }
+        }
+        _ => panic!("Expected subscript, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_slice_start_stop_step() {
+    let expr = parse_expr("list[0:10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_only_stop() {
+    let expr = parse_expr("list[:5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_only_start() {
+    let expr = parse_expr("list[5:]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_all_empty() {
+    let expr = parse_expr("list[:]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_none(), "Step should be None");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_step_only() {
+    let expr = parse_expr("list[::2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_stop_and_step() {
+    let expr = parse_expr("list[:10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none(), "Start should be None");
+                    assert!(upper.is_some(), "Stop should be present");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_start_and_step() {
+    let expr = parse_expr("list[5::2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_none(), "Stop should be None");
+                    assert!(step.is_some(), "Step should be present");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_negative_indices() {
+    let expr = parse_expr("list[-5:-1]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, .. } => {
+                    assert!(lower.is_some(), "Start should be present");
+                    assert!(upper.is_some(), "Stop should be present");
+                    // Check they are unary minus expressions
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::UnaryOp { op, .. } => {
+                            assert_eq!(*op, UnaryOperator::USub);
+                        }
+                        _ => panic!("Expected unary minus for negative index"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_expressions() {
+    let expr = parse_expr("list[x:y:z]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some());
+                    assert!(upper.is_some());
+                    assert!(step.is_some());
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected identifier x"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_with_computed_values() {
+    let expr = parse_expr("list[i+1:i+10:2]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_some());
+                    assert!(upper.is_some());
+                    assert!(step.is_some());
+                    match &lower.as_ref().unwrap().kind {
+                        ExpressionKind::BinaryOp { .. } => {},
+                        _ => panic!("Expected binary operation"),
+                    }
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_slice_reverse() {
+    let expr = parse_expr("list[::-1]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { index, .. } => {
+            match &index.kind {
+                ExpressionKind::Slice { lower, upper, step } => {
+                    assert!(lower.is_none());
+                    assert!(upper.is_none());
+                    assert!(step.is_some(), "Step should be present for reverse");
+                }
+                _ => panic!("Expected slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_regular_subscript_still_works() {
+    let expr = parse_expr("list[5]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            match &value.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "list"),
+                _ => panic!("Expected identifier"),
+            }
+            match &index.kind {
+                ExpressionKind::Integer(5) => {},
+                _ => panic!("Expected integer index, not slice"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
+#[test]
+fn test_chained_subscript_with_slice() {
+    let expr = parse_expr("matrix[0][1:3]").unwrap();
+    match expr.kind {
+        ExpressionKind::Subscript { value, index } => {
+            // Outer subscript should have a slice
+            match &index.kind {
+                ExpressionKind::Slice { .. } => {},
+                _ => panic!("Expected slice in second subscript"),
+            }
+            // Inner should be another subscript
+            match &value.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected nested subscript"),
+            }
+        }
+        _ => panic!("Expected subscript"),
+    }
+}
+
