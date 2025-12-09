@@ -1116,3 +1116,196 @@ fn test_no_colon_makes_it_set() {
     }
 }
 
+// ============================================================================
+// Tuple Tests
+// ============================================================================
+
+#[test]
+fn test_empty_tuple() {
+    let expr = parse_expr("()").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 0, "Empty tuple should have 0 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_single_element_tuple() {
+    let expr = parse_expr("(42,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 1, "Single element tuple should have 1 element");
+            match &elements[0].kind {
+                ExpressionKind::Integer(42) => {},
+                _ => panic!("Expected integer 42"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_two_element_tuple() {
+    let expr = parse_expr("(1, 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2, "Two element tuple should have 2 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_multiple_element_tuple() {
+    let expr = parse_expr("(1, 2, 3, 4, 5)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 5, "Expected 5 elements");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_trailing_comma() {
+    let expr = parse_expr("(1, 2, 3,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 3, "Expected 3 elements (trailing comma ignored)");
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_strings() {
+    let expr = parse_expr(r#"("hello", "world")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "hello"),
+                _ => panic!("Expected string"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_expressions() {
+    let expr = parse_expr("(1 + 2, 3 * 4)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_nested_tuple() {
+    let expr = parse_expr("((1, 2), (3, 4))").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Tuple { elements: inner } => {
+                    assert_eq!(inner.len(), 2);
+                }
+                _ => panic!("Expected nested tuple"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_mixed_types() {
+    let expr = parse_expr(r#"(42, "hello", True, None)"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 4);
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_parenthesized_expression_not_tuple() {
+    let expr = parse_expr("(42)").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(42) => {}, // Should be just an integer, not a tuple
+        _ => panic!("Expected integer (parenthesized expression), got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_parenthesized_expression_complex() {
+    let expr = parse_expr("(1 + 2)").unwrap();
+    match expr.kind {
+        ExpressionKind::BinaryOp { .. } => {}, // Should be binary op, not tuple
+        _ => panic!("Expected binary operation (parenthesized), got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_nested_parentheses_not_tuple() {
+    let expr = parse_expr("((42))").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(42) => {}, // Multiple parentheses don't make a tuple
+        _ => panic!("Expected integer, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_in_list() {
+    let expr = parse_expr("[(1, 2), (3, 4)]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Tuple { .. } => {},
+                _ => panic!("Expected tuple in list"),
+            }
+        }
+        _ => panic!("Expected list, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_single_element_tuple_in_expression() {
+    let expr = parse_expr("(x,)").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier"),
+            }
+        }
+        _ => panic!("Expected single-element tuple, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_tuple_with_function_call() {
+    let expr = parse_expr("(foo(), bar())").unwrap();
+    match expr.kind {
+        ExpressionKind::Tuple { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call"),
+            }
+        }
+        _ => panic!("Expected tuple, got {:?}", expr.kind),
+    }
+}
+

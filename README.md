@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-156%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-171%20passing-brightgreen.svg)](#testing)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
 > A compiled programming language with Python-compatible syntax and C-level performance
@@ -134,7 +134,7 @@ cargo test --package silk-lexer
 cargo test --package silk-parser
 ```
 
-**Current test coverage:** 156 tests across all components
+**Current test coverage:** 171 tests across all components
 
 ## Contributing
 

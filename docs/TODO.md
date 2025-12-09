@@ -55,7 +55,6 @@
     - Lambda expressions not implemented
     - Slice syntax not implemented (only single subscripts)
     - Ternary/conditional expressions not implemented
-    - Tuple literals not implemented
     - Keyword arguments in function calls not implemented
     - Decorators have placeholder implementation only
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
@@ -63,13 +62,13 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~84% complete! Core statements functional, basic expressions working
+- **Phase 1: Foundation** - ~85% complete! Core statements functional, basic expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (81% - all statements complete, most expressions work)
+  - Parser 🟡 (83% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets)
-    - ❌ Missing: comprehensions, lambda, slices, ternary, tuples
+    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples)
+    - ❌ Missing: comprehensions, lambda, slices, ternary
     - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
@@ -98,9 +97,16 @@
    - ✅ Support for trailing commas, nested structures, expression keys/values
    - ✅ Added 17 comprehensive tests covering all scenarios
 
+4. ~~**TUPLE LITERAL PARSING**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented tuple literal parsing: (1, 2, 3)
+   - ✅ Empty tuple support: ()
+   - ✅ Single-element tuple: (x,) with required trailing comma
+   - ✅ Proper disambiguation from parenthesized expressions
+   - ✅ Support for nested tuples, trailing commas, mixed types
+   - ✅ Added 15 comprehensive tests covering all scenarios
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-4. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Tuple literals and tuple unpacking
+5. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
    - Slice syntax (list[start:stop:step])
    - Comprehensions (list/dict/set/generator)
    - Lambda expressions
@@ -108,21 +114,21 @@
    - Keyword arguments in function calls
    - *args and **kwargs in function parameters
    
-5. Lexer enhancements (1-2 weeks):
+6. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-6. Begin semantic analysis phase (2-3 months):
+7. Begin semantic analysis phase (2-3 months):
    - Create silk-semantic crate
    - Symbol table management
    - Type inference engine
    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-7. Code generation foundation (2-3 months)
-8. Runtime library basics (1-2 months)
-9. Optimization passes (1-2 months)
+8. Code generation foundation (2-3 months)
+9. Runtime library basics (1-2 months)
+10. Optimization passes (1-2 months)
 
 ---
 

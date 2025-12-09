@@ -88,12 +88,41 @@ impl Parser {
                 ExpressionKind::Identifier(name)
             }
             
-            // Grouping
+            // Tuple literal or grouping
             TokenKind::LeftParen => {
                 self.advance(); // consume '('
-                let expr = self.parse_expression()?;
-                self.expect(TokenKind::RightParen, "Expected ')' after expression")?;
-                return Ok(expr); // Return grouped expression directly
+                
+                // Empty tuple: ()
+                if self.check(TokenKind::RightParen) {
+                    self.advance();
+                    ExpressionKind::Tuple { elements: Vec::new() }
+                } else {
+                    // Parse first expression
+                    let first_expr = self.parse_expression()?;
+                    
+                    // Check for comma (makes it a tuple)
+                    if self.check(TokenKind::Comma) {
+                        self.advance(); // consume comma
+                        
+                        let mut elements = vec![first_expr];
+                        
+                        // Parse remaining elements
+                        while !self.check(TokenKind::RightParen) && !self.is_at_end() {
+                            elements.push(self.parse_expression()?);
+                            
+                            if !self.check(TokenKind::RightParen) {
+                                self.expect(TokenKind::Comma, "Expected ',' or ')' in tuple")?;
+                            }
+                        }
+                        
+                        self.expect(TokenKind::RightParen, "Expected ')' after tuple elements")?;
+                        ExpressionKind::Tuple { elements }
+                    } else {
+                        // No comma, just a parenthesized expression
+                        self.expect(TokenKind::RightParen, "Expected ')' after expression")?;
+                        return Ok(first_expr);
+                    }
+                }
             }
             
             // Unary operators

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Tuple Literal Parsing - December 9, 2025
+**Implemented tuple literal parsing** - completing another fundamental Python collection type.
+
+**Parser Expression Enhancement (silk-parser)** - Tuple Literals ✅:
+- ✅ Implemented tuple literal parsing: `(1, 2, 3)`
+- ✅ Empty tuple support: `()`
+- ✅ Single-element tuples: `(x,)` with required trailing comma
+- ✅ Proper disambiguation from parenthesized expressions
+  - `(42)` → parenthesized expression (returns integer)
+  - `(42,)` → single-element tuple
+  - `(1, 2)` → tuple
+- ✅ Support for nested tuples: `((1, 2), (3, 4))`
+- ✅ Support for trailing commas: `(1, 2, 3,)`
+- ✅ Mixed types and expressions: `(42, "hello", True, x + y)`
+- ✅ Added 15 comprehensive tests covering all scenarios:
+  - Empty tuple, single/two/multiple elements
+  - Trailing commas, nested tuples
+  - Strings, expressions, function calls in tuples
+  - Disambiguation tests (parentheses vs tuples)
+  - Tuples in other collections
+- ✅ All 96 parser tests passing (171 total workspace tests)
+- **Status**: Parser now at ~83% complete, Phase 1 at ~85%
+- **Impact**: Core Python collection types (list, dict, set, tuple) all supported
+
 ### ✅ FEATURE - Dict/Set Literal Parsing - December 2025
 **Implemented dict and set literal parsing** - resolved critical panic-causing issue.
 
