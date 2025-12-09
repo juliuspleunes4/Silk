@@ -83,11 +83,11 @@
   - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 44 tests)
   - Forward References ✅ (100% - function/class forward refs, mutual recursion, 14 tests)
   - Architecture ✅ (100% - single-pass refactor complete)
-  - Type Inference ⏳ (25% - **IN PROGRESS**)
+  - Type Inference ⏳ (40% - **IN PROGRESS**)
     - ✅ Literal type inference (int, float, str, bool, None)
-    - ⏳ Binary operation type inference (arithmetic, comparison, logical) - **NEXT**
-    - ❌ Unary operation type inference (not yet started)
-    - ❌ Function call type inference (not yet started)
+    - ✅ Binary operation type inference (arithmetic, comparison, logical)
+    - ✅ Unary operation type inference (not, +, -, ~)
+    - ❌ Function call type inference (not yet started) - **NEXT**
     - ❌ Collection type inference (list, dict, set, tuple) (not yet started)
   - Type Checking ❌ (0% - blocked on type inference completion)
   - Control Flow Analysis ❌ (0% - future)

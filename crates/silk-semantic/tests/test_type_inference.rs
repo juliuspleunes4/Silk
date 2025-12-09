@@ -248,7 +248,7 @@ y = x
 }
 
 #[test]
-fn test_complex_expression_gets_unknown_type() {
+fn test_int_variable_addition_infers_int_type() {
     let source = r#"
 x = 10
 y = 20
