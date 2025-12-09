@@ -60,13 +60,13 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~88% complete! Core statements functional, most expressions working
+- **Phase 1: Foundation** - ~89% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (87% - all statements complete, most expressions work)
+  - Parser 🟡 (88% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Most expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda)
-    - ❌ Missing: comprehensions, ternary
+    - ✅ Complete: Most expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
+    - ❌ Missing: comprehensions
     - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
@@ -122,28 +122,37 @@
    - ✅ Lambdas in function calls, lists, etc.
    - ✅ Added 14 comprehensive tests covering all lambda forms
 
+7. ~~**TERNARY/CONDITIONAL EXPRESSIONS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented ternary operator parsing: value if condition else other
+   - ✅ Basic ternary: x if cond else y
+   - ✅ Ternaries with comparisons: positive if x > 0 else negative
+   - ✅ Nested ternaries: a if x else b if y else c
+   - ✅ Ternaries in function calls, lists, assignments
+   - ✅ Complex conditions with logical operators
+   - ✅ Proper precedence handling (Or level)
+   - ✅ Added 14 comprehensive tests covering all ternary forms
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-7. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+8. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
    - Comprehensions (list/dict/set/generator)
-   - Ternary/conditional expressions (x if cond else y)
    - Keyword arguments in function calls
    - *args and **kwargs in function parameters
    
-8. Lexer enhancements (1-2 weeks):
+9. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-9. Begin semantic analysis phase (2-3 months):
-   - Create silk-semantic crate
-   - Symbol table management
-   - Type inference engine
-   - Basic type checking
+10. Begin semantic analysis phase (2-3 months):
+    - Create silk-semantic crate
+    - Symbol table management
+    - Type inference engine
+    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-10. Code generation foundation (2-3 months)
-11. Runtime library basics (1-2 months)
-12. Optimization passes (1-2 months)
+11. Code generation foundation (2-3 months)
+12. Runtime library basics (1-2 months)
+13. Optimization passes (1-2 months)
 
 ---
 

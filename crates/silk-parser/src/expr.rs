@@ -418,6 +418,26 @@ impl Parser {
                 }
             }
             
+            // Ternary/conditional expression: body if test else orelse
+            TokenKind::If => {
+                self.advance(); // consume 'if'
+                
+                // Parse the test condition
+                let test = Box::new(self.parse_precedence(Precedence::Or.succ())?);
+                
+                // Expect 'else'
+                self.expect(TokenKind::Else, "Expected 'else' in conditional expression")?;
+                
+                // Parse the else value (at same precedence level to allow chaining)
+                let orelse = Box::new(self.parse_precedence(Precedence::None)?);
+                
+                ExpressionKind::IfExp {
+                    test,
+                    body: Box::new(left),  // The left side is the 'if true' value
+                    orelse,
+                }
+            }
+            
             // Postfix operators
             TokenKind::LeftParen => {
                 // Function call
@@ -450,6 +470,7 @@ impl Parser {
     /// Get precedence of current token
     fn get_precedence(&self) -> Precedence {
         match self.current_token().kind {
+            TokenKind::If => Precedence::Or,  // Ternary is between None and Or precedence
             TokenKind::Or => Precedence::Or,
             TokenKind::And => Precedence::And,
             TokenKind::Equal | TokenKind::NotEqual | TokenKind::Less | TokenKind::Greater |

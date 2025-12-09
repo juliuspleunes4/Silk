@@ -1814,3 +1814,251 @@ fn test_lambda_with_subscript() {
     }
 }
 
+// ============================================================================
+// Ternary/Conditional Expression Tests
+// ============================================================================
+
+#[test]
+fn test_ternary_basic() {
+    let expr = parse_expr("x if condition else y").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "condition"),
+                _ => panic!("Expected identifier 'condition' in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "y"),
+                _ => panic!("Expected identifier 'y' in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_ternary_with_literals() {
+    let expr = parse_expr("1 if True else 0").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::Integer(1) => {},
+                _ => panic!("Expected integer 1 in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Boolean(true) => {},
+                _ => panic!("Expected True in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Integer(0) => {},
+                _ => panic!("Expected integer 0 in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_comparison() {
+    let expr = parse_expr("positive if x > 0 else negative").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, .. } => {
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in test"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_expressions() {
+    let expr = parse_expr("x + 1 if x > 0 else x - 1").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in body"),
+            }
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in test"),
+            }
+            match &orelse.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_nested_ternary() {
+    let expr = parse_expr("a if x > 0 else b if x < 0 else c").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { orelse, .. } => {
+            // The orelse should be another ternary
+            match &orelse.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected nested ternary in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_in_function_call() {
+    let expr = parse_expr("foo(x if cond else y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in function argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_ternary_in_list() {
+    let expr = parse_expr("[x if x > 0 else 0]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_ternary_with_strings() {
+    let expr = parse_expr(r#""yes" if flag else "no""#).unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "yes"),
+                _ => panic!("Expected string in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "no"),
+                _ => panic!("Expected string in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_function_calls() {
+    let expr = parse_expr("foo() if condition else bar()").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_logical_ops() {
+    let expr = parse_expr("result if x > 0 and y > 0 else default").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, .. } => {
+            match &test.kind {
+                ExpressionKind::LogicalOp { .. } => {},
+                _ => panic!("Expected logical operation in test"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_in_assignment() {
+    let stmt = parse_stmt("result = positive if x > 0 else negative").unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match &value.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment statement"),
+    }
+}
+
+#[test]
+fn test_ternary_with_subscript() {
+    let expr = parse_expr("lst[0] if lst else None").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, .. } => {
+            match &body.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected subscript in body"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_with_lambda() {
+    let expr = parse_expr("(lambda: x) if flag else (lambda: y)").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { body, orelse, .. } => {
+            match &body.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in body"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in orelse"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+
+#[test]
+fn test_ternary_max_pattern() {
+    let expr = parse_expr("a if a > b else b").unwrap();
+    match expr.kind {
+        ExpressionKind::IfExp { test, body, orelse } => {
+            // Common pattern: max(a, b) as ternary
+            match &test.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison"),
+            }
+            match &body.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "a"),
+                _ => panic!("Expected identifier a"),
+            }
+            match &orelse.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "b"),
+                _ => panic!("Expected identifier b"),
+            }
+        }
+        _ => panic!("Expected ternary expression"),
+    }
+}
+

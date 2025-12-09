@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Ternary/Conditional Expressions - December 9, 2025
+**Implemented ternary operator parsing** - enabling inline conditional expressions.
+
+**Parser Expression Enhancement (silk-parser)** - Ternary/Conditional Expressions ✅:
+- ✅ Implemented ternary operator parsing: `value if condition else other`
+- ✅ Basic ternary: `x if cond else y`
+- ✅ Ternaries with literals: `1 if True else 0`
+- ✅ Ternaries with comparisons: `positive if x > 0 else negative`
+- ✅ Complex expressions: `x + 1 if x > 0 else x - 1`
+- ✅ Nested ternaries: `a if x > 0 else b if x < 0 else c`
+- ✅ Ternaries in function calls: `foo(x if cond else y)`
+- ✅ Ternaries in lists: `[x if x > 0 else 0]`
+- ✅ Ternaries in assignments: `result = value if cond else default`
+- ✅ Complex conditions with logical operators: `result if x > 0 and y > 0 else default`
+- ✅ Proper precedence handling at Or level
+- ✅ Right-associative chaining for nested ternaries
+- ✅ Added 14 comprehensive tests covering all ternary forms
+- ✅ All 138 parser tests passing (213 total workspace tests)
+- **Status**: Parser now at ~88% complete, Phase 1 at ~89%
+- **Impact**: Full Python-style inline conditionals enabled
+
 ### ✅ FEATURE - Lambda Expressions - December 9, 2025
 **Implemented lambda expression parsing** - enabling anonymous function creation.
 

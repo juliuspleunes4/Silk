@@ -1,0 +1,62 @@
+# Ternary/Conditional Expression Examples
+
+# Basic ternary operator
+result = "yes" if True else "no"
+value = x if condition else y
+
+# Ternary with comparison
+status = "positive" if x > 0 else "non-positive"
+sign = 1 if x >= 0 else -1
+
+# Ternary with complex expressions
+result = x + 10 if x > 0 else x - 10
+output = foo() if ready else bar()
+
+# Nested ternaries (for multiple conditions)
+category = "positive" if x > 0 else "negative" if x < 0 else "zero"
+grade = "A" if score >= 90 else "B" if score >= 80 else "C" if score >= 70 else "F"
+
+# Ternary in function calls
+print("even" if n % 2 == 0 else "odd")
+max_value = max(a if a > b else b, c)
+
+# Ternary in list/collection
+numbers = [x if x > 0 else 0 for x in range(-5, 5)]
+options = [default_config() if not custom else custom]
+
+# Ternary with logical operators
+access = "granted" if authenticated and authorized else "denied"
+result = success_value if x > 0 and y > 0 else failure_value
+
+# Common patterns
+# Max of two values
+maximum = a if a > b else b
+
+# Min of two values
+minimum = a if a < b else b
+
+# Default value pattern
+name = user_name if user_name else "Anonymous"
+count = len(items) if items else 0
+
+# Safe division
+ratio = numerator / denominator if denominator != 0 else 0
+
+# Clamp value to range
+clamped = value if min_val <= value <= max_val else (min_val if value < min_val else max_val)
+
+# Boolean to string
+enabled_text = "ON" if enabled else "OFF"
+
+# Ternary in assignment with complex conditions
+discount = 0.2 if is_member and purchase_amount > 100 else 0.1 if is_member else 0
+
+# Function selection
+handler = fast_process if size < 1000 else slow_process
+strategy = aggressive_strategy if risk_tolerance > 0.7 else conservative_strategy
+
+# Ternary with function calls in condition
+output = process_data() if has_data() else get_default()
+
+# Inline validation
+validated_input = input_value if is_valid(input_value) else default_value
