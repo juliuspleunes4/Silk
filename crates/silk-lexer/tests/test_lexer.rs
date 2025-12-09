@@ -7,7 +7,7 @@
 /// - Source location tracking
 /// - Complex integration scenarios
 
-use silk_lexer::{Lexer, TokenKind, LexError};
+use silk_lexer::{Lexer, TokenKind, LexError, FStringPart};
 use pretty_assertions::assert_eq;
 
 // ========== KEYWORD TESTS ==========
@@ -1084,4 +1084,216 @@ fn test_float_with_underscores() {
     
     assert_eq!(tokens[0].lexeme, "1_000.5");
     assert_eq!(tokens[1].lexeme, "3.14_15_92");
+}
+
+#[test]
+fn test_fstring_basic() {
+    let source = r#"f"Hello {name}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2); // FString + EOF
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 2);
+        
+        // Check text part
+        if let FStringPart::Text(ref text) = parts[0] {
+            assert_eq!(text, "Hello ");
+        } else {
+            panic!("Expected text part");
+        }
+        
+        // Check expression part
+        if let FStringPart::Expression { ref code, ref format_spec } = parts[1] {
+            assert_eq!(code, "name");
+            assert_eq!(format_spec, &None);
+        } else {
+            panic!("Expected expression part");
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_multiple_expressions() {
+    let source = r#"f"{x} + {y} = {x + y}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 5); // x, " + ", y, " = ", x+y
+        
+        match &parts[0] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "x"),
+            _ => panic!("Expected expression"),
+        }
+        
+        match &parts[1] {
+            FStringPart::Text(text) => assert_eq!(text, " + "),
+            _ => panic!("Expected text"),
+        }
+        
+        match &parts[2] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "y"),
+            _ => panic!("Expected expression"),
+        }
+        
+        match &parts[3] {
+            FStringPart::Text(text) => assert_eq!(text, " = "),
+            _ => panic!("Expected text"),
+        }
+        
+        match &parts[4] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "x + y"),
+            _ => panic!("Expected expression"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_with_format_spec() {
+    let source = r#"f"{value:.2f}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 1);
+        
+        if let FStringPart::Expression { ref code, ref format_spec } = parts[0] {
+            assert_eq!(code, "value");
+            assert_eq!(format_spec, &Some(".2f".to_string()));
+        } else {
+            panic!("Expected expression with format spec");
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_escaped_braces() {
+    let source = r#"f"{{escaped}} {name}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 2);
+        
+        match &parts[0] {
+            FStringPart::Text(text) => assert_eq!(text, "{escaped} "),
+            _ => panic!("Expected text with escaped braces"),
+        }
+        
+        match &parts[1] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "name"),
+            _ => panic!("Expected expression"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_single_quotes() {
+    let source = r#"f'Value: {x}'"#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2);
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 2);
+        
+        match &parts[0] {
+            FStringPart::Text(text) => assert_eq!(text, "Value: "),
+            _ => panic!("Expected text part"),
+        }
+        
+        match &parts[1] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "x"),
+            _ => panic!("Expected expression"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_uppercase_f() {
+    let source = r#"F"Hello {world}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2);
+    assert!(matches!(tokens[0].kind, TokenKind::FString(_)));
+}
+
+#[test]
+fn test_fstring_only_text() {
+    let source = r#"f"Just text, no expressions""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 1);
+        
+        match &parts[0] {
+            FStringPart::Text(text) => assert_eq!(text, "Just text, no expressions"),
+            _ => panic!("Expected text part only"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_complex_expression() {
+    let source = r#"f"Result: {func(a, b) * 2}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 2);
+        
+        match &parts[1] {
+            FStringPart::Expression { code, .. } => assert_eq!(code, "func(a, b) * 2"),
+            _ => panic!("Expected complex expression"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_with_escape_sequences() {
+    let source = r#"f"Line 1\nLine 2: {value}""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::FString(ref parts) = tokens[0].kind {
+        assert_eq!(parts.len(), 2);
+        
+        match &parts[0] {
+            FStringPart::Text(text) => assert_eq!(text, "Line 1\nLine 2: "),
+            _ => panic!("Expected text with newline"),
+        }
+    } else {
+        panic!("Expected FString token");
+    }
+}
+
+#[test]
+fn test_fstring_unmatched_brace_error() {
+    let source = r#"f"Hello }world""#;
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    assert!(result.is_err());
+    if let Err(err) = result {
+        assert!(err.to_string().contains("Unmatched '}'"));
+    }
 }

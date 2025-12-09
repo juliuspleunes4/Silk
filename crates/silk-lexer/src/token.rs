@@ -4,6 +4,18 @@
 
 use std::fmt;
 
+/// Parts of an f-string: literal text or embedded expression
+#[derive(Debug, Clone, PartialEq)]
+pub enum FStringPart {
+    /// Literal string text
+    Text(String),
+    /// Expression code to be evaluated (stored as string, parsed later)
+    Expression { 
+        code: String,
+        format_spec: Option<String>,  // e.g., ".2f" in {value:.2f}
+    },
+}
+
 /// A token with its kind, lexeme, and source location
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -74,6 +86,7 @@ pub enum TokenKind {
     Integer(i64),
     Float(f64),
     String(String),
+    FString(Vec<FStringPart>),  // f"text {expr} text"
     
     // Operators
     Plus,           // +

@@ -3,7 +3,7 @@
 /// Converts source code text into a stream of tokens.
 
 use crate::error::{LexError, LexResult};
-use crate::token::{Span, Token, TokenKind};
+use crate::token::{Span, Token, TokenKind, FStringPart};
 
 pub struct Lexer {
     input: Vec<char>,
@@ -340,6 +340,16 @@ impl Lexer {
         let start_pos = self.position;
         let start_col = self.column;
         
+        // Check for f-string prefix (f"..." or f'...')
+        if (self.current_char() == 'f' || self.current_char() == 'F') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_fstring();
+            }
+        }
+        
         while !self.is_at_end() {
             let ch = self.current_char();
             if ch.is_alphanumeric() || ch == '_' {
@@ -550,6 +560,167 @@ impl Lexer {
         
         Ok(Token {
             kind,
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_fstring(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'f' or 'F'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted f-strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut parts = Vec::new();
+        let mut current_text = String::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        if !current_text.is_empty() {
+                            parts.push(FStringPart::Text(current_text.clone()));
+                        }
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        current_text.push(self.advance());
+                    }
+                } else {
+                    if !current_text.is_empty() {
+                        parts.push(FStringPart::Text(current_text.clone()));
+                    }
+                    self.advance();
+                    break;
+                }
+            } else if ch == '{' {
+                // Check for escaped brace {{
+                if self.peek_char(1) == Some('{') {
+                    current_text.push('{');
+                    self.advance();
+                    self.advance();
+                } else {
+                    // Start of expression
+                    if !current_text.is_empty() {
+                        parts.push(FStringPart::Text(current_text.clone()));
+                        current_text.clear();
+                    }
+                    
+                    self.advance(); // Consume {
+                    let mut expr_code = String::new();
+                    let mut brace_depth = 1;
+                    let mut format_spec = None;
+                    
+                    // Read expression until closing }
+                    loop {
+                        if self.is_at_end() {
+                            return Err(LexError::UnterminatedString(start_line, start_col));
+                        }
+                        
+                        let expr_ch = self.current_char();
+                        
+                        if expr_ch == '{' {
+                            brace_depth += 1;
+                            expr_code.push(self.advance());
+                        } else if expr_ch == '}' {
+                            brace_depth -= 1;
+                            if brace_depth == 0 {
+                                self.advance(); // Consume closing }
+                                break;
+                            }
+                            expr_code.push(self.advance());
+                        } else if expr_ch == ':' && brace_depth == 1 {
+                            // Format specifier
+                            self.advance(); // Consume :
+                            let mut spec = String::new();
+                            loop {
+                                if self.is_at_end() {
+                                    return Err(LexError::UnterminatedString(start_line, start_col));
+                                }
+                                let spec_ch = self.current_char();
+                                if spec_ch == '}' {
+                                    break;
+                                }
+                                spec.push(self.advance());
+                            }
+                            format_spec = Some(spec);
+                            self.advance(); // Consume closing }
+                            break;
+                        } else {
+                            expr_code.push(self.advance());
+                        }
+                    }
+                    
+                    parts.push(FStringPart::Expression {
+                        code: expr_code.trim().to_string(),
+                        format_spec,
+                    });
+                }
+            } else if ch == '}' {
+                // Check for escaped brace }}
+                if self.peek_char(1) == Some('}') {
+                    current_text.push('}');
+                    self.advance();
+                    self.advance();
+                } else {
+                    return Err(LexError::InvalidFString(
+                        "Unmatched '}' in f-string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+            } else if ch == '\\' && !is_triple {
+                // Handle escape sequences
+                self.advance();
+                if self.is_at_end() {
+                    return Err(LexError::UnterminatedString(start_line, start_col));
+                }
+                
+                let escaped = self.advance();
+                let escaped_char = match escaped {
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    '\\' => '\\',
+                    '\'' => '\'',
+                    '"' => '"',
+                    '0' => '\0',
+                    _ => {
+                        return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                    }
+                };
+                current_text.push(escaped_char);
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                current_text.push(self.advance());
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::FString(parts),
             lexeme,
             span: Span::new(start_pos, self.position, start_line, start_col),
         })

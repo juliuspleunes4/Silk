@@ -69,6 +69,11 @@ impl Parser {
                 self.advance();
                 ExpressionKind::String(value)
             }
+            TokenKind::FString(parts) => {
+                let parts = parts.clone();
+                self.advance();
+                ExpressionKind::FString { parts }
+            }
             TokenKind::True => {
                 self.advance();
                 ExpressionKind::Boolean(true)

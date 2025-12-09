@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - F-Strings (Formatted String Literals) - December 9, 2025
+**Implemented f-strings (formatted string literals)** - enabling Python 3.6+ string formatting syntax.
+
+**Lexer Enhancement (silk-lexer)** - F-String Parsing ✅:
+- ✅ Added FStringPart enum with Text and Expression variants
+- ✅ Added FString token type: `TokenKind::FString(Vec<FStringPart>)`
+- ✅ F-string prefix detection: f"..." and f'...' (case-insensitive F/f)
+- ✅ Triple-quoted f-strings: f"""...""" and f'''...'''
+- ✅ Embedded expressions: `f"Hello {name}"`
+- ✅ Multiple expressions: `f"{x} + {y} = {x + y}"`
+- ✅ Format specifiers: `f"{value:.2f}"`, `f"{num:05d}"`
+- ✅ Escaped braces: `f"{{literal}}"` produces `{literal}`
+- ✅ Complex expressions: `f"Result: {func(a, b) * 2}"`
+- ✅ Escape sequences in text parts: `f"Line 1\nLine 2: {value}"`
+- ✅ Error handling for unmatched closing braces
+- ✅ Proper brace depth tracking for nested expressions
+- ✅ Added 10 comprehensive tests:
+  - test_fstring_basic: Basic f-string with single expression
+  - test_fstring_multiple_expressions: Multiple embedded expressions
+  - test_fstring_with_format_spec: Format specifiers (.2f, :05d)
+  - test_fstring_escaped_braces: {{ and }} escape sequences
+  - test_fstring_single_quotes: f'...' variant
+  - test_fstring_uppercase_f: F"..." variant
+  - test_fstring_only_text: F-string without expressions
+  - test_fstring_complex_expression: Complex expressions with function calls
+  - test_fstring_with_escape_sequences: \n, \t escape sequences
+  - test_fstring_unmatched_brace_error: Error handling
+
+**AST Enhancement (silk-ast)** - F-String Expression ✅:
+- ✅ Added ExpressionKind::FString variant
+- ✅ Stores Vec<FStringPart> for string parts and expressions
+- ✅ Expressions stored as raw code strings (parsed during semantic analysis)
+
+**Parser Expression Enhancement (silk-parser)** - F-String Support ✅:
+- ✅ Parse f-string tokens as primary expressions
+- ✅ F-strings work in all expression contexts (assignments, function calls, lists)
+- ✅ Added 8 comprehensive tests:
+  - test_fstring_basic: Basic f-string parsing
+  - test_fstring_multiple_expressions: Multiple expression parts
+  - test_fstring_with_format_spec: Format specifier parsing
+  - test_fstring_in_assignment: F-strings in assignments
+  - test_fstring_in_function_call: F-strings as function arguments
+  - test_fstring_only_text: Text-only f-strings
+  - test_fstring_complex_expression: Complex embedded expressions
+  - test_fstring_in_list: F-strings in list literals
+- ✅ All 176 parser tests passing (270 total workspace tests)
+- **Status**: Lexer at 100%, Parser now at ~94% complete, Phase 1 at ~95%
+- **Impact**: Full Python 3.6+ formatted string literal syntax enabled
+
 ### ✅ FEATURE - Additional Number Formats - December 9, 2025
 **Implemented binary, octal, and hexadecimal number literals** - enabling full Python numeric literal support.
 

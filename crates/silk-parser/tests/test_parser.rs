@@ -2556,4 +2556,111 @@ fn test_walrus_in_function_call() {
     }
 }
 
+// ============================================================================
+// F-String Tests
+// ============================================================================
+
+#[test]
+fn test_fstring_basic() {
+    let expr = parse_expr(r#"f"Hello {name}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 2);
+        }
+        _ => panic!("Expected f-string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_fstring_multiple_expressions() {
+    let expr = parse_expr(r#"f"{x} + {y} = {x + y}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 5); // x, " + ", y, " = ", x+y
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_with_format_spec() {
+    let expr = parse_expr(r#"f"{value:.2f}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 1);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_in_assignment() {
+    let stmt = parse_stmt(r#"message = f"Hello {name}""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_fstring_in_function_call() {
+    let expr = parse_expr(r#"print(f"Value: {x}")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_fstring_only_text() {
+    let expr = parse_expr(r#"f"Just text, no expressions""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 1);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_complex_expression() {
+    let expr = parse_expr(r#"f"Result: {func(a, b) * 2}""#).unwrap();
+    match expr.kind {
+        ExpressionKind::FString { parts } => {
+            assert_eq!(parts.len(), 2);
+        }
+        _ => panic!("Expected f-string"),
+    }
+}
+
+#[test]
+fn test_fstring_in_list() {
+    let expr = parse_expr(r#"[f"Item {i}", f"Value {v}"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in list"),
+            }
+            match &elements[1].kind {
+                ExpressionKind::FString { .. } => {},
+                _ => panic!("Expected f-string in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
 

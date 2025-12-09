@@ -60,10 +60,10 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~94% complete! Core statements functional, most expressions working
-  - Lexer ✅ (100% - all core features including binary/octal/hex numbers, underscores, indentation)
+- **Phase 1: Foundation** - ~95% complete! Core statements functional, most expressions working
+  - Lexer ✅ (100% - all core features including f-strings, binary/octal/hex numbers, indentation)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (93% - all statements complete, most expressions work)
+  - Parser 🟡 (94% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
     - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary, walrus)
     - ✅ Complete: Function params with *args/**kwargs support
@@ -193,8 +193,26 @@
     - ✅ Added 9 comprehensive tests covering all number formats
     - ✅ All 84 lexer tests passing (252 total workspace tests)
 
+13. ~~**F-STRINGS (FORMATTED STRING LITERALS)**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added FStringPart enum (Text/Expression variants)
+    - ✅ Added FString token type to lexer
+    - ✅ F-string prefix detection: f"..." and f'...' (case-insensitive)
+    - ✅ Triple-quoted f-strings: f"""..."""
+    - ✅ Embedded expressions: f"Hello {name}"
+    - ✅ Multiple expressions: f"{x} + {y} = {x + y}"
+    - ✅ Format specifiers: f"{value:.2f}"
+    - ✅ Escaped braces: f"{{literal braces}}"
+    - ✅ Complex expressions: f"Result: {func(a, b) * 2}"
+    - ✅ Escape sequences: f"Line 1\nLine 2: {value}"
+    - ✅ Error handling for unmatched braces
+    - ✅ Added FString variant to ExpressionKind
+    - ✅ Parser support for f-strings in all contexts
+    - ✅ Added 10 comprehensive lexer tests
+    - ✅ Added 8 comprehensive parser tests
+    - ✅ All 83 lexer tests passing, 176 parser tests passing (270 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-13. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+14. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
     - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):

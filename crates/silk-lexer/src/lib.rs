@@ -7,6 +7,6 @@ pub mod token;
 pub mod lexer;
 pub mod error;
 
-pub use token::{Token, TokenKind, Span};
+pub use token::{Token, TokenKind, Span, FStringPart};
 pub use lexer::Lexer;
 pub use error::{LexError, LexResult};

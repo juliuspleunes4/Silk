@@ -1,6 +1,6 @@
 /// Expression AST nodes
 
-use silk_lexer::Span;
+use silk_lexer::{Span, FStringPart};
 use crate::{Type, Pattern};
 
 /// Expression node with source location
@@ -23,6 +23,9 @@ pub enum ExpressionKind {
     Integer(i64),
     Float(f64),
     String(String),
+    FString {
+        parts: Vec<FStringPart>,
+    },
     Boolean(bool),
     None,
     
