@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ VERIFIED - Lambda Expressions - December 9, 2025
+**Confirmed full implementation** of Python's lambda expressions (`lambda params: body`).
+
+**Discovery**: While planning to implement lambda expressions, discovered they were already fully implemented with comprehensive test coverage!
+
+**Implementation Details**:
+- **AST Node**: `Lambda { params: Vec<Parameter>, body: Box<Expression> }` in `ExpressionKind` (silk-ast)
+- **Parser**: Implemented in `parse_primary()` with `TokenKind::Lambda` (silk-parser)
+- **Parameters**: Supports 0 to N parameters with comma separation
+- **Body**: Single expression (any valid expression including nested lambdas)
+- **Precedence**: Lowest expression precedence (parsed as primary expression)
+
+**Test Coverage** - 13 comprehensive tests:
+1. No parameters: `lambda: 42`
+2. Single parameter: `lambda x: x + 1`
+3. Multiple parameters: `lambda x, y: x * y`
+4. Three parameters: `lambda x, y, z: x + y + z`
+5. String operations: `lambda name: "Hello, " + name`
+6. With comparisons: `lambda x: x > 0`
+7. With function calls: `lambda x: foo(x)`
+8. In function calls: `map(lambda x: x * 2, numbers)`
+9. In lists: `[lambda x: x + 1, lambda x: x * 2]`
+10. Complex body: `lambda x: x * 2 + 1`
+11. Nested lambdas: `lambda x: lambda y: x + y` (closures)
+12. With tuples: `lambda x, y: (x, y)`
+13. Logical operations: `lambda x, y: x and y`
+14. With subscripts: `lambda lst, i: lst[i]`
+
+**Key Features**:
+- ✅ Variable number of parameters (0 to N)
+- ✅ Complex expression bodies (all expression types supported)
+- ✅ Nested lambdas (closures)
+- ✅ Works in all contexts (function arguments, lists, assignments, etc.)
+- ✅ No type annotations or default values (Python lambda limitation)
+
+**Status**: All 359 tests passing (115 lexer + 11 unit + 233 parser)
+
+---
+
 ### ✅ VERIFIED - Conditional Expressions (Ternary Operator) - December 9, 2025
 **Confirmed full implementation** of Python's conditional expressions (`x if condition else y`).
 
