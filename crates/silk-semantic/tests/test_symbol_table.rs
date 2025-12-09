@@ -80,19 +80,31 @@ fn test_define_class_symbol() {
 }
 
 #[test]
-fn test_redefinition_error() {
+fn test_variable_reassignment_allowed() {
     let mut table = SymbolTable::new();
     
     let x1 = Symbol::new("x".to_string(), SymbolKind::Variable, make_span(1, 1));
     let x2 = Symbol::new("x".to_string(), SymbolKind::Variable, make_span(5, 1));
     
     assert!(table.define_symbol(x1).is_ok());
-    let result = table.define_symbol(x2);
+    // Variables can be reassigned in Python
+    assert!(table.define_symbol(x2).is_ok());
+}
+
+#[test]
+fn test_function_redefinition_error() {
+    let mut table = SymbolTable::new();
+    
+    let func1 = Symbol::new("foo".to_string(), SymbolKind::Function, make_span(1, 1));
+    let func2 = Symbol::new("foo".to_string(), SymbolKind::Function, make_span(5, 1));
+    
+    assert!(table.define_symbol(func1).is_ok());
+    let result = table.define_symbol(func2);
     
     assert!(result.is_err());
     match result {
         Err(SemanticError::RedefinedVariable { name, line, first_line, .. }) => {
-            assert_eq!(name, "x");
+            assert_eq!(name, "foo");
             assert_eq!(line, 5);
             assert_eq!(first_line, 1);
         }

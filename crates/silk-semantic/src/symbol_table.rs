@@ -103,13 +103,22 @@ impl SymbolTable {
 
         // Check if symbol already exists in current scope
         if let Some(existing) = self.scopes[self.current_scope].lookup_local(&name) {
-            return Err(SemanticError::RedefinedVariable {
-                name,
-                line: span.line,
-                column: span.column,
-                first_line: existing.span.line,
-                span,
-            });
+            // Allow variable/parameter redefinition (Python allows reassignment)
+            // But don't allow function/class/module redefinition
+            match existing.kind {
+                SymbolKind::Variable | SymbolKind::Parameter => {
+                    // Allow redefinition for variables
+                }
+                SymbolKind::Function | SymbolKind::Class | SymbolKind::Module => {
+                    return Err(SemanticError::RedefinedVariable {
+                        name,
+                        line: span.line,
+                        column: span.column,
+                        first_line: existing.span.line,
+                        span,
+                    });
+                }
+            }
         }
 
         self.scopes[self.current_scope].define(name, symbol);
