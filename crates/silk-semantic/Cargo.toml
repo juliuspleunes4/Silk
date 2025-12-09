@@ -1,0 +1,12 @@
+[package]
+name = "silk-semantic"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+silk-ast = { path = "../silk-ast" }
+silk-lexer = { path = "../silk-lexer" }
+thiserror.workspace = true
+
+[dev-dependencies]
+silk-parser = { path = "../silk-parser" }

@@ -1,8 +1,11 @@
 [workspace]
-members = ["crates/silk-ast",
+members = [
+    "crates/silk-ast",
     "crates/silk-cli",
     "crates/silk-compiler",
-    "crates/silk-lexer", "crates/silk-parser",
+    "crates/silk-lexer",
+    "crates/silk-parser",
+    "crates/silk-semantic",
 ]
 resolver = "2"
 
