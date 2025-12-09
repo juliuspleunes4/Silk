@@ -13,8 +13,9 @@ impl Parser {
             TokenKind::If => self.parse_if_statement()?,
             TokenKind::While => self.parse_while_statement()?,
             TokenKind::For => self.parse_for_statement()?,
-            TokenKind::Def => self.parse_function_def()?,
-            TokenKind::Class => self.parse_class_def()?,
+            TokenKind::At => self.parse_decorated()?,
+            TokenKind::Def => self.parse_function_def(Vec::new())?,
+            TokenKind::Class => self.parse_class_def(Vec::new())?,
             TokenKind::Return => self.parse_return_statement()?,
             TokenKind::Break => {
                 self.advance();
@@ -139,7 +140,55 @@ impl Parser {
         })
     }
     
-    fn parse_function_def(&mut self) -> ParseResult<StatementKind> {
+    fn parse_decorated(&mut self) -> ParseResult<StatementKind> {
+        // Parse decorator list
+        let decorators = self.parse_decorators()?;
+        
+        // After decorators, we expect 'def' or 'class'
+        if self.check(TokenKind::Def) {
+            self.parse_function_def(decorators)
+        } else if self.check(TokenKind::Class) {
+            self.parse_class_def(decorators)
+        } else {
+            Err(ParseError::UnexpectedToken {
+                expected: "def or class after decorator".to_string(),
+                found: self.current_token().clone(),
+                message: "Decorators must be followed by a function or class definition".to_string(),
+            })
+        }
+    }
+    
+    fn parse_decorators(&mut self) -> ParseResult<Vec<silk_ast::Expression>> {
+        let mut decorators = Vec::new();
+        
+        while self.check(TokenKind::At) {
+            self.advance(); // consume '@'
+            
+            // Parse decorator expression - parse_expression handles 
+            // dotted names (module.decorator) and calls (@decorator(args))
+            let decorator = self.parse_expression()?;
+            
+            // Expect newline after decorator
+            if !self.check(TokenKind::Newline) && !self.check(TokenKind::At) 
+                && !self.check(TokenKind::Def) && !self.check(TokenKind::Class) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "newline after decorator".to_string(),
+                    found: self.current_token().clone(),
+                    message: "Decorators must be followed by a newline".to_string(),
+                });
+            }
+            
+            if self.check(TokenKind::Newline) {
+                self.advance(); // consume newline
+            }
+            
+            decorators.push(decorator);
+        }
+        
+        Ok(decorators)
+    }
+    
+    fn parse_function_def(&mut self, decorator_list: Vec<silk_ast::Expression>) -> ParseResult<StatementKind> {
         self.advance(); // consume 'def'
         
         let name = self.expect(TokenKind::Identifier, "Expected function name")?.lexeme;
@@ -167,13 +216,13 @@ impl Parser {
             name,
             params,
             body,
-            decorator_list: Vec::new(), // TODO: Parse decorators
+            decorator_list,
             returns,
             is_async: false,
         })
     }
     
-    fn parse_class_def(&mut self) -> ParseResult<StatementKind> {
+    fn parse_class_def(&mut self, decorator_list: Vec<silk_ast::Expression>) -> ParseResult<StatementKind> {
         self.advance(); // consume 'class'
         
         let name = self.expect(TokenKind::Identifier, "Expected class name")?.lexeme;
@@ -231,7 +280,7 @@ impl Parser {
             bases,
             keywords,
             body,
-            decorator_list: Vec::new(), // TODO: Parse decorators
+            decorator_list,
         })
     }
     

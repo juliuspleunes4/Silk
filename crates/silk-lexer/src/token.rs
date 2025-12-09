@@ -126,6 +126,7 @@ pub enum TokenKind {
     Dot,            // .
     Arrow,          // ->
     Ellipsis,       // ...
+    At,             // @
     
     // Special tokens
     Newline,

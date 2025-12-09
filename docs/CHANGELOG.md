@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Decorators - December 9, 2025
+**Implemented decorator parsing** - enabling Python-style decorators for functions and classes.
+
+**Lexer Enhancement (silk-lexer)** - @ Token ✅:
+- ✅ Added TokenKind::At for the @ symbol
+- ✅ Lexer recognizes @ as a single-character token
+- ✅ Proper tokenization of decorator syntax
+
+**Parser Statement Enhancement (silk-parser)** - Decorators ✅:
+- ✅ Simple decorators: `@decorator`
+- ✅ Decorator calls with arguments: `@decorator(arg1, arg2)`
+- ✅ Decorator calls with keyword arguments: `@decorator(timeout=30)`
+- ✅ Attribute decorators: `@module.decorator`
+- ✅ Complex decorator calls: `@decorator(1, 2, x=3, **opts)`
+- ✅ Multiple stacked decorators: `@dec1\n@dec2\n@dec3`
+- ✅ Function decorators: Applied before `def` statements
+- ✅ Class decorators: Applied before `class` statements
+- ✅ parse_decorators method handles all decorator forms
+- ✅ parse_decorated method routes to function/class parsing
+- ✅ Added 8 comprehensive tests covering all decorator forms
+- ✅ All 160 parser tests passing (235 total workspace tests)
+- **Status**: Parser now at ~91% complete, Phase 1 at ~92%
+- **Impact**: Full Python-style decorator syntax enabled
+
 ### ✅ FEATURE - *args and **kwargs in Function Parameters - December 9, 2025
 **Implemented variadic parameter parsing** - enabling *args and **kwargs in function definitions.
 

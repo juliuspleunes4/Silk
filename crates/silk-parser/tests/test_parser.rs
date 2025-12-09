@@ -2269,4 +2269,154 @@ fn test_function_with_defaults_and_vararg() {
     }
 }
 
+// ==================== Decorator Tests ====================
+
+#[test]
+fn test_simple_decorator() {
+    let stmt = parse_stmt("@decorator\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_call() {
+    let stmt = parse_stmt("@decorator(arg1, arg2)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { func, args, .. } => {
+                    match &func.kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "decorator"),
+                        _ => panic!("Expected identifier in call"),
+                    }
+                    assert_eq!(args.len(), 2);
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_multiple_decorators() {
+    let stmt = parse_stmt("@decorator1\n@decorator2\n@decorator3\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { name, decorator_list, .. } => {
+            assert_eq!(name, "func");
+            assert_eq!(decorator_list.len(), 3);
+            
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator1"),
+                _ => panic!("Expected identifier decorator"),
+            }
+            match &decorator_list[1].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator2"),
+                _ => panic!("Expected identifier decorator"),
+            }
+            match &decorator_list[2].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "decorator3"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_arguments() {
+    let stmt = parse_stmt("@decorator(timeout=30)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { keywords, .. } => {
+                    assert_eq!(keywords.len(), 1);
+                    assert_eq!(keywords[0].arg.as_ref().unwrap(), "timeout");
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_attribute() {
+    let stmt = parse_stmt("@module.decorator\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Attribute { value, attr, .. } => {
+                    match &value.kind {
+                        ExpressionKind::Identifier(name) => assert_eq!(name, "module"),
+                        _ => panic!("Expected identifier"),
+                    }
+                    assert_eq!(attr, "decorator");
+                }
+                _ => panic!("Expected attribute decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
+#[test]
+fn test_class_decorator() {
+    let stmt = parse_stmt("@dataclass\nclass MyClass:\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::ClassDef { name, decorator_list, .. } => {
+            assert_eq!(name, "MyClass");
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "dataclass"),
+                _ => panic!("Expected identifier decorator"),
+            }
+        }
+        _ => panic!("Expected class definition"),
+    }
+}
+
+#[test]
+fn test_class_multiple_decorators() {
+    let stmt = parse_stmt("@decorator1\n@decorator2\nclass MyClass:\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::ClassDef { name, decorator_list, .. } => {
+            assert_eq!(name, "MyClass");
+            assert_eq!(decorator_list.len(), 2);
+        }
+        _ => panic!("Expected class definition"),
+    }
+}
+
+#[test]
+fn test_decorator_with_complex_call() {
+    let stmt = parse_stmt("@decorator(1, 2, x=3, **opts)\ndef func():\n    pass").unwrap();
+    match stmt.kind {
+        StatementKind::FunctionDef { decorator_list, .. } => {
+            assert_eq!(decorator_list.len(), 1);
+            match &decorator_list[0].kind {
+                ExpressionKind::Call { args, keywords, .. } => {
+                    assert_eq!(args.len(), 2);
+                    assert_eq!(keywords.len(), 2); // x=3 and **opts
+                }
+                _ => panic!("Expected call decorator"),
+            }
+        }
+        _ => panic!("Expected function definition"),
+    }
+}
+
 

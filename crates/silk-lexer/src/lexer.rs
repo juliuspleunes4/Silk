@@ -693,6 +693,8 @@ impl Lexer {
                 }
             }
             
+            '@' => TokenKind::At,
+            
             _ => {
                 return Err(LexError::UnexpectedCharacter(ch, self.line, start_col));
             }

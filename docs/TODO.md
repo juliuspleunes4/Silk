@@ -60,15 +60,15 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~91% complete! Core statements functional, most expressions working
+- **Phase 1: Foundation** - ~92% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (90% - all statements complete, most expressions work)
+  - Parser 🟡 (91% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
     - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary)
     - ✅ Complete: Function params with *args/**kwargs support
+    - ✅ Complete: Decorators for functions and classes
     - ❌ Missing: comprehensions
-    - ⚠️ Partial: Decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
   - Runtime ❌ (0% - not started)
@@ -154,8 +154,20 @@
    - ✅ Added 8 comprehensive tests covering all parameter forms
    - ✅ All 152 parser tests passing (227 total workspace tests)
 
+10. ~~**DECORATORS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added @ token to lexer (TokenKind::At)
+    - ✅ Implemented decorator parsing before function/class definitions
+    - ✅ Simple decorators: @decorator
+    - ✅ Decorator calls: @decorator(args)
+    - ✅ Decorator with keyword args: @decorator(timeout=30)
+    - ✅ Attribute decorators: @module.decorator
+    - ✅ Multiple stacked decorators: @dec1\n@dec2\n@dec3
+    - ✅ Class decorators: @dataclass
+    - ✅ Added 8 comprehensive tests covering all decorator forms
+    - ✅ All 160 parser tests passing (235 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-10. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+11. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
     - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):
