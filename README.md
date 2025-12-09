@@ -156,9 +156,10 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detai
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [TODO List](docs/TODO.md)
-- [Changelog](docs/CHANGELOG.md)
+- [Syntax Reference](docs/SYNTAX.md) — Complete language syntax guide
+- [Architecture Overview](docs/ARCHITECTURE.md) — Compiler design and phases
+- [TODO List](docs/TODO.md) — Development roadmap
+- [Changelog](docs/CHANGELOG.md) — Version history and changes
 
 ## License
 
