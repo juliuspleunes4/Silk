@@ -67,6 +67,115 @@ fn test_float_literal() {
 }
 
 #[test]
+fn test_binary_literal() {
+    let expr = parse_expr("0b1010").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 10), // 0b1010 = 10
+        _ => panic!("Expected integer literal from binary, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_binary_literal_uppercase() {
+    let expr = parse_expr("0B1111").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 15), // 0B1111 = 15
+        _ => panic!("Expected integer literal from binary, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_octal_literal() {
+    let expr = parse_expr("0o755").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 493), // 0o755 = 493
+        _ => panic!("Expected integer literal from octal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_octal_literal_uppercase() {
+    let expr = parse_expr("0O77").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 63), // 0O77 = 63
+        _ => panic!("Expected integer literal from octal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal() {
+    let expr = parse_expr("0xFF").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 255), // 0xFF = 255
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal_uppercase() {
+    let expr = parse_expr("0XAB").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 171), // 0XAB = 171
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_literal_mixed_case() {
+    let expr = parse_expr("0xDeAdBeEf").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 3735928559), // 0xDEADBEEF = 3735928559
+        _ => panic!("Expected integer literal from hex, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_number_with_underscores() {
+    let expr = parse_expr("1_000_000").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 1_000_000),
+        _ => panic!("Expected integer literal with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_binary_with_underscores() {
+    let expr = parse_expr("0b1111_0000").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 240), // 0b1111_0000 = 240
+        _ => panic!("Expected integer literal from binary with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_hex_with_underscores() {
+    let expr = parse_expr("0xDEAD_BEEF").unwrap();
+    match expr.kind {
+        ExpressionKind::Integer(value) => assert_eq!(value, 3735928559), // 0xDEAD_BEEF
+        _ => panic!("Expected integer literal from hex with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_float_with_underscores() {
+    let expr = parse_expr("3.14_15_92").unwrap();
+    match expr.kind {
+        ExpressionKind::Float(value) => assert!((value - 3.141592).abs() < 0.0001),
+        _ => panic!("Expected float literal with underscores, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_number_formats_in_expression() {
+    // Test that different number formats work in expressions
+    let expr = parse_expr("0xFF + 0b1010 + 0o10 + 100").unwrap();
+    match expr.kind {
+        ExpressionKind::BinaryOp { .. } => (), // Should parse as binary operations
+        _ => panic!("Expected binary operation, got {:?}", expr.kind),
+    }
+}
+
+#[test]
 fn test_string_literal() {
     let expr = parse_expr("\"hello\"").unwrap();
     match expr.kind {
@@ -2150,6 +2259,152 @@ fn test_keyword_with_function_call() {
     }
 }
 
+#[test]
+fn test_keyword_with_string() {
+    let expr = parse_expr(r#"func(name="Alice", age=30)"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            assert_eq!(keywords[0].arg, Some("name".to_string()));
+            assert_eq!(keywords[1].arg, Some("age".to_string()));
+            match &keywords[0].value.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "Alice"),
+                _ => panic!("Expected string"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_list() {
+    let expr = parse_expr("func(items=[1, 2, 3])").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::List { elements } => assert_eq!(elements.len(), 3),
+                _ => panic!("Expected list in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_dict() {
+    let expr = parse_expr("func(options={'a': 1})").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Dict { .. } => {},
+                _ => panic!("Expected dict in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_lambda() {
+    let expr = parse_expr("func(key=lambda x: x.lower())").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_ternary() {
+    let expr = parse_expr("func(value=x if condition else y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::IfExp { .. } => {},
+                _ => panic!("Expected ternary in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_with_comprehension() {
+    let expr = parse_expr("func(items=[x * 2 for x in range(10)])").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 1);
+            match &keywords[0].value.kind {
+                ExpressionKind::ListComp { .. } => {},
+                _ => panic!("Expected list comprehension in keyword value"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_many_keyword_args() {
+    let expr = parse_expr("func(a=1, b=2, c=3, d=4, e=5)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { keywords, .. } => {
+            assert_eq!(keywords.len(), 5);
+            assert_eq!(keywords[0].arg, Some("a".to_string()));
+            assert_eq!(keywords[4].arg, Some("e".to_string()));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_nested_call_with_keywords() {
+    let expr = parse_expr("outer(inner(x=1), y=2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, keywords, .. } => {
+            assert_eq!(args.len(), 1);
+            assert_eq!(keywords.len(), 1);
+            // Check inner call
+            match &args[0].kind {
+                ExpressionKind::Call { keywords: inner_kw, .. } => {
+                    assert_eq!(inner_kw.len(), 1);
+                    assert_eq!(inner_kw[0].arg, Some("x".to_string()));
+                }
+                _ => panic!("Expected inner function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_keyword_in_method_call() {
+    let expr = parse_expr("obj.method(x=1, y=2)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { func, keywords, .. } => {
+            assert_eq!(keywords.len(), 2);
+            match &func.kind {
+                ExpressionKind::Attribute { .. } => {},
+                _ => panic!("Expected attribute access"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_positional_after_keyword_error() {
+    let result = parse_expr("func(x=1, 2)");
+    assert!(result.is_err(), "Should error: positional after keyword");
+}
+
 // ============================================================================
 // Function Parameter Tests (*args, **kwargs)
 // ============================================================================
@@ -3258,6 +3513,466 @@ fn test_notimplemented_in_conditional() {
             }
         }
         _ => panic!("Expected conditional expression"),
+    }
+}
+
+// ============================================================================
+// Comprehension Tests - Step by Step Implementation
+// ============================================================================
+
+#[test]
+fn test_list_comp_detection() {
+    // Test 1: Regular list should still work
+    let expr = parse_expr("[x]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 1);
+        }
+        _ => panic!("Expected regular list for [x]"),
+    }
+    
+    // Test 2: List comprehension should now parse successfully!
+    let result = parse_expr("[x for x in items]");
+    match result {
+        Ok(expr) => {
+            match expr.kind {
+                ExpressionKind::ListComp { .. } => {
+                    // Success! Comprehension detected and parsed
+                }
+                _ => panic!("Expected list comprehension"),
+            }
+        }
+        Err(e) => panic!("Comprehension should parse successfully now, got error: {:?}", e),
+    }
+}
+
+#[test]
+fn test_list_comp_simplest() {
+    // Simplest possible: [x for x in items]
+    // First verify parsing doesn't hang - add timeout expectation
+    let source = "[x for x in items]";
+    println!("Parsing: {}", source);
+    let expr = parse_expr(source).unwrap();
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x'
+            match element.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' as element"),
+            }
+            
+            // Check we have exactly one generator
+            assert_eq!(generators.len(), 1);
+            
+            let gen = &generators[0];
+            
+            // Check target is 'x'
+            match &gen.target.kind {
+                silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected name pattern for target"),
+            }
+            
+            // Check iterator is 'items'
+            match gen.iter.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
+                _ => panic!("Expected identifier 'items' as iterator"),
+            }
+            
+            // No filters
+            assert_eq!(gen.ifs.len(), 0);
+            assert_eq!(gen.is_async, false);
+        }
+        _ => panic!("Expected list comprehension, got: {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_list_comp_single_filter() {
+    let source = "[x for x in items if x > 0]";
+    println!("Parsing: {}", source);
+    
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x'
+            match element.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' as element"),
+            }
+            
+            assert_eq!(generators.len(), 1);
+            let gen = &generators[0];
+            
+            // Check target pattern
+            match &gen.target.kind {
+                silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected name pattern"),
+            }
+            
+            // Check iterator
+            match gen.iter.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
+                _ => panic!("Expected identifier 'items'"),
+            }
+            
+            // Check single filter: x > 0
+            assert_eq!(gen.ifs.len(), 1);
+            match &gen.ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x' on left"),
+                    }
+                    assert_eq!(ops.len(), 1);
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Gt);
+                    assert_eq!(comparators.len(), 1);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(val) => assert_eq!(val, 0),
+                        _ => panic!("Expected 0 on right"),
+                    }
+                }
+                _ => panic!("Expected compare op for filter"),
+            }
+            
+            assert_eq!(gen.is_async, false);
+        }
+        _ => panic!("Expected list comprehension, got: {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_list_comp_multiple_filters() {
+    let source = "[x for x in items if x > 0 if x < 10]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            let gen = &generators[0];
+            
+            // Check two filters
+            assert_eq!(gen.ifs.len(), 2);
+            
+            // First filter: x > 0
+            match &gen.ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x'"),
+                    }
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Gt);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(0) => {},
+                        _ => panic!("Expected 0"),
+                    }
+                }
+                _ => panic!("Expected compare"),
+            }
+            
+            // Second filter: x < 10
+            match &gen.ifs[1].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x'"),
+                    }
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Lt);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(10) => {},
+                        _ => panic!("Expected 10"),
+                    }
+                }
+                _ => panic!("Expected compare"),
+            }
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_list_comp_nested_simple() {
+    let source = "[x + y for x in range(3) for y in range(3)]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x + y'
+            match &element.kind {
+                ExpressionKind::BinaryOp { left, op, right } => {
+                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                    assert_eq!(*op, silk_ast::BinaryOperator::Add);
+                    assert!(matches!(right.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                }
+                _ => panic!("Expected binary op for element"),
+            }
+            
+            // Check two generators
+            assert_eq!(generators.len(), 2);
+            
+            // First: for x in range(3)
+            let gen1 = &generators[0];
+            assert!(matches!(gen1.target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(matches!(gen1.iter.kind, ExpressionKind::Call { .. }));
+            assert_eq!(gen1.ifs.len(), 0);
+            
+            // Second: for y in range(3)
+            let gen2 = &generators[1];
+            assert!(matches!(gen2.target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+            assert!(matches!(gen2.iter.kind, ExpressionKind::Call { .. }));
+            assert_eq!(gen2.ifs.len(), 0);
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_list_comp_nested_with_filter() {
+    let source = "[x for x in range(10) for y in range(10) if x == y]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 2);
+            
+            // First generator: for x in range(10) - no filter
+            assert_eq!(generators[0].ifs.len(), 0);
+            
+            // Second generator: for y in range(10) if x == y - one filter
+            assert_eq!(generators[1].ifs.len(), 1);
+            
+            // Check the filter is x == y
+            match &generators[1].ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Eq);
+                    assert!(matches!(comparators[0].kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                }
+                _ => panic!("Expected compare for filter"),
+            }
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_dict_comp_simple() {
+    let source = "{x: x * 2 for x in items}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::DictComp { ref key, ref value, ref generators } => {
+            // Check key is 'x'
+            assert!(matches!(key.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+            
+            // Check value is 'x * 2'
+            assert!(matches!(value.kind, ExpressionKind::BinaryOp { .. }));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected dict comprehension"),
+    }
+}
+
+#[test]
+fn test_set_comp_simple() {
+    let source = "{x * 2 for x in items}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::SetComp { ref element, ref generators } => {
+            // Check element is 'x * 2'
+            assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected set comprehension"),
+    }
+}
+
+#[test]
+fn test_dict_comp_with_filter() {
+    let source = "{x: x * 2 for x in items if x > 0}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::DictComp { key: _, value: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            
+            // Check simple name target
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            
+            // Check one filter
+            assert_eq!(generators[0].ifs.len(), 1);
+        }
+        _ => panic!("Expected dict comprehension"),
+    }
+}
+
+#[test]
+fn test_generator_exp_simple() {
+    let source = "(x for x in items)";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::GeneratorExp { ref element, ref generators } => {
+            // Check element is 'x'
+            assert!(matches!(element.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected generator expression"),
+    }
+}
+
+#[test]
+fn test_generator_exp_with_filter() {
+    let source = "(x for x in items if x > 0)";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::GeneratorExp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            assert_eq!(generators[0].ifs.len(), 1);
+        }
+        _ => panic!("Expected generator expression"),
+    }
+}
+
+#[test]
+fn test_generator_exp_in_function_call() {
+    let source = "sum(x * x for x in range(100))";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::Call { ref func, ref args, keywords: _ } => {
+            // Check function name is 'sum'
+            assert!(matches!(func.kind, ExpressionKind::Identifier(ref name) if name == "sum"));
+            
+            // Check one argument
+            assert_eq!(args.len(), 1);
+            
+            // Check argument is generator expression
+            match &args[0].kind {
+                ExpressionKind::GeneratorExp { element, generators } => {
+                    // Check element is x * x
+                    assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
+                    
+                    // Check one generator
+                    assert_eq!(generators.len(), 1);
+                    assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+                }
+                _ => panic!("Expected generator expression as argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+// Step 10: Edge Cases & Polish
+
+#[test]
+fn test_comp_empty_sequence() {
+    let source = "[x for x in []]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, generators } => {
+            assert_eq!(generators.len(), 1);
+            // Iterator is empty list
+            assert!(matches!(generators[0].iter.kind, ExpressionKind::List { .. }));
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_nested_comprehension() {
+    let source = "[[y for y in row] for row in matrix]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Outer comprehension has one generator
+            assert_eq!(generators.len(), 1);
+            
+            // Element is itself a list comprehension
+            match &element.kind {
+                ExpressionKind::ListComp { element: inner_elem, generators: inner_gens } => {
+                    // Inner comprehension: [y for y in row]
+                    assert!(matches!(inner_elem.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                    assert_eq!(inner_gens.len(), 1);
+                    assert!(matches!(inner_gens[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+                }
+                _ => panic!("Expected inner list comprehension"),
+            }
+        }
+        _ => panic!("Expected outer list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_in_function_call() {
+    let source = "func([x for x in items])";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::Call { func: _, ref args, keywords: _ } => {
+            assert_eq!(args.len(), 1);
+            assert!(matches!(args[0].kind, ExpressionKind::ListComp { .. }));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_comp_complex_filter() {
+    let source = "[x for x in items if x > 0 if x < 10]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            // Two filters
+            assert_eq!(generators[0].ifs.len(), 2);
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_with_call_in_iterator() {
+    let source = "[x for x in range(10)]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            // Iterator is a function call
+            assert!(matches!(generators[0].iter.kind, ExpressionKind::Call { .. }));
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_with_attribute_access() {
+    let source = "[obj.name for obj in objects]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Element is attribute access
+            assert!(matches!(element.kind, ExpressionKind::Attribute { .. }));
+            assert_eq!(generators.len(), 1);
+        }
+        _ => panic!("Expected list comprehension"),
     }
 }
 

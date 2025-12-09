@@ -126,8 +126,14 @@ impl Parser {
                     self.advance();
                     ExpressionKind::Tuple { elements: Vec::new() }
                 } else {
-                    // Parse first expression
+                    // Parse first expression - use parse_expression() to get full expression
+                    // including walrus operator, but 'for' is not an infix op so it stops naturally
                     let first_expr = self.parse_expression()?;
+                    
+                    // Check for generator expression: (x for x in items)
+                    if self.check(TokenKind::For) {
+                        return self.parse_generator_expression(first_expr, start);
+                    }
                     
                     // Check for comma (makes it a tuple)
                     if self.check(TokenKind::Comma) {
@@ -183,14 +189,36 @@ impl Parser {
             // List literal (TODO: comprehensions)
             TokenKind::LeftBracket => {
                 self.advance(); // consume '['
-                let mut elements = Vec::new();
                 
-                while !self.check(TokenKind::RightBracket) && !self.is_at_end() {
-                    elements.push(self.parse_expression()?);
+                // Check for empty list
+                if self.check(TokenKind::RightBracket) {
+                    self.advance();
+                    return Ok(Expression::new(
+                        ExpressionKind::List { elements: vec![] },
+                        silk_lexer::Span::new(start.start, self.current_token().span.end, start.line, start.column)
+                    ));
+                }
+                
+                // Parse first element
+                let first_element = self.parse_expression()?;
+                
+                // DETECTION POINT: Check if this is a list comprehension
+                if self.check(TokenKind::For) {
+                    return self.parse_list_comprehension(first_element, start);
+                }
+                
+                // Regular list: continue parsing elements
+                let mut elements = vec![first_element];
+                
+                while self.check(TokenKind::Comma) {
+                    self.advance(); // consume ','
                     
-                    if !self.check(TokenKind::RightBracket) {
-                        self.expect(TokenKind::Comma, "Expected ',' or ']' in list")?;
+                    // Check for trailing comma
+                    if self.check(TokenKind::RightBracket) {
+                        break;
                     }
+                    
+                    elements.push(self.parse_expression()?);
                 }
                 
                 self.expect(TokenKind::RightBracket, "Expected ']' after list elements")?;
@@ -215,9 +243,14 @@ impl Parser {
                 
                 // Check if this is a dict or set
                 if self.check(TokenKind::Colon) {
-                    // Dict: {key: value, ...}
+                    // Dict: {key: value, ...} or dict comprehension {k: v for ...}
                     self.advance(); // consume ':'
                     let first_value = self.parse_expression()?;
+                    
+                    // Check for dict comprehension
+                    if self.check(TokenKind::For) {
+                        return self.parse_dict_comprehension(first_expr, first_value, start);
+                    }
                     
                     let mut keys = vec![first_expr];
                     let mut values = vec![first_value];
@@ -242,7 +275,13 @@ impl Parser {
                     self.expect(TokenKind::RightBrace, "Expected '}' after dict elements")?;
                     ExpressionKind::Dict { keys, values }
                 } else {
-                    // Set: {element, ...}
+                    // Set: {element, ...} or set comprehension {x for ...}
+                    
+                    // Check for set comprehension
+                    if self.check(TokenKind::For) {
+                        return self.parse_set_comprehension(first_expr, start);
+                    }
+                    
                     let mut elements = vec![first_expr];
                     
                     // Parse remaining elements
@@ -588,7 +627,22 @@ impl Parser {
                                 self.current_token().span.column,
                             ));
                         }
-                        args.push(self.parse_expression()?);
+                        
+                        let expr = self.parse_expression()?;
+                        
+                        // Check for generator expression
+                        if self.check(TokenKind::For) {
+                            let generators = self.parse_comprehension_generators()?;
+                            args.push(Expression::new(
+                                ExpressionKind::GeneratorExp {
+                                    element: Box::new(expr),
+                                    generators,
+                                },
+                                silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                            ));
+                        } else {
+                            args.push(expr);
+                        }
                     }
                 } else {
                     // No next token, treat as positional
@@ -599,7 +653,22 @@ impl Parser {
                             self.current_token().span.column,
                         ));
                     }
-                    args.push(self.parse_expression()?);
+                    
+                    let expr = self.parse_expression()?;
+                    
+                    // Check for generator expression
+                    if self.check(TokenKind::For) {
+                        let generators = self.parse_comprehension_generators()?;
+                        args.push(Expression::new(
+                            ExpressionKind::GeneratorExp {
+                                element: Box::new(expr),
+                                generators,
+                            },
+                            silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                        ));
+                    } else {
+                        args.push(expr);
+                    }
                 }
             }
             // Regular positional argument
@@ -611,7 +680,23 @@ impl Parser {
                         self.current_token().span.column,
                     ));
                 }
-                args.push(self.parse_expression()?);
+                
+                // Parse expression, then check for generator
+                let expr = self.parse_expression()?;
+                
+                // Check for generator expression: func(x for x in items)
+                if self.check(TokenKind::For) {
+                    let generators = self.parse_comprehension_generators()?;
+                    args.push(Expression::new(
+                        ExpressionKind::GeneratorExp {
+                            element: Box::new(expr),
+                            generators,
+                        },
+                        silk_lexer::Span::new(arg_start.start, self.current_token().span.end, arg_start.line, arg_start.column)
+                    ));
+                } else {
+                    args.push(expr);
+                }
             }
             
             if !self.check(TokenKind::RightParen) {
@@ -701,6 +786,111 @@ impl Parser {
             value: Box::new(value),
             attr: attr.lexeme,
         })
+    }
+    
+    /// Parse list comprehension: [element for target in iter]
+    fn parse_list_comprehension(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        self.expect(TokenKind::RightBracket, "Expected ']' after list comprehension")?;
+        
+        let end = self.current_token().span.clone();
+        Ok(Expression::new(
+            ExpressionKind::ListComp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse dict comprehension: {key: value for target in iter}
+    fn parse_dict_comprehension(&mut self, key: Expression, value: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightBrace, "Expected '}' after dict comprehension")?;
+        Ok(Expression::new(
+            ExpressionKind::DictComp {
+                key: Box::new(key),
+                value: Box::new(value),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse set comprehension: {element for target in iter}
+    fn parse_set_comprehension(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightBrace, "Expected '}' after set comprehension")?;
+        Ok(Expression::new(
+            ExpressionKind::SetComp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse generator expression: (element for target in iter)
+    fn parse_generator_expression(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightParen, "Expected ')' after generator expression")?;
+        Ok(Expression::new(
+            ExpressionKind::GeneratorExp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse comprehension generators: for target in iter [if cond]*
+    fn parse_comprehension_generators(&mut self) -> ParseResult<Vec<silk_ast::Comprehension>> {
+        let mut generators = Vec::new();
+        
+        // Step 6: Loop to parse multiple 'for' clauses
+        // Parse at least one 'for', then continue while we see more
+        loop {
+            // Expect 'for'
+            self.expect(TokenKind::For, "Expected 'for' in comprehension")?;
+            
+            // Parse target (loop variable) - use Primary to get just the identifier/tuple
+            let target_expr = self.parse_precedence(Precedence::Primary)?;
+            let target = self.expr_to_pattern(target_expr)?;
+            
+            // Expect 'in'
+            self.expect(TokenKind::In, "Expected 'in' after comprehension target")?;
+            
+            // Parse iterator - use Comparison precedence to stop before 'if' or ']'
+            let iter = self.parse_precedence(Precedence::Comparison)?;
+            
+            // Parse optional 'if' filters for this generator
+            let mut ifs = Vec::new();
+            while self.check(TokenKind::If) {
+                self.advance(); // consume 'if'
+                
+                // Parse the filter condition
+                // Use And precedence (one level below Or) to stop BEFORE ternary 'if'
+                let filter = self.parse_precedence(Precedence::And)?;
+                ifs.push(filter);
+            }
+            
+            generators.push(silk_ast::Comprehension {
+                target,
+                iter,
+                ifs,
+                is_async: false,
+            });
+            
+            // Check if there's another 'for' clause
+            if !self.check(TokenKind::For) {
+                break;
+            }
+        }
+        
+        Ok(generators)
     }
 }
 
