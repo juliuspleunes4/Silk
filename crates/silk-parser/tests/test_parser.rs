@@ -3331,4 +3331,108 @@ fn test_list_comp_simplest() {
     }
 }
 
+#[test]
+fn test_list_comp_single_filter() {
+    let source = "[x for x in items if x > 0]";
+    println!("Parsing: {}", source);
+    
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Check element is 'x'
+            match element.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                _ => panic!("Expected identifier 'x' as element"),
+            }
+            
+            assert_eq!(generators.len(), 1);
+            let gen = &generators[0];
+            
+            // Check target pattern
+            match &gen.target.kind {
+                silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
+                _ => panic!("Expected name pattern"),
+            }
+            
+            // Check iterator
+            match gen.iter.kind {
+                ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
+                _ => panic!("Expected identifier 'items'"),
+            }
+            
+            // Check single filter: x > 0
+            assert_eq!(gen.ifs.len(), 1);
+            match &gen.ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x' on left"),
+                    }
+                    assert_eq!(ops.len(), 1);
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Gt);
+                    assert_eq!(comparators.len(), 1);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(val) => assert_eq!(val, 0),
+                        _ => panic!("Expected 0 on right"),
+                    }
+                }
+                _ => panic!("Expected compare op for filter"),
+            }
+            
+            assert_eq!(gen.is_async, false);
+        }
+        _ => panic!("Expected list comprehension, got: {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_list_comp_multiple_filters() {
+    let source = "[x for x in items if x > 0 if x < 10]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            let gen = &generators[0];
+            
+            // Check two filters
+            assert_eq!(gen.ifs.len(), 2);
+            
+            // First filter: x > 0
+            match &gen.ifs[0].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x'"),
+                    }
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Gt);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(0) => {},
+                        _ => panic!("Expected 0"),
+                    }
+                }
+                _ => panic!("Expected compare"),
+            }
+            
+            // Second filter: x < 10
+            match &gen.ifs[1].kind {
+                ExpressionKind::Compare { left, ops, comparators } => {
+                    match left.kind {
+                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                        _ => panic!("Expected 'x'"),
+                    }
+                    assert_eq!(ops[0], silk_ast::CompareOperator::Lt);
+                    match comparators[0].kind {
+                        ExpressionKind::Integer(10) => {},
+                        _ => panic!("Expected 10"),
+                    }
+                }
+                _ => panic!("Expected compare"),
+            }
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
 

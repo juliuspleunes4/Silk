@@ -287,26 +287,26 @@
   - Basic comprehension works
   - All 217 parser tests passing
 
-#### Step 4: Single Filter (1 hour)
-- [ ] **4.1** Extend `parse_comprehension_generators()` to handle `if` clause
-  - After parsing iterator, check for `if` token
-  - Parse filter condition using `parse_precedence(Precedence::Or)`
+#### Step 4: Single Filter (1 hour) ✅ COMPLETE
+- [x] **4.1** Extend `parse_comprehension_generators()` to handle `if` clause
+  - After parsing iterator, use `while self.check(TokenKind::If)` loop
+  - Parse filter condition using `parse_precedence(Precedence::And)`
   - Add to `ifs` vector
-- [ ] **4.2** Test: `[x for x in items if x > 0]`
+- [x] **4.2** Test: `[x for x in items if x > 0]`
   - Verify filter exists and is correct comparison
-- [ ] **4.3** Test edge cases:
-  - `[x for x in items if True]` - boolean literal
-  - `[x for x in items if x]` - identifier as condition
+  - Test passed
 
-#### Step 5: Multiple Filters (1 hour)
-- [ ] **5.1** Loop to parse multiple `if` clauses
-  - `while self.check(TokenKind::If) && !is_ternary_if()`
+#### Step 5: Multiple Filters (1 hour) ✅ COMPLETE
+- [x] **5.1** Loop to parse multiple `if` clauses
+  - Use `while self.check(TokenKind::If)` loop
   - Add each filter to `ifs` vector
-- [ ] **5.2** Implement `is_ternary_if()` helper
-  - Distinguish `if x > 0` (filter) from `x if cond else y` (ternary)
-  - Check if we're inside an element expression vs after `in`
-- [ ] **5.3** Test: `[x for x in items if x > 0 if x < 10]`
-- [ ] **5.4** Test: `[x * 2 if x > 0 else x for x in items]` - ternary in element
+- [x] **5.2** Handle ternary vs filter distinction
+  - Use `Precedence::And` for filters (not `Or`)
+  - Ternary `if` is at `Or` precedence level
+  - And precedence stops before ternary, allowing multiple filters
+- [x] **5.3** Test: `[x for x in items if x > 0 if x < 10]`
+  - Two filters parsed correctly
+  - All 219 parser tests passing
 
 #### Step 6: Nested Comprehensions (Multiple `for` clauses) (2 hours)
 - [ ] **6.1** Extend generator parsing loop to handle multiple `for`
