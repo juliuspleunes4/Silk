@@ -900,3 +900,219 @@ fn test_only_newlines() {
     assert_eq!(stmts.len(), 0);
 }
 
+// ============================================================================
+// Dict Literal Tests
+// ============================================================================
+
+#[test]
+fn test_empty_dict() {
+    let expr = parse_expr("{}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 0);
+            assert_eq!(values.len(), 0);
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_dict_with_one_pair() {
+    let expr = parse_expr(r#"{"key": "value"}"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 1);
+            assert_eq!(values.len(), 1);
+            
+            match &keys[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "key"),
+                _ => panic!("Expected string key"),
+            }
+            
+            match &values[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "value"),
+                _ => panic!("Expected string value"),
+            }
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_dict_with_multiple_pairs() {
+    let expr = parse_expr(r#"{"a": 1, "b": 2, "c": 3}"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 3);
+            assert_eq!(values.len(), 3);
+            
+            match &keys[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "a"),
+                _ => panic!("Expected string key"),
+            }
+            match &values[0].kind {
+                ExpressionKind::Integer(n) => assert_eq!(*n, 1),
+                _ => panic!("Expected integer value"),
+            }
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_dict_with_trailing_comma() {
+    let expr = parse_expr(r#"{"x": 10, "y": 20,}"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 2);
+            assert_eq!(values.len(), 2);
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_dict_with_expression_keys() {
+    let expr = parse_expr("{1 + 1: 2, 3: 4}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 2);
+            assert_eq!(values.len(), 2);
+            
+            // First key is 1 + 1 (a binary op)
+            match &keys[0].kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary op as key"),
+            }
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_nested_dict() {
+    let expr = parse_expr(r#"{"outer": {"inner": 42}}"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { keys, values } => {
+            assert_eq!(keys.len(), 1);
+            assert_eq!(values.len(), 1);
+            
+            // Value should be another dict
+            match &values[0].kind {
+                ExpressionKind::Dict { keys: inner_keys, values: inner_values } => {
+                    assert_eq!(inner_keys.len(), 1);
+                    assert_eq!(inner_values.len(), 1);
+                }
+                _ => panic!("Expected nested dict"),
+            }
+        }
+        _ => panic!("Expected dict literal, got {:?}", expr.kind),
+    }
+}
+
+// ============================================================================
+// Set Literal Tests
+// ============================================================================
+
+#[test]
+fn test_set_with_one_element() {
+    let expr = parse_expr("{1}").unwrap();
+    match expr.kind {
+        ExpressionKind::Set { elements } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                ExpressionKind::Integer(n) => assert_eq!(*n, 1),
+                _ => panic!("Expected integer element"),
+            }
+        }
+        _ => panic!("Expected set literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_set_with_multiple_elements() {
+    let expr = parse_expr("{1, 2, 3, 4, 5}").unwrap();
+    match expr.kind {
+        ExpressionKind::Set { elements } => {
+            assert_eq!(elements.len(), 5);
+        }
+        _ => panic!("Expected set literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_set_with_trailing_comma() {
+    let expr = parse_expr("{1, 2, 3,}").unwrap();
+    match expr.kind {
+        ExpressionKind::Set { elements } => {
+            assert_eq!(elements.len(), 3);
+        }
+        _ => panic!("Expected set literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_set_with_strings() {
+    let expr = parse_expr(r#"{"apple", "banana", "cherry"}"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Set { elements } => {
+            assert_eq!(elements.len(), 3);
+            match &elements[0].kind {
+                ExpressionKind::String(s) => assert_eq!(s, "apple"),
+                _ => panic!("Expected string element"),
+            }
+        }
+        _ => panic!("Expected set literal, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_set_with_expressions() {
+    let expr = parse_expr("{1 + 1, 2 * 3, 10 - 5}").unwrap();
+    match expr.kind {
+        ExpressionKind::Set { elements } => {
+            assert_eq!(elements.len(), 3);
+            // All elements should be binary operations
+            for elem in &elements {
+                match &elem.kind {
+                    ExpressionKind::BinaryOp { .. } => {},
+                    _ => panic!("Expected binary op in set"),
+                }
+            }
+        }
+        _ => panic!("Expected set literal, got {:?}", expr.kind),
+    }
+}
+
+// ============================================================================
+// Dict vs Set Disambiguation Tests
+// ============================================================================
+
+#[test]
+fn test_empty_braces_is_dict() {
+    // In Python, {} is an empty dict, not an empty set
+    let expr = parse_expr("{}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { .. } => {},
+        _ => panic!("Expected empty dict, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_colon_makes_it_dict() {
+    let expr = parse_expr("{1: 2}").unwrap();
+    match expr.kind {
+        ExpressionKind::Dict { .. } => {},
+        _ => panic!("Expected dict (has colon), got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_no_colon_makes_it_set() {
+    let expr = parse_expr("{1, 2}").unwrap();
+    match expr.kind {
+        ExpressionKind::Set { .. } => {},
+        _ => panic!("Expected set (no colon), got {:?}", expr.kind),
+    }
+}
+

@@ -1,0 +1,41 @@
+# Dict and Set Literal Examples
+
+# Empty dict
+empty = {}
+
+# Simple dict
+config = {"host": "localhost", "port": 8080}
+
+# Nested dict with trailing comma
+user = {
+    "name": "Alice",
+    "age": 30,
+    "address": {
+        "street": "123 Main St",
+        "city": "Springfield",
+    },
+}
+
+# Dict with expression keys/values
+x = 10
+y = 20
+coords = {x + 5: y * 2, "total": x + y}
+
+# Simple set
+primes = {2, 3, 5, 7, 11}
+
+# Set with trailing comma
+colors = {
+    "red",
+    "green",
+    "blue",
+}
+
+# Set with expressions
+numbers = {x, y, x + y, x * y}
+
+# Mixed usage
+data = {
+    "values": {1, 2, 3},
+    "mapping": {"a": 1, "b": 2},
+}

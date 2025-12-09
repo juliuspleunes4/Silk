@@ -143,7 +143,7 @@ impl Parser {
             TokenKind::LeftBrace => {
                 self.advance(); // consume '{'
                 
-                // Empty dict
+                // Empty dict (by default, {} is a dict, not a set)
                 if self.check(TokenKind::RightBrace) {
                     self.advance();
                     return Ok(Expression::new(
@@ -152,8 +152,56 @@ impl Parser {
                     ));
                 }
                 
-                // TODO: Distinguish between dict and set
-                todo!("Implement dict/set literal parsing")
+                // Parse first element
+                let first_expr = self.parse_expression()?;
+                
+                // Check if this is a dict or set
+                if self.check(TokenKind::Colon) {
+                    // Dict: {key: value, ...}
+                    self.advance(); // consume ':'
+                    let first_value = self.parse_expression()?;
+                    
+                    let mut keys = vec![first_expr];
+                    let mut values = vec![first_value];
+                    
+                    // Parse remaining key-value pairs
+                    while self.check(TokenKind::Comma) {
+                        self.advance(); // consume ','
+                        
+                        // Allow trailing comma
+                        if self.check(TokenKind::RightBrace) {
+                            break;
+                        }
+                        
+                        let key = self.parse_expression()?;
+                        self.expect(TokenKind::Colon, "Expected ':' in dict literal")?;
+                        let value = self.parse_expression()?;
+                        
+                        keys.push(key);
+                        values.push(value);
+                    }
+                    
+                    self.expect(TokenKind::RightBrace, "Expected '}' after dict elements")?;
+                    ExpressionKind::Dict { keys, values }
+                } else {
+                    // Set: {element, ...}
+                    let mut elements = vec![first_expr];
+                    
+                    // Parse remaining elements
+                    while self.check(TokenKind::Comma) {
+                        self.advance(); // consume ','
+                        
+                        // Allow trailing comma
+                        if self.check(TokenKind::RightBrace) {
+                            break;
+                        }
+                        
+                        elements.push(self.parse_expression()?);
+                    }
+                    
+                    self.expect(TokenKind::RightBrace, "Expected '}' after set elements")?;
+                    ExpressionKind::Set { elements }
+                }
             }
             
             _ => {

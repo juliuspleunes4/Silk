@@ -51,11 +51,11 @@
   - Type annotation parsing (simple types and generics) ✅
   - Expression to pattern conversion for for loops ✅
   - **Known Limitations**:
-    - Dict/set literal parsing causes panic (todo!() in expr.rs:156)
     - List/dict/set comprehensions not implemented
     - Lambda expressions not implemented
     - Slice syntax not implemented (only single subscripts)
     - Ternary/conditional expressions not implemented
+    - Tuple literals not implemented
     - Keyword arguments in function calls not implemented
     - Decorators have placeholder implementation only
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
@@ -63,13 +63,13 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~82% complete! Core statements functional, basic expressions working
+- **Phase 1: Foundation** - ~84% complete! Core statements functional, basic expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (78% - all statements complete, basic expressions work)
+  - Parser 🟡 (81% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists)
-    - ❌ Missing: dict/set literals (causes panic), comprehensions, lambda, slices, ternary, tuples
+    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets)
+    - ❌ Missing: comprehensions, lambda, slices, ternary, tuples
     - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
@@ -91,9 +91,15 @@
    - ✅ Implemented: import, from, global, nonlocal, assert, raise, del, with, try, match
    - ✅ Can now parse real Python code with functions, classes, and control flow
 
+3. ~~**DICT/SET LITERAL PARSING**~~ ✅ DONE (December 2025)
+   - ✅ Implemented dict literal parsing with colon detection
+   - ✅ Implemented set literal parsing
+   - ✅ Proper disambiguation: {} = empty dict, {k:v} = dict, {elem} = set
+   - ✅ Support for trailing commas, nested structures, expression keys/values
+   - ✅ Added 17 comprehensive tests covering all scenarios
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-3. Complete expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
-   - Dict/set literals (**URGENT** - currently causes panic)
+4. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
    - Tuple literals and tuple unpacking
    - Slice syntax (list[start:stop:step])
    - Comprehensions (list/dict/set/generator)
@@ -102,21 +108,21 @@
    - Keyword arguments in function calls
    - *args and **kwargs in function parameters
    
-4. Lexer enhancements (1-2 weeks):
+5. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-5. Begin semantic analysis phase (2-3 months):
+6. Begin semantic analysis phase (2-3 months):
    - Create silk-semantic crate
    - Symbol table management
    - Type inference engine
    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-6. Code generation foundation (2-3 months)
-7. Runtime library basics (1-2 months)
-8. Optimization passes (1-2 months)
+7. Code generation foundation (2-3 months)
+8. Runtime library basics (1-2 months)
+9. Optimization passes (1-2 months)
 
 ---
 

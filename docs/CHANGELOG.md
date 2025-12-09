@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Dict/Set Literal Parsing - December 2025
+**Implemented dict and set literal parsing** - resolved critical panic-causing issue.
+
+**Parser Expression Enhancement (silk-parser)** - Dict/Set Literals ✅:
+- ✅ Implemented dict literal parsing: `{key: value, ...}`
+- ✅ Implemented set literal parsing: `{element, ...}`
+- ✅ Proper Python semantics: `{}` = empty dict, `{k:v}` = dict, `{elem}` = set
+- ✅ Support for trailing commas in both dicts and sets
+- ✅ Support for nested structures (nested dicts/sets)
+- ✅ Support for expression keys and values (not just literals)
+- ✅ Added 17 comprehensive tests covering all scenarios:
+  - Empty dict, single/multiple pairs, trailing commas
+  - Expression keys/values, nested dicts
+  - Single/multiple element sets, trailing commas
+  - String/expression sets
+  - Disambiguation tests (empty braces, colon detection)
+- ✅ All 81 parser tests passing
+- **Status**: Parser now at ~81% complete, Phase 1 at ~84%
+- **Impact**: No more panics on Python code with dict/set literals
+
 ### ✅ MAJOR IMPLEMENTATION - December 8, 2025
 **Critical blockers resolved!** Implemented missing lexer indentation tracking and all parser statement types.
 
