@@ -1,0 +1,72 @@
+# Byte Strings (b-strings) Example
+# Byte strings represent sequences of bytes (0-255) rather than Unicode text
+# They are ASCII-only and perfect for binary data, network protocols, and file I/O
+
+# Basic byte strings
+data = b"Hello, World!"
+empty = b""
+single_quoted = b'Python'
+
+# Byte strings with escape sequences
+newline = b"Line 1\nLine 2"
+tab_separated = b"Column1\tColumn2\tColumn3"
+null_terminated = b"String\0"
+carriage_return = b"Windows line\r\n"
+
+# Hex escapes for arbitrary bytes
+# \xHH where HH is two hexadecimal digits (00-FF)
+binary_data = b"\x00\x01\x02\xFF\xFE\xFD"
+ascii_codes = b"\x41\x42\x43"  # ABC in ASCII
+magic_number = b"\x89PNG"  # PNG file signature
+
+# Triple-quoted byte strings for multiline binary data
+multiline_data = b"""
+This is a multiline
+byte string that preserves
+line breaks and formatting.
+"""
+
+# Network protocol example (HTTP request)
+http_request = b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
+
+# File format signatures (magic numbers)
+png_signature = b"\x89PNG\r\n\x1a\n"
+gif_signature = b"GIF89a"
+jpeg_signature = b"\xFF\xD8\xFF"
+
+# Binary file I/O simulation
+file_header = b"\x00\x00\x00\x14"  # 4-byte big-endian integer (20)
+file_data = b"\x48\x65\x6C\x6C\x6F"  # "Hello" in hex
+
+# Cryptography and hashing (byte data)
+# In real usage, these would be actual hash outputs
+salt = b"\x5a\x9b\x2c\x7d\x3e\x8f\x1a\x4b"
+hash_digest = b"\xa1\xb2\xc3\xd4\xe5\xf6\x07\x18"
+
+# Low-level data structures
+# Packed binary data (simulating struct packing)
+header_version = b"\x01\x00"  # Version 1.0
+header_flags = b"\x00\x00\x00\x08"  # Flags: 0x08
+
+# Network packet construction
+packet_type = b"\x01"  # Packet type: data
+packet_length = b"\x00\x20"  # Length: 32 bytes
+packet_payload = b"This is the packet payload!!"
+
+# Byte strings cannot contain non-ASCII characters
+# This would cause an error:
+# invalid = b"Hello 世界"  # Error: InvalidByteString (non-ASCII)
+
+# But hex escapes can represent any byte value
+high_bytes = b"\x80\x90\xA0\xB0\xC0\xD0\xE0\xF0"
+
+# Byte strings are useful when you need:
+# 1. Binary data representation (files, network protocols)
+# 2. ASCII-only text (legacy systems, protocols)
+# 3. Raw byte manipulation (cryptography, compression)
+# 4. Fixed-width character encoding (Latin-1, ASCII)
+# 5. Low-level data structures (headers, packets)
+
+print(data)
+print(binary_data)
+print(http_request)

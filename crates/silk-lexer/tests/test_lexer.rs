@@ -1436,3 +1436,135 @@ fn test_raw_string_latex() {
         panic!("Expected raw string token");
     }
 }
+
+#[test]
+fn test_byte_string_basic() {
+    let source = r#"b"Hello""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2); // ByteString + EOF
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, b"Hello");
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_with_escape_sequences() {
+    let source = r#"b"Line1\nLine2\tTab""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, b"Line1\nLine2\tTab");
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_hex_escape() {
+    let source = r#"b"\x48\x65\x6C\x6C\x6F""#;  // "Hello" in hex
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, b"Hello");
+        assert_eq!(bytes[0], 0x48); // 'H'
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_single_quotes() {
+    let source = r#"b'data'"#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, b"data");
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_uppercase_b() {
+    let source = r#"B"test""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2);
+    assert!(matches!(tokens[0].kind, TokenKind::ByteString(_)));
+}
+
+#[test]
+fn test_byte_string_triple_quoted() {
+    let source = r#"b"""Multi
+line
+bytes""""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert!(bytes.len() > 5);
+        assert!(bytes.contains(&b'\n'));
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_empty() {
+    let source = r#"b"""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes.len(), 0);
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_with_backslashes() {
+    let source = r#"b"\\path\\file""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, b"\\path\\file");
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_binary_data() {
+    let source = r#"b"\x00\x01\x02\xFF""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::ByteString(ref bytes) = tokens[0].kind {
+        assert_eq!(bytes, &[0x00, 0x01, 0x02, 0xFF]);
+    } else {
+        panic!("Expected byte string token");
+    }
+}
+
+#[test]
+fn test_byte_string_non_ascii_error() {
+    let source = r#"b"Hello 世界""#;  // Contains non-ASCII characters
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    assert!(result.is_err());
+    if let Err(err) = result {
+        assert!(err.to_string().contains("Non-ASCII"));
+    }
+}

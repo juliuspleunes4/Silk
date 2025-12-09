@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Byte Strings (b-strings) - December 9, 2025
+**Implemented byte string literals** - enabling Python-style byte strings for binary data handling.
+
+**Lexer Enhancement (silk-lexer)** - Byte String Parsing ✅:
+- ✅ Added ByteString token type: `TokenKind::ByteString(Vec<u8>)`
+- ✅ Byte string prefix detection: b"..." and b'...' (case-insensitive B/b)
+- ✅ Triple-quoted byte strings: b"""...""" and b'''...'''
+- ✅ ASCII-only validation: Non-ASCII characters produce InvalidByteString error
+- ✅ Escape sequences processed:
+  - Basic escapes: `\n` (newline), `\r` (carriage return), `\t` (tab), `\\` (backslash), `\'` (single quote), `\"` (double quote), `\0` (null)
+  - Hex escapes: `\xHH` where HH is two hex digits (e.g., `\x41` → 65 → 'A')
+- ✅ Perfect for binary data: `b"\x00\xFF\x42"` for byte sequences
+- ✅ Perfect for network protocols: `b"GET / HTTP/1.1\r\n"`
+- ✅ Perfect for file I/O: reading/writing binary files
+- ✅ Added 10 comprehensive tests:
+  - test_byte_string_basic: Basic byte string b"Hello"
+  - test_byte_string_with_escape_sequences: Escape handling (\n, \t)
+  - test_byte_string_hex_escape: Hex byte sequences (\xHH)
+  - test_byte_string_single_quotes: b'...' variant
+  - test_byte_string_uppercase_b: B"..." variant
+  - test_byte_string_triple_quoted: Triple-quoted byte strings
+  - test_byte_string_empty: Empty byte string b""
+  - test_byte_string_with_backslashes: Backslash escape sequences
+  - test_byte_string_binary_data: Binary data with \x00 and \xFF
+  - test_byte_string_non_ascii_error: Error on non-ASCII characters
+- ✅ All 103 lexer tests passing (304 total workspace tests)
+
+**AST Enhancement (silk-ast)** - Byte String Expression ✅:
+- ✅ Added ExpressionKind::ByteString(Vec<u8>) variant
+- ✅ Stores byte data as Vec<u8> rather than String
+
+**Parser Expression Enhancement (silk-parser)** - Byte String Support ✅:
+- ✅ Parse byte string tokens as primary expressions
+- ✅ Byte strings work in all expression contexts (assignments, function calls, lists)
+- ✅ Added 7 comprehensive tests:
+  - test_byte_string_basic: Basic byte string parsing
+  - test_byte_string_with_escapes: Escape sequence parsing
+  - test_byte_string_hex_escape: Hex escape parsing
+  - test_byte_string_in_assignment: Byte strings in assignments
+  - test_byte_string_in_function_call: Byte strings as function arguments
+  - test_byte_string_in_list: Byte strings in list literals
+  - test_byte_string_empty: Empty byte string parsing
+- ✅ All 190 parser tests passing (304 total workspace tests)
+
+**Impact**:
+- Enables binary data handling for network protocols, file I/O, and cryptography
+- Complements existing string types (regular, f-strings, raw strings)
+- Provides ASCII validation ensuring data integrity
+- Hex escapes enable arbitrary byte sequences
+
+**Testing**: 17 new tests (10 lexer + 7 parser) | All 304 tests passing (103 lexer + 190 parser + 11 unit)
+
+---
+
 ### ✅ FEATURE - Raw Strings - December 9, 2025
 **Implemented raw string literals** - enabling Python-style raw strings that preserve escape sequences literally.
 

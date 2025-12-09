@@ -340,6 +340,16 @@ impl Lexer {
         let start_pos = self.position;
         let start_col = self.column;
         
+        // Check for byte string prefix (b"..." or b'...')
+        if (self.current_char() == 'b' || self.current_char() == 'B') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_byte_string();
+            }
+        }
+        
         // Check for raw string prefix (r"..." or r'...')
         if (self.current_char() == 'r' || self.current_char() == 'R') 
             && !self.is_at_end() 
@@ -570,6 +580,105 @@ impl Lexer {
         
         Ok(Token {
             kind,
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_byte_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'b' or 'B'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted byte strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut bytes = Vec::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        bytes.push(self.advance() as u8);
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\\' && !is_triple {
+                // Handle escape sequences
+                self.advance();
+                if self.is_at_end() {
+                    return Err(LexError::UnterminatedString(start_line, start_col));
+                }
+                
+                let escaped = self.advance();
+                let byte_val = match escaped {
+                    'n' => b'\n',
+                    'r' => b'\r',
+                    't' => b'\t',
+                    '\\' => b'\\',
+                    '\'' => b'\'',
+                    '"' => b'"',
+                    '0' => b'\0',
+                    'x' => {
+                        // Hex escape: \xHH
+                        if self.position + 2 > self.input.len() {
+                            return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                        }
+                        let hex1 = self.advance();
+                        let hex2 = self.advance();
+                        let hex_str = format!("{}{}", hex1, hex2);
+                        match u8::from_str_radix(&hex_str, 16) {
+                            Ok(val) => val,
+                            Err(_) => return Err(LexError::InvalidEscape('x', self.line, self.column)),
+                        }
+                    }
+                    _ => {
+                        return Err(LexError::InvalidEscape(escaped, self.line, self.column));
+                    }
+                };
+                bytes.push(byte_val);
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Only ASCII characters allowed in byte strings
+                if !ch.is_ascii() {
+                    return Err(LexError::InvalidByteString(
+                        "Non-ASCII character in byte string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+                bytes.push(self.advance() as u8);
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::ByteString(bytes),
             lexeme,
             span: Span::new(start_pos, self.position, start_line, start_col),
         })

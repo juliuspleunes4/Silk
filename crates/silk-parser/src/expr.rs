@@ -74,6 +74,11 @@ impl Parser {
                 self.advance();
                 ExpressionKind::RawString(value)
             }
+            TokenKind::ByteString(bytes) => {
+                let bytes = bytes.clone();
+                self.advance();
+                ExpressionKind::ByteString(bytes)
+            }
             TokenKind::FString(parts) => {
                 let parts = parts.clone();
                 self.advance();

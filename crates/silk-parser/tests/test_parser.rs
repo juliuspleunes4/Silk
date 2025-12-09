@@ -2776,4 +2776,98 @@ fn test_raw_vs_regular_string_parser() {
     }
 }
 
+// ============================================================================
+// Byte String Tests
+// ============================================================================
+
+#[test]
+fn test_byte_string_basic() {
+    let expr = parse_expr(r#"b"Hello""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Hello");
+        }
+        _ => panic!("Expected byte string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_byte_string_with_escapes() {
+    let expr = parse_expr(r#"b"Line1\nLine2""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Line1\nLine2");
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
+#[test]
+fn test_byte_string_hex_escape() {
+    let expr = parse_expr(r#"b"\x48\x69""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes, b"Hi");
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_assignment() {
+    let stmt = parse_stmt(r#"data = b"binary""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"binary"),
+                _ => panic!("Expected byte string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_function_call() {
+    let expr = parse_expr(r#"write(b"data")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"data"),
+                _ => panic!("Expected byte string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_byte_string_in_list() {
+    let expr = parse_expr(r#"[b"a", b"b", b"c"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            for elem in &elements {
+                match &elem.kind {
+                    ExpressionKind::ByteString(_) => {},
+                    _ => panic!("Expected byte string in list"),
+                }
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_byte_string_empty() {
+    let expr = parse_expr(r#"b"""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteString(ref bytes) => {
+            assert_eq!(bytes.len(), 0);
+        }
+        _ => panic!("Expected byte string"),
+    }
+}
+
 

@@ -24,6 +24,7 @@ pub enum ExpressionKind {
     Float(f64),
     String(String),
     RawString(String),  // r"text\n" - escape sequences preserved
+    ByteString(Vec<u8>),  // b"bytes" - byte literal
     FString {
         parts: Vec<FStringPart>,
     },
