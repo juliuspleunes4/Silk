@@ -60,10 +60,10 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~95% complete! Core statements functional, most expressions working
-  - Lexer ✅ (100% - all core features including f-strings, binary/octal/hex numbers, indentation)
+- **Phase 1: Foundation** - ~96% complete! Core statements functional, most expressions working
+  - Lexer ✅ (100% - all core features including f-strings, raw strings, binary/octal/hex numbers, indentation)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (94% - all statements complete, most expressions work)
+  - Parser 🟡 (95% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
     - ✅ Complete: Most expressions (literals, operators, calls with keyword args, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda, ternary, walrus)
     - ✅ Complete: Function params with *args/**kwargs support
@@ -211,8 +211,23 @@
     - ✅ Added 8 comprehensive parser tests
     - ✅ All 83 lexer tests passing, 176 parser tests passing (270 total workspace tests)
 
+14. ~~**RAW STRINGS**~~ ✅ DONE (December 9, 2025)
+    - ✅ Added RawString token type to lexer
+    - ✅ Raw string prefix detection: r"..." and r'...' (case-insensitive)
+    - ✅ Triple-quoted raw strings: r"""..."""
+    - ✅ Escape sequences preserved literally: r"\n" stays as "\n" (not newline)
+    - ✅ Backslashes preserved: r"C:\Users\name"
+    - ✅ Perfect for regex patterns: r"\d+\.\d+"
+    - ✅ Perfect for file paths: r"C:\path\to\file.txt"
+    - ✅ Perfect for LaTeX: r"\alpha + \beta"
+    - ✅ Added RawString variant to ExpressionKind
+    - ✅ Parser support for raw strings in all contexts
+    - ✅ Added 10 comprehensive lexer tests
+    - ✅ Added 7 comprehensive parser tests
+    - ✅ All 93 lexer tests passing, 183 parser tests passing (287 total workspace tests)
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-14. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+15. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
     - Comprehensions (list/dict/set/generator) - complex, needs careful design
    
 9. Lexer enhancements (1-2 weeks):

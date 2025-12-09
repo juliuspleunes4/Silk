@@ -23,6 +23,7 @@ pub enum ExpressionKind {
     Integer(i64),
     Float(f64),
     String(String),
+    RawString(String),  // r"text\n" - escape sequences preserved
     FString {
         parts: Vec<FStringPart>,
     },

@@ -340,6 +340,16 @@ impl Lexer {
         let start_pos = self.position;
         let start_col = self.column;
         
+        // Check for raw string prefix (r"..." or r'...')
+        if (self.current_char() == 'r' || self.current_char() == 'R') 
+            && !self.is_at_end() 
+            && self.position + 1 < self.input.len() {
+            let next_ch = self.input[self.position + 1];
+            if next_ch == '"' || next_ch == '\'' {
+                return self.lex_raw_string();
+            }
+        }
+        
         // Check for f-string prefix (f"..." or f'...')
         if (self.current_char() == 'f' || self.current_char() == 'F') 
             && !self.is_at_end() 
@@ -560,6 +570,64 @@ impl Lexer {
         
         Ok(Token {
             kind,
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_raw_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        self.advance(); // Consume 'r' or 'R'
+        let quote = self.advance(); // Consume opening quote
+        
+        // Check for triple-quoted raw strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut value = String::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        value.push(self.advance());
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Raw strings: preserve everything literally, including backslashes
+                value.push(self.advance());
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::RawString(value),
             lexeme,
             span: Span::new(start_pos, self.position, start_line, start_col),
         })

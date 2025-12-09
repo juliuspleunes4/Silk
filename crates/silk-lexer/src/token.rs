@@ -86,6 +86,7 @@ pub enum TokenKind {
     Integer(i64),
     Float(f64),
     String(String),
+    RawString(String),  // r"text\n" - escape sequences not processed
     FString(Vec<FStringPart>),  // f"text {expr} text"
     
     // Operators

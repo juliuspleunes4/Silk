@@ -1297,3 +1297,142 @@ fn test_fstring_unmatched_brace_error() {
         assert!(err.to_string().contains("Unmatched '}'"));
     }
 }
+
+#[test]
+fn test_raw_string_basic() {
+    let source = r#"r"Hello\nWorld""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2); // RawString + EOF
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        // Raw strings preserve backslashes literally
+        assert_eq!(value, r"Hello\nWorld");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_backslashes() {
+    let source = r#"r"C:\Users\name\file.txt""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"C:\Users\name\file.txt");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_single_quotes() {
+    let source = r#"r'Hello\tWorld'"#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"Hello\tWorld");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_uppercase_r() {
+    let source = r#"R"Test\n""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    assert_eq!(tokens.len(), 2);
+    assert!(matches!(tokens[0].kind, TokenKind::RawString(_)));
+}
+
+#[test]
+fn test_raw_string_regex_pattern() {
+    let source = r#"r"\d+\.\d+""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"\d+\.\d+");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_triple_quoted() {
+    let source = r#"r"""Line 1\nLine 2\tTab""""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"Line 1\nLine 2\tTab");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_with_backslash_at_end() {
+    // Raw strings can contain backslashes except at the very end before closing quote
+    let source = r#"r"path\to\file""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"path\to\file");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_string_multiple_backslashes() {
+    let source = r#"r"\\\\""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"\\\\");
+    } else {
+        panic!("Expected raw string token");
+    }
+}
+
+#[test]
+fn test_raw_vs_regular_string() {
+    let source = r#"r"\n" "\n""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    // First is raw string
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"\n"); // Literal backslash-n
+    } else {
+        panic!("Expected raw string token");
+    }
+    
+    // Second is regular string
+    if let TokenKind::String(ref value) = tokens[1].kind {
+        assert_eq!(value, "\n"); // Actual newline character
+    } else {
+        panic!("Expected regular string token");
+    }
+}
+
+#[test]
+fn test_raw_string_latex() {
+    let source = r#"r"\alpha + \beta = \gamma""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    
+    if let TokenKind::RawString(ref value) = tokens[0].kind {
+        assert_eq!(value, r"\alpha + \beta = \gamma");
+    } else {
+        panic!("Expected raw string token");
+    }
+}

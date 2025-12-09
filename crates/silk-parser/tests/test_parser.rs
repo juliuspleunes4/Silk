@@ -2663,4 +2663,117 @@ fn test_fstring_in_list() {
     }
 }
 
+// ============================================================================
+// Raw String Tests
+// ============================================================================
+
+#[test]
+fn test_raw_string_basic() {
+    let expr = parse_expr(r#"r"Hello\nWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"Hello\nWorld");
+        }
+        _ => panic!("Expected raw string, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_raw_string_backslashes() {
+    let expr = parse_expr(r#"r"C:\Users\name\file.txt""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"C:\Users\name\file.txt");
+        }
+        _ => panic!("Expected raw string"),
+    }
+}
+
+#[test]
+fn test_raw_string_regex() {
+    let expr = parse_expr(r#"r"\d+\.\d+""#).unwrap();
+    match expr.kind {
+        ExpressionKind::RawString(ref value) => {
+            assert_eq!(value, r"\d+\.\d+");
+        }
+        _ => panic!("Expected raw string"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_assignment() {
+    let stmt = parse_stmt(r#"pattern = r"\w+""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { value, .. } => {
+            match value.kind {
+                ExpressionKind::RawString(ref s) => assert_eq!(s, r"\w+"),
+                _ => panic!("Expected raw string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_function_call() {
+    let expr = parse_expr(r#"compile(r"[a-z]+")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+            match &args[0].kind {
+                ExpressionKind::RawString(ref s) => assert_eq!(s, r"[a-z]+"),
+                _ => panic!("Expected raw string in function call"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_raw_string_in_list() {
+    let expr = parse_expr(r#"[r"\n", r"\t", r"\r"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 3);
+            for elem in &elements {
+                match &elem.kind {
+                    ExpressionKind::RawString(_) => {},
+                    _ => panic!("Expected raw string in list"),
+                }
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_raw_vs_regular_string_parser() {
+    let stmts = parse_program(r#"r"\n"
+"\n""#).unwrap();
+    
+    assert_eq!(stmts.len(), 2);
+    
+    // First should be raw string
+    match &stmts[0].kind {
+        StatementKind::Expr(expr) => {
+            match &expr.kind {
+                ExpressionKind::RawString(s) => assert_eq!(s, r"\n"),
+                _ => panic!("Expected raw string"),
+            }
+        }
+        _ => panic!("Expected expression statement"),
+    }
+    
+    // Second should be regular string
+    match &stmts[1].kind {
+        StatementKind::Expr(expr) => {
+            match &expr.kind {
+                ExpressionKind::String(s) => assert_eq!(s, "\n"),
+                _ => panic!("Expected regular string"),
+            }
+        }
+        _ => panic!("Expected expression statement"),
+    }
+}
+
 

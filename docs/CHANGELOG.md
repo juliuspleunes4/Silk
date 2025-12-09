@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Raw Strings - December 9, 2025
+**Implemented raw string literals** - enabling Python-style raw strings that preserve escape sequences literally.
+
+**Lexer Enhancement (silk-lexer)** - Raw String Parsing ✅:
+- ✅ Added RawString token type: `TokenKind::RawString(String)`
+- ✅ Raw string prefix detection: r"..." and r'...' (case-insensitive R/r)
+- ✅ Triple-quoted raw strings: r"""...""" and r'''...'''
+- ✅ Escape sequences preserved literally: `r"\n"` stays as `\n` (not a newline character)
+- ✅ Backslashes preserved: `r"C:\Users\name"` contains literal backslashes
+- ✅ Perfect for Windows file paths: `r"C:\path\to\file.txt"`
+- ✅ Perfect for regex patterns: `r"\d+\.\d+"` for digit matching
+- ✅ Perfect for LaTeX expressions: `r"\alpha + \beta = \gamma"`
+- ✅ No escape sequence processing (unlike regular strings)
+- ✅ Added 10 comprehensive tests:
+  - test_raw_string_basic: Basic raw string with \\n preserved
+  - test_raw_string_backslashes: Windows path with backslashes
+  - test_raw_string_single_quotes: r'...' variant
+  - test_raw_string_uppercase_r: R"..." variant
+  - test_raw_string_regex_pattern: Regex pattern with escape sequences
+  - test_raw_string_triple_quoted: Triple-quoted raw strings
+  - test_raw_string_with_backslash_at_end: Backslashes in paths
+  - test_raw_string_multiple_backslashes: Multiple consecutive backslashes
+  - test_raw_vs_regular_string: Comparison between raw and regular strings
+  - test_raw_string_latex: LaTeX math expressions
+- ✅ All 93 lexer tests passing (287 total workspace tests)
+
+**AST Enhancement (silk-ast)** - Raw String Expression ✅:
+- ✅ Added ExpressionKind::RawString variant
+- ✅ Stores string content with escape sequences preserved
+
+**Parser Expression Enhancement (silk-parser)** - Raw String Support ✅:
+- ✅ Parse raw string tokens as primary expressions
+- ✅ Raw strings work in all expression contexts (assignments, function calls, lists)
+- ✅ Added 7 comprehensive tests:
+  - test_raw_string_basic: Basic raw string parsing
+  - test_raw_string_backslashes: File path parsing
+  - test_raw_string_regex: Regex pattern parsing
+  - test_raw_string_in_assignment: Raw strings in assignments
+  - test_raw_string_in_function_call: Raw strings as function arguments
+  - test_raw_string_in_list: Raw strings in list literals
+  - test_raw_vs_regular_string_parser: Parsing both string types
+- ✅ All 183 parser tests passing (287 total workspace tests)
+- **Status**: Lexer at 100%, Parser now at ~95% complete, Phase 1 at ~96%
+- **Impact**: Full Python raw string literal syntax enabled for regex, file paths, and LaTeX
+
 ### ✅ FEATURE - F-Strings (Formatted String Literals) - December 9, 2025
 **Implemented f-strings (formatted string literals)** - enabling Python 3.6+ string formatting syntax.
 
