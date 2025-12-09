@@ -56,12 +56,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Function calling function defined later
 - Class referencing class defined later
 - Mutual recursion between functions
-- Decorator/base class forward references
+- Decorator/base class forward references (limited: only simple name references collected in pre-pass; full decorator/base class expression validation not yet implemented)
 - Nested function scope validation
 - Comprehension scope persistence
 
-**Total Test Count**: **484 tests** (115 lexer + 11 unit + 255 parser + 103 semantic)
-- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table
+**Known Limitations**:
+- Decorators and base class expressions are not yet validated for undefined variables
+- Only forward references to names collected in pre-pass (functions/classes) work
+- Complex decorator expressions (e.g., `@undefined_var` or `@module.decorator`) not checked
+
+**Total Test Count**: **490 tests** (115 lexer + 11 unit + 255 parser + 109 semantic)
+- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults
 
 ---
 

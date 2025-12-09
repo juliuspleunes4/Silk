@@ -57,6 +57,7 @@
   - Ellipsis literal (...) for type hints and stubs ✅
   - NotImplemented singleton for rich comparison methods ✅
   - **Known Limitations**:
+    - Lambda parameter defaults not supported by parser (semantic analyzer ready)
     - List/dict/set comprehensions not implemented
     - Generator expressions not implemented
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
@@ -287,7 +288,16 @@
     - ✅ Forward references handled correctly
     - ✅ All 484 tests passing with new architecture
 
-19. **TYPE CHECKING** ⏳ NEXT
+19. **DECORATOR AND BASE CLASS VALIDATION** ⏳ TODO
+    - [ ] Validate decorator expressions for undefined variables
+    - [ ] Validate base class expressions for undefined variables
+    - [ ] Validate class keyword arguments (e.g., `metaclass=...`)
+    - [ ] Test complex decorator expressions (e.g., `@module.decorator`, `@decorator(args)`)
+    - [ ] Test complex base class expressions (e.g., `Generic[T]`, `ParentClass[int]`)
+    - **Current Limitation**: Only simple name references collected in pre-pass work
+    - **Impact**: Undefined decorators/base classes not detected
+
+20. **TYPE CHECKING** ⏳ NEXT
     - Implement type inference engine
     - Type annotation validation
     - Function return type checking

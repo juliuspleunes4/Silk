@@ -135,11 +135,11 @@ cargo test --package silk-parser
 cargo test --package silk-semantic
 ```
 
-**Current test coverage:** 467 tests across all components
+**Current test coverage:** 490 tests across all components
 - 115 lexer tests
 - 11 unit tests  
 - 255 parser tests
-- 86 semantic analysis tests (17 symbol table + 28 analyzer + 41 name resolution)
+- 109 semantic analysis tests (17 symbol table + 28 analyzer + 44 name resolution + 14 forward references + 6 parameter defaults)
 
 ## Contributing
 
