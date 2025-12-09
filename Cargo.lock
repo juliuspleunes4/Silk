@@ -206,6 +206,7 @@ version = "0.1.0"
 dependencies = [
  "silk-ast",
  "silk-lexer",
+ "silk-parser",
  "thiserror 2.0.17",
 ]
 
