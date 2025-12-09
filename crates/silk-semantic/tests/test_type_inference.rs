@@ -172,10 +172,10 @@ fn test_negative_integer_type() {
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // Negative numbers are parsed as UnaryOp, so they'll be Unknown for now
-    // This is expected and will be fixed when we add binary/unary op type inference
+    // Negative numbers are parsed as UnaryOp with USub
+    // Unary minus on Int returns Int
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Unknown);
+    assert_eq!(symbol.ty, Type::Int);
 }
 
 #[test]
@@ -259,9 +259,10 @@ z = x + y
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // x + y is a binary operation, not a literal, so z should be Unknown
+    // x + y is a binary operation with type inference
+    // Int + Int = Int
     let z_symbol = analyzer.symbol_table().resolve_symbol("z").unwrap();
-    assert_eq!(z_symbol.ty, Type::Unknown);
+    assert_eq!(z_symbol.ty, Type::Int);
 }
 
 #[test]

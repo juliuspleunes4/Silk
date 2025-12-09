@@ -647,9 +647,113 @@ impl SemanticAnalyzer {
                 }
             }
             
+            // Binary operations
+            ExpressionKind::BinaryOp { left, op, right } => {
+                self.infer_binary_op_type(left, *op, right)
+            }
+            
+            // Comparison operations (always return Bool)
+            ExpressionKind::Compare { .. } => Type::Bool,
+            
+            // Logical operations
+            ExpressionKind::LogicalOp { left, op, right } => {
+                self.infer_logical_op_type(left, *op, right)
+            }
+            
+            // Unary operations
+            ExpressionKind::UnaryOp { op, operand } => {
+                self.infer_unary_op_type(*op, operand)
+            }
+            
             // For now, other expressions return Unknown
-            // TODO: Infer types for binary ops, calls, etc.
+            // TODO: Infer types for calls, collections, etc.
             _ => Type::Unknown,
+        }
+    }
+    
+    /// Infer type for binary arithmetic operations
+    fn infer_binary_op_type(&self, left: &Expression, op: silk_ast::BinaryOperator, right: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        use silk_ast::BinaryOperator;
+        
+        let left_type = self.infer_type(left);
+        let right_type = self.infer_type(right);
+        
+        match op {
+            // Arithmetic operators
+            BinaryOperator::Add => {
+                match (&left_type, &right_type) {
+                    // Int + Int = Int
+                    (Type::Int, Type::Int) => Type::Int,
+                    // Float + Float = Float
+                    (Type::Float, Type::Float) => Type::Float,
+                    // Int + Float = Float or Float + Int = Float
+                    (Type::Int, Type::Float) | (Type::Float, Type::Int) => Type::Float,
+                    // String + String = String
+                    (Type::Str, Type::Str) => Type::Str,
+                    // Unknown for other combinations
+                    _ => Type::Unknown,
+                }
+            }
+            BinaryOperator::Sub | BinaryOperator::Mult | BinaryOperator::Div | 
+            BinaryOperator::FloorDiv | BinaryOperator::Mod | BinaryOperator::Pow => {
+                match (&left_type, &right_type) {
+                    // Int op Int = Int
+                    (Type::Int, Type::Int) => Type::Int,
+                    // Float op Float = Float
+                    (Type::Float, Type::Float) => Type::Float,
+                    // Int op Float = Float or Float op Int = Float
+                    (Type::Int, Type::Float) | (Type::Float, Type::Int) => Type::Float,
+                    // Unknown for other combinations
+                    _ => Type::Unknown,
+                }
+            }
+            // Bitwise operators (only work with integers)
+            BinaryOperator::BitOr | BinaryOperator::BitXor | BinaryOperator::BitAnd |
+            BinaryOperator::LShift | BinaryOperator::RShift => {
+                match (&left_type, &right_type) {
+                    (Type::Int, Type::Int) => Type::Int,
+                    _ => Type::Unknown,
+                }
+            }
+        }
+    }
+    
+    /// Infer type for logical operations
+    fn infer_logical_op_type(&self, left: &Expression, op: silk_ast::LogicalOperator, right: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // In Python, 'and' and 'or' return one of the operands, not necessarily Bool
+        // For now, we simplify and return Unknown
+        // TODO: Implement proper 'and'/'or' semantics (return type of last evaluated operand)
+        let _ = (left, op, right);
+        Type::Unknown
+    }
+    
+    /// Infer type for unary operations
+    fn infer_unary_op_type(&self, op: silk_ast::UnaryOperator, operand: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        use silk_ast::UnaryOperator;
+        
+        match op {
+            UnaryOperator::Not => Type::Bool,
+            UnaryOperator::UAdd | UnaryOperator::USub => {
+                // Unary + and - preserve the numeric type
+                let operand_type = self.infer_type(operand);
+                match operand_type {
+                    Type::Int => Type::Int,
+                    Type::Float => Type::Float,
+                    _ => Type::Unknown,
+                }
+            }
+            UnaryOperator::Invert => {
+                // Bitwise NOT only works with integers
+                let operand_type = self.infer_type(operand);
+                match operand_type {
+                    Type::Int => Type::Int,
+                    _ => Type::Unknown,
+                }
+            }
         }
     }
 
