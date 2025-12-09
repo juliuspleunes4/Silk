@@ -49,11 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Attribute decorators: `@module.decorator`
   - Multiple stacked decorators
 
-**Tests Added**: 19 new comprehensive tests in `test_decorators_bases.rs`
+**Tests Added**: 24 new comprehensive tests in `test_decorators_bases.rs`
 - Function decorator validation (undefined, defined, forward ref, attributes, multiple) ✅
 - Class decorator validation (undefined, defined, forward ref) ✅
 - Base class validation (undefined, defined, forward ref, multiple) ✅
-- Combined decorator + base class validation ✅
+- Keyword argument validation (metaclass, undefined, defined, forward ref) ✅
+- Combined decorator + base class + keyword validation ✅
 
 **Note**: This resolves the limitation documented in the architecture fix changelog entry.
 
@@ -89,8 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nested function scope validation
 - Comprehension scope persistence
 
-**Total Test Count**: **509 tests** (115 lexer + 11 unit + 255 parser + 128 semantic)
-- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 19 decorators/bases
+**Total Test Count**: **514 tests** (115 lexer + 11 unit + 255 parser + 133 semantic)
+- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases/keywords
 
 ---
 

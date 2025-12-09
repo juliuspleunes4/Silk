@@ -313,3 +313,72 @@ class MyClass(UndefinedBase):
     let errors = result.unwrap_err();
     assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase"));
 }
+
+// ========== CLASS KEYWORD ARGUMENTS ==========
+
+#[test]
+fn test_class_keyword_metaclass_undefined() {
+    let source = r#"
+class MyClass(metaclass=UndefinedMeta):
+    pass
+    "#;
+    let result = analyze(source);
+    assert!(result.is_err(), "Should detect undefined metaclass");
+    let errors = result.unwrap_err();
+    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedMeta"));
+}
+
+#[test]
+fn test_class_keyword_metaclass_defined() {
+    let source = r#"
+class MetaClass:
+    pass
+
+class MyClass(metaclass=MetaClass):
+    pass
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Defined metaclass should work: {:?}", result);
+}
+
+#[test]
+fn test_class_keyword_metaclass_forward_reference() {
+    let source = r#"
+class MyClass(metaclass=MetaClass):
+    pass
+
+class MetaClass:
+    pass
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Forward reference metaclass should work: {:?}", result);
+}
+
+#[test]
+fn test_class_with_base_and_metaclass_both_undefined() {
+    let source = r#"
+class MyClass(UndefinedBase, metaclass=UndefinedMeta):
+    pass
+    "#;
+    let result = analyze(source);
+    assert!(result.is_err(), "Should detect both undefined base and metaclass");
+    let errors = result.unwrap_err();
+    // Should have 2 errors
+    assert_eq!(errors.len(), 2);
+}
+
+#[test]
+fn test_class_with_base_and_metaclass_both_defined() {
+    let source = r#"
+class BaseClass:
+    pass
+
+class MetaClass:
+    pass
+
+class MyClass(BaseClass, metaclass=MetaClass):
+    pass
+    "#;
+    let result = analyze(source);
+    assert!(result.is_ok(), "Both base and metaclass defined should work: {:?}", result);
+}

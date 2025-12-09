@@ -174,7 +174,7 @@ impl SemanticAnalyzer {
             }
 
             // Class definition: already declared in pre-pass, now analyze body
-            StatementKind::ClassDef { bases, decorator_list, body, .. } => {
+            StatementKind::ClassDef { bases, keywords, decorator_list, body, .. } => {
                 // Analyze decorators BEFORE entering scope (evaluated in outer scope)
                 for decorator in decorator_list {
                     self.analyze_expression(decorator);
@@ -185,7 +185,10 @@ impl SemanticAnalyzer {
                     self.analyze_expression(base);
                 }
 
-                // TODO: Analyze keywords (e.g., metaclass=...) once keyword validation is implemented
+                // Analyze keyword arguments (e.g., metaclass=UndefinedMeta)
+                for keyword in keywords {
+                    self.analyze_expression(&keyword.value);
+                }
 
                 // Enter class scope
                 self.symbol_table.enter_scope(ScopeKind::Class);
