@@ -1,4 +1,2 @@
 # Ensure only Rust is treated in GitHub Linguist
-*.rs linguist-language=Rust
-# Exclude other file types from being counted in language statistics
-* linguist-vendored
+* linguist-language=Rust
