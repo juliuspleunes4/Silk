@@ -3500,4 +3500,62 @@ fn test_list_comp_nested_with_filter() {
     }
 }
 
+#[test]
+fn test_dict_comp_simple() {
+    let source = "{x: x * 2 for x in items}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::DictComp { ref key, ref value, ref generators } => {
+            // Check key is 'x'
+            assert!(matches!(key.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+            
+            // Check value is 'x * 2'
+            assert!(matches!(value.kind, ExpressionKind::BinaryOp { .. }));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected dict comprehension"),
+    }
+}
+
+#[test]
+fn test_set_comp_simple() {
+    let source = "{x * 2 for x in items}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::SetComp { ref element, ref generators } => {
+            // Check element is 'x * 2'
+            assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
+            
+            // Check one generator
+            assert_eq!(generators.len(), 1);
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+        }
+        _ => panic!("Expected set comprehension"),
+    }
+}
+
+#[test]
+fn test_dict_comp_with_filter() {
+    let source = "{x: x * 2 for x in items if x > 0}";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::DictComp { key: _, value: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            
+            // Check simple name target
+            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            
+            // Check one filter
+            assert_eq!(generators[0].ifs.len(), 1);
+        }
+        _ => panic!("Expected dict comprehension"),
+    }
+}
+
 

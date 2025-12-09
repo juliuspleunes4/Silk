@@ -129,6 +129,11 @@ impl Parser {
                     // Parse first expression
                     let first_expr = self.parse_expression()?;
                     
+                    // Check for generator expression: (x for x in items)
+                    if self.check(TokenKind::For) {
+                        return self.parse_generator_expression(first_expr, start);
+                    }
+                    
                     // Check for comma (makes it a tuple)
                     if self.check(TokenKind::Comma) {
                         self.advance(); // consume comma
@@ -237,9 +242,14 @@ impl Parser {
                 
                 // Check if this is a dict or set
                 if self.check(TokenKind::Colon) {
-                    // Dict: {key: value, ...}
+                    // Dict: {key: value, ...} or dict comprehension {k: v for ...}
                     self.advance(); // consume ':'
                     let first_value = self.parse_expression()?;
+                    
+                    // Check for dict comprehension
+                    if self.check(TokenKind::For) {
+                        return self.parse_dict_comprehension(first_expr, first_value, start);
+                    }
                     
                     let mut keys = vec![first_expr];
                     let mut values = vec![first_value];
@@ -264,7 +274,13 @@ impl Parser {
                     self.expect(TokenKind::RightBrace, "Expected '}' after dict elements")?;
                     ExpressionKind::Dict { keys, values }
                 } else {
-                    // Set: {element, ...}
+                    // Set: {element, ...} or set comprehension {x for ...}
+                    
+                    // Check for set comprehension
+                    if self.check(TokenKind::For) {
+                        return self.parse_set_comprehension(first_expr, start);
+                    }
+                    
                     let mut elements = vec![first_expr];
                     
                     // Parse remaining elements
@@ -727,15 +743,41 @@ impl Parser {
     
     /// Parse list comprehension: [element for target in iter]
     fn parse_list_comprehension(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
-        // Parse the generator clauses
         let generators = self.parse_comprehension_generators()?;
-        
-        // Expect closing bracket
         self.expect(TokenKind::RightBracket, "Expected ']' after list comprehension")?;
         
         let end = self.current_token().span.clone();
         Ok(Expression::new(
             ExpressionKind::ListComp {
+                element: Box::new(element),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse dict comprehension: {key: value for target in iter}
+    fn parse_dict_comprehension(&mut self, key: Expression, value: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightBrace, "Expected '}' after dict comprehension")?;
+        Ok(Expression::new(
+            ExpressionKind::DictComp {
+                key: Box::new(key),
+                value: Box::new(value),
+                generators,
+            },
+            silk_lexer::Span::new(start.start, end.end, start.line, start.column)
+        ))
+    }
+    
+    /// Parse set comprehension: {element for target in iter}
+    fn parse_set_comprehension(&mut self, element: Expression, start: silk_lexer::Span) -> ParseResult<Expression> {
+        let generators = self.parse_comprehension_generators()?;
+        let end = self.current_token().span;
+        self.expect(TokenKind::RightBrace, "Expected '}' after set comprehension")?;
+        Ok(Expression::new(
+            ExpressionKind::SetComp {
                 element: Box::new(element),
                 generators,
             },
