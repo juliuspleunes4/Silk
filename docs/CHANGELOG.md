@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🏗️ Type Annotation Infrastructure - December 9, 2025
+
+**Added type annotation resolver infrastructure** (ready for use once parser supports annotated assignments).
+
+**New Features**:
+- Implemented `resolve_type_annotation()` method in semantic analyzer
+- Converts AST `TypeKind::Name` to semantic `Type` enum
+- Resolves built-in type names: int, str, bool, float, None
+- Returns `Type::Unknown` for custom/undefined types
+- Made public for testability and future use
+
+**Parser Blocker**: Full type annotation validation requires parser to implement:
+1. `AnnAssign` statement kind (for `x: int = 5` syntax)
+2. `type_annotation` field in `Assign` (currently always None)
+
+**Status**: Infrastructure complete and tested. Waiting for parser implementation to enable end-to-end type annotation validation.
+
+**Test Count**: **550 tests** (unchanged - no new tests added pending parser support)
+
+---
+
 ### 🔬 Type System Foundation and Literal Type Inference - December 9, 2025
 
 **Implemented foundational type system with literal type inference**.

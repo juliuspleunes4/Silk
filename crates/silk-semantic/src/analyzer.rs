@@ -653,6 +653,30 @@ impl SemanticAnalyzer {
         }
     }
 
+    /// Resolve a type annotation from AST to semantic Type
+    /// 
+    /// Converts AST TypeKind to semantic Type enum.
+    /// For now, handles built-in named types (int, str, bool, float).
+    /// Returns Unknown for non-built-in types.
+    /// 
+    /// NOTE: Currently unused pending parser implementation of AnnAssign.
+    /// Will be used once parser supports `x: int = 5` syntax.
+    #[allow(dead_code)]
+    fn resolve_type_annotation(&self, type_ann: &silk_ast::Type) -> crate::types::Type {
+        use crate::types::Type;
+        
+        match &type_ann.kind {
+            silk_ast::TypeKind::Name(name) => {
+                // Try to parse as built-in type
+                Type::from_str(name).unwrap_or(Type::Unknown)
+            }
+            
+            // For now, complex types return Unknown
+            // TODO: Handle Generic, Union, Optional, Callable, etc.
+            _ => Type::Unknown,
+        }
+    }
+
     /// Define a function parameter
     fn define_parameter(&mut self, arg: &silk_ast::FunctionArg) {
         let param_symbol = Symbol::new(

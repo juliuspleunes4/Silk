@@ -76,8 +76,10 @@
     - ✅ Complete: List/dict/set/generator comprehensions with multiple generators and filters
 - **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (75% complete)**
   - Symbol Table ✅ (100% - scope stack, define/resolve, 17 tests)
-  - AST Visitor ✅ (100% - single-pass analyzer with pre-pass, ~600 lines)
+  - AST Visitor ✅ (100% - single-pass analyzer with pre-pass, ~700 lines)
   - Symbol Collection ✅ (100% - assignments, functions, classes, imports, 28 tests)
+  - Type System ✅ (100% - Type enum, literal inference, type compatibility, 36 tests)
+  - Type Annotation Infrastructure ✅ (100% - resolver ready, blocked on parser for AnnAssign)
   - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 44 tests)
   - Forward References ✅ (100% - function/class forward refs, mutual recursion, 14 tests)
   - Architecture ✅ (100% - single-pass refactor complete)
