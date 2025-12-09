@@ -379,7 +379,10 @@ impl SemanticAnalyzer {
             StatementKind::FunctionDef { params, body, .. } => {
                 self.symbol_table.enter_scope(ScopeKind::Function);
                 
-                // Define parameters first
+                // NOTE: Re-defining parameters here because each pass creates new scopes.
+                // This is redundant but necessary with current two-pass architecture.
+                // Parameters allow redefinition, so this doesn't cause errors.
+                // TODO: Refactor to single-pass or persist scopes between passes.
                 for param in &params.args {
                     self.collect_function_arg(param);
                 }
