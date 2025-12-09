@@ -233,6 +233,41 @@ impl Parser {
                 }
             }
             
+            // Lambda expression
+            TokenKind::Lambda => {
+                self.advance(); // consume 'lambda'
+                
+                let mut params = Vec::new();
+                
+                // Parse parameters (if any) - simple form without type annotations or defaults
+                if !self.check(TokenKind::Colon) {
+                    loop {
+                        let param_start = self.current_token().span.clone();
+                        let name = self.expect(TokenKind::Identifier, "Expected parameter name in lambda")?.lexeme;
+                        
+                        params.push(silk_ast::Parameter {
+                            name,
+                            annotation: None,  // Lambdas don't have type annotations
+                            default: None,     // Lambdas don't have default values in simple form
+                            span: param_start,
+                        });
+                        
+                        if self.check(TokenKind::Comma) {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                
+                self.expect(TokenKind::Colon, "Expected ':' after lambda parameters")?;
+                
+                // Parse body (single expression)
+                let body = Box::new(self.parse_expression()?);
+                
+                ExpressionKind::Lambda { params, body }
+            }
+            
             _ => {
                 return Err(ParseError::InvalidExpression(
                     self.current_token().span.line,

@@ -52,7 +52,6 @@
   - Expression to pattern conversion for for loops ✅
   - **Known Limitations**:
     - List/dict/set comprehensions not implemented
-    - Lambda expressions not implemented
     - Ternary/conditional expressions not implemented
     - Keyword arguments in function calls not implemented
     - Decorators have placeholder implementation only
@@ -61,13 +60,13 @@
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
 
 ### ⏳ In Progress
-- **Phase 1: Foundation** - ~87% complete! Core statements functional, basic expressions working
+- **Phase 1: Foundation** - ~88% complete! Core statements functional, most expressions working
   - Lexer ✅ (100% - all core features including indentation tracking)
   - AST ✅ (100% - all definitions complete)
-  - Parser 🟡 (85% - all statements complete, most expressions work)
+  - Parser 🟡 (87% - all statements complete, most expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
-    - ✅ Complete: Basic expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices)
-    - ❌ Missing: comprehensions, lambda, ternary
+    - ✅ Complete: Most expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, slices, lambda)
+    - ❌ Missing: comprehensions, ternary
     - ⚠️ Partial: Function calls (no keyword args), function params (no *args/**kwargs), decorators (placeholder)
   - Semantic Analysis ❌ (0% - not started, next phase)
   - Code Generation ❌ (0% - not started)
@@ -113,29 +112,38 @@
    - ✅ Slices work correctly as subscript indices
    - ✅ Added 14 comprehensive tests covering all slice forms
 
+6. ~~**LAMBDA EXPRESSIONS**~~ ✅ DONE (December 9, 2025)
+   - ✅ Implemented lambda expression parsing: lambda x: x + 1
+   - ✅ No parameters: lambda: 42
+   - ✅ Single parameter: lambda x: x * 2
+   - ✅ Multiple parameters: lambda x, y: x + y
+   - ✅ Complex expressions in body
+   - ✅ Nested lambdas: lambda x: lambda y: x + y
+   - ✅ Lambdas in function calls, lists, etc.
+   - ✅ Added 14 comprehensive tests covering all lambda forms
+
 #### 🟡 HIGH Priority (Phase 1 completion) - NEXT
-6. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
+7. Complete remaining expression parsing (2-3 weeks) - **CRITICAL FOR BASIC PYTHON SUPPORT**:
    - Comprehensions (list/dict/set/generator)
-   - Lambda expressions
    - Ternary/conditional expressions (x if cond else y)
    - Keyword arguments in function calls
    - *args and **kwargs in function parameters
    
-7. Lexer enhancements (1-2 weeks):
+8. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
    - Numeric literal underscores (1_000)
    - Raw strings (r"...") and f-strings
 
-8. Begin semantic analysis phase (2-3 months):
+9. Begin semantic analysis phase (2-3 months):
    - Create silk-semantic crate
    - Symbol table management
    - Type inference engine
    - Basic type checking
 
 #### 🟢 MEDIUM Priority (Phase 2)
-9. Code generation foundation (2-3 months)
-10. Runtime library basics (1-2 months)
-11. Optimization passes (1-2 months)
+10. Code generation foundation (2-3 months)
+11. Runtime library basics (1-2 months)
+12. Optimization passes (1-2 months)
 
 ---
 

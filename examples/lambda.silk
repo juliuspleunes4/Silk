@@ -1,0 +1,89 @@
+# Lambda Expression Examples
+
+# Simple lambda with no parameters
+get_pi = lambda: 3.14159
+answer = lambda: 42
+
+# Lambda with single parameter
+square = lambda x: x ** 2
+double = lambda x: x * 2
+increment = lambda x: x + 1
+is_positive = lambda x: x > 0
+
+# Lambda with multiple parameters
+add = lambda x, y: x + y
+multiply = lambda x, y, z: x * y * z
+distance = lambda x1, y1, x2, y2: ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+# Lambdas with complex expressions
+greeting = lambda name: "Hello, " + name + "!"
+max_of_two = lambda a, b: a if a > b else b  # (when ternary is implemented)
+clamp = lambda x, min_val, max_val: x
+
+# Lambdas with logical operations
+both_positive = lambda x, y: x > 0 and y > 0
+either_zero = lambda x, y: x == 0 or y == 0
+
+# Lambdas with tuple return
+make_point = lambda x, y: (x, y)
+swap = lambda a, b: (b, a)
+
+# Lambdas with subscripts
+get_first = lambda lst: lst[0]
+get_last = lambda lst: lst[-1]
+get_middle = lambda lst: lst[len(lst) // 2]
+
+# Nested lambdas (currying)
+make_adder = lambda x: lambda y: x + y
+add_five = make_adder(5)
+result = add_five(10)  # 15
+
+make_multiplier = lambda factor: lambda x: x * factor
+double_func = make_multiplier(2)
+triple_func = make_multiplier(3)
+
+# Lambdas in function calls
+numbers = [1, 2, 3, 4, 5]
+doubled = map(lambda x: x * 2, numbers)
+evens = filter(lambda x: x % 2 == 0, numbers)
+sum_result = reduce(lambda acc, x: acc + x, numbers)
+
+# Sorting with lambdas
+people = [("Alice", 30), ("Bob", 25), ("Charlie", 35)]
+by_age = sorted(people, key=lambda person: person[1])
+by_name = sorted(people, key=lambda person: person[0])
+
+# Lambdas in list
+operations = [
+    lambda x: x + 1,
+    lambda x: x * 2,
+    lambda x: x ** 2,
+]
+
+# Apply operations
+for op in operations:
+    result = op(5)
+
+# Lambdas in dictionary
+math_ops = {
+    "add": lambda x, y: x + y,
+    "sub": lambda x, y: x - y,
+    "mul": lambda x, y: x * y,
+    "div": lambda x, y: x / y,
+}
+
+# Complex lambda with function calls
+transform = lambda text: text.upper().strip()
+validate = lambda x: len(x) > 0 and x.isalpha()
+
+# Lambda with comparison
+comparator = lambda x, y: x < y
+is_in_range = lambda x, low, high: x >= low and x <= high
+
+# Immediately invoked lambda
+result = (lambda x, y: x + y)(10, 20)  # 30
+
+# Lambda returning lambda
+create_greeter = lambda greeting: lambda name: greeting + ", " + name
+say_hello = create_greeter("Hello")
+say_hi = create_greeter("Hi")

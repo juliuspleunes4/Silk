@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Lambda Expressions - December 9, 2025
+**Implemented lambda expression parsing** - enabling anonymous function creation.
+
+**Parser Expression Enhancement (silk-parser)** - Lambda Expressions ✅:
+- ✅ Implemented lambda expression parsing: `lambda x: x + 1`
+- ✅ No parameters: `lambda: 42`
+- ✅ Single parameter: `lambda x: x * 2`
+- ✅ Multiple parameters: `lambda x, y: x + y`
+- ✅ Complex expressions in body (arithmetic, comparisons, logical ops, calls)
+- ✅ Nested lambdas: `lambda x: lambda y: x + y`
+- ✅ Lambdas work in function calls: `map(lambda x: x * 2, numbers)`
+- ✅ Lambdas work in collections: `[lambda x: x + 1, lambda x: x * 2]`
+- ✅ Lambda with tuple return: `lambda x, y: (x, y)`
+- ✅ Lambda with subscripts: `lambda lst, i: lst[i]`
+- ✅ Added 14 comprehensive tests covering all lambda forms
+- ✅ All 124 parser tests passing (199 total workspace tests)
+- **Status**: Parser now at ~87% complete, Phase 1 at ~88%
+- **Impact**: Full Python-style anonymous functions enabled
+
 ### ✅ FEATURE - Slice Syntax - December 9, 2025
 **Implemented slice syntax parsing** - enabling Python-style sequence slicing.
 

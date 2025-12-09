@@ -1585,3 +1585,232 @@ fn test_chained_subscript_with_slice() {
     }
 }
 
+// ============================================================================
+// Lambda Expression Tests
+// ============================================================================
+
+#[test]
+fn test_lambda_no_params() {
+    let expr = parse_expr("lambda: 42").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 0, "Lambda should have no parameters");
+            match &body.kind {
+                ExpressionKind::Integer(42) => {},
+                _ => panic!("Expected integer 42 in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression, got {:?}", expr.kind),
+    }
+}
+
+#[test]
+fn test_lambda_single_param() {
+    let expr = parse_expr("lambda x: x + 1").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1, "Lambda should have 1 parameter");
+            assert_eq!(params[0].name, "x");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_multiple_params() {
+    let expr = parse_expr("lambda x, y: x * y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2, "Lambda should have 2 parameters");
+            assert_eq!(params[0].name, "x");
+            assert_eq!(params[1].name, "y");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_three_params() {
+    let expr = parse_expr("lambda x, y, z: x + y + z").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, .. } => {
+            assert_eq!(params.len(), 3, "Lambda should have 3 parameters");
+            assert_eq!(params[0].name, "x");
+            assert_eq!(params[1].name, "y");
+            assert_eq!(params[2].name, "z");
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_string_body() {
+    let expr = parse_expr(r#"lambda name: "Hello, " + name"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            assert_eq!(params[0].name, "name");
+            match &body.kind {
+                ExpressionKind::BinaryOp { .. } => {},
+                _ => panic!("Expected binary operation"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_comparison() {
+    let expr = parse_expr("lambda x: x > 0").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            match &body.kind {
+                ExpressionKind::Compare { .. } => {},
+                _ => panic!("Expected comparison in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_function_call() {
+    let expr = parse_expr("lambda x: foo(x)").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            match &body.kind {
+                ExpressionKind::Call { .. } => {},
+                _ => panic!("Expected function call in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_in_function_call() {
+    let expr = parse_expr("map(lambda x: x * 2, numbers)").unwrap();
+    match expr.kind {
+        ExpressionKind::Call { func, args, .. } => {
+            match &func.kind {
+                ExpressionKind::Identifier(name) => assert_eq!(name, "map"),
+                _ => panic!("Expected identifier 'map'"),
+            }
+            assert_eq!(args.len(), 2, "Expected 2 arguments");
+            match &args[0].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda as first argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_lambda_in_list() {
+    let expr = parse_expr("[lambda x: x + 1, lambda x: x * 2]").unwrap();
+    match expr.kind {
+        ExpressionKind::List { elements } => {
+            assert_eq!(elements.len(), 2);
+            match &elements[0].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in list"),
+            }
+            match &elements[1].kind {
+                ExpressionKind::Lambda { .. } => {},
+                _ => panic!("Expected lambda in list"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_lambda_with_complex_body() {
+    let expr = parse_expr("lambda x: x * 2 + 1").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body: _ } => {
+            assert_eq!(params.len(), 1);
+            // Body is a complex expression with multiple operations
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_nested_lambda() {
+    let expr = parse_expr("lambda x: lambda y: x + y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 1);
+            assert_eq!(params[0].name, "x");
+            // Body should be another lambda
+            match &body.kind {
+                ExpressionKind::Lambda { params: inner_params, .. } => {
+                    assert_eq!(inner_params.len(), 1);
+                    assert_eq!(inner_params[0].name, "y");
+                }
+                _ => panic!("Expected nested lambda in body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_tuple_unpack() {
+    let expr = parse_expr("lambda x, y: (x, y)").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::Tuple { elements } => {
+                    assert_eq!(elements.len(), 2);
+                }
+                _ => panic!("Expected tuple in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_logical_ops() {
+    let expr = parse_expr("lambda x, y: x and y").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::LogicalOp { .. } => {},
+                _ => panic!("Expected logical operation in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
+#[test]
+fn test_lambda_with_subscript() {
+    let expr = parse_expr("lambda lst, i: lst[i]").unwrap();
+    match expr.kind {
+        ExpressionKind::Lambda { params, body } => {
+            assert_eq!(params.len(), 2);
+            match &body.kind {
+                ExpressionKind::Subscript { .. } => {},
+                _ => panic!("Expected subscript in lambda body"),
+            }
+        }
+        _ => panic!("Expected lambda expression"),
+    }
+}
+
