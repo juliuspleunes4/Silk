@@ -10,8 +10,9 @@ pub struct Lexer {
     position: usize,
     line: usize,
     column: usize,
-    #[allow(dead_code)] // TODO: Used for indentation tracking
     indent_stack: Vec<usize>,
+    at_line_start: bool,
+    pending_dedents: usize,
 }
 
 impl Lexer {
@@ -23,6 +24,8 @@ impl Lexer {
             line: 1,
             column: 1,
             indent_stack: vec![0], // Start with 0 indentation
+            at_line_start: true,
+            pending_dedents: 0,
         }
     }
     
@@ -31,8 +34,34 @@ impl Lexer {
         let mut tokens = Vec::new();
         
         loop {
+            // Handle pending dedents first
+            if self.pending_dedents > 0 {
+                self.pending_dedents -= 1;
+                let token = Token {
+                    kind: TokenKind::Dedent,
+                    lexeme: String::new(),
+                    span: Span::new(self.position, self.position, self.line, self.column),
+                };
+                tokens.push(token);
+                continue;
+            }
+            
             let token = self.next_token()?;
             let is_eof = token.kind == TokenKind::Eof;
+            
+            // Don't add EOF yet if we have pending dedents
+            if is_eof {
+                // Generate dedents for remaining indentation levels
+                while self.indent_stack.len() > 1 {
+                    self.indent_stack.pop();
+                    tokens.push(Token {
+                        kind: TokenKind::Dedent,
+                        lexeme: String::new(),
+                        span: Span::new(self.position, self.position, self.line, self.column),
+                    });
+                }
+            }
+            
             tokens.push(token);
             
             if is_eof {
@@ -45,6 +74,11 @@ impl Lexer {
     
     /// Get the next token
     pub fn next_token(&mut self) -> LexResult<Token> {
+        // Handle indentation at line start
+        if self.at_line_start {
+            return self.handle_indentation();
+        }
+        
         self.skip_whitespace_inline();
         
         if self.is_at_end() {
@@ -60,6 +94,7 @@ impl Lexer {
         // Handle newlines
         if ch == '\n' {
             self.advance();
+            self.at_line_start = true;
             return Ok(Token {
                 kind: TokenKind::Newline,
                 lexeme: "\n".to_string(),
@@ -133,6 +168,138 @@ impl Lexer {
                 break;
             }
         }
+    }
+    
+    fn handle_indentation(&mut self) -> LexResult<Token> {
+        self.at_line_start = false;
+        
+        let start_pos = self.position;
+        let start_line = self.line;
+        let start_col = self.column;
+        
+        // Skip blank lines and comments
+        while !self.is_at_end() {
+            let ch = self.current_char();
+            
+            // Skip whitespace
+            if ch == ' ' || ch == '\t' {
+                self.advance();
+                continue;
+            }
+            
+            // Empty line - skip it
+            if ch == '\n' {
+                self.advance();
+                self.at_line_start = true;
+                return Ok(Token {
+                    kind: TokenKind::Newline,
+                    lexeme: "\n".to_string(),
+                    span: Span::new(start_pos, self.position, start_line, start_col),
+                });
+            }
+            
+            // Comment line - lex the comment but stay at line start
+            if ch == '#' {
+                let comment = self.lex_comment()?;
+                return Ok(comment);
+            }
+            
+            break;
+        }
+        
+        // End of file
+        if self.is_at_end() {
+            return Ok(self.make_token(TokenKind::Eof, ""));
+        }
+        
+        // Calculate indentation level (column - 1 because column starts at 1)
+        let indent_level = self.column - 1;
+        let current_indent = *self.indent_stack.last().unwrap();
+        
+        if indent_level > current_indent {
+            // Indentation increased - generate INDENT
+            self.indent_stack.push(indent_level);
+            return Ok(Token {
+                kind: TokenKind::Indent,
+                lexeme: String::new(),
+                span: Span::new(start_pos, self.position, start_line, start_col),
+            });
+        } else if indent_level < current_indent {
+            // Indentation decreased - generate DEDENT(s)
+            let mut dedent_count = 0;
+            
+            while let Some(&stack_indent) = self.indent_stack.last() {
+                if stack_indent <= indent_level {
+                    break;
+                }
+                self.indent_stack.pop();
+                dedent_count += 1;
+            }
+            
+            // Check if indentation matches a level in the stack
+            if self.indent_stack.last() != Some(&indent_level) {
+                return Err(LexError::IndentationError(
+                    start_line,
+                    format!("Inconsistent indentation at column {}", indent_level),
+                ));
+            }
+            
+            // Queue up dedents
+            if dedent_count > 0 {
+                self.pending_dedents = dedent_count - 1;
+                return Ok(Token {
+                    kind: TokenKind::Dedent,
+                    lexeme: String::new(),
+                    span: Span::new(start_pos, self.position, start_line, start_col),
+                });
+            }
+        }
+        
+        // Same indentation - continue normally
+        self.skip_whitespace_inline();
+        
+        if self.is_at_end() {
+            return Ok(self.make_token(TokenKind::Eof, ""));
+        }
+        
+        let ch = self.current_char();
+        
+        // Handle comments
+        if ch == '#' {
+            return self.lex_comment();
+        }
+        
+        // Handle identifiers and keywords
+        if ch.is_alphabetic() || ch == '_' {
+            return self.lex_identifier();
+        }
+        
+        // Handle numbers
+        if ch.is_ascii_digit() {
+            return self.lex_number();
+        }
+        
+        // Handle strings
+        if ch == '"' || ch == '\'' {
+            return self.lex_string();
+        }
+        
+        // Handle newlines
+        if ch == '\n' {
+            let start_pos = self.position;
+            let start_line = self.line;
+            let start_col = self.column;
+            self.advance();
+            self.at_line_start = true;
+            return Ok(Token {
+                kind: TokenKind::Newline,
+                lexeme: "\n".to_string(),
+                span: Span::new(start_pos, self.position, start_line, start_col),
+            });
+        }
+        
+        // Handle operators and delimiters
+        self.lex_operator_or_delimiter()
     }
     
     fn make_token(&self, kind: TokenKind, lexeme: &str) -> Token {
@@ -640,6 +807,44 @@ mod tests {
         assert_eq!(tokens[1].kind, TokenKind::Assign);
         assert_eq!(tokens[2].kind, TokenKind::Integer(1));
         assert_eq!(tokens[3].kind, TokenKind::Comment);
+    }
+    
+    #[test]
+    fn test_indentation_simple() {
+        let source = "def foo():\n    return 42";
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        
+        // Find INDENT and DEDENT tokens
+        let indent_found = tokens.iter().any(|t| t.kind == TokenKind::Indent);
+        let dedent_found = tokens.iter().any(|t| t.kind == TokenKind::Dedent);
+        
+        assert!(indent_found, "Should have INDENT token");
+        assert!(dedent_found, "Should have DEDENT token");
+    }
+    
+    #[test]
+    fn test_indentation_nested() {
+        let source = "def outer():\n    if True:\n        x = 1\n    y = 2";
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        
+        let indent_count = tokens.iter().filter(|t| t.kind == TokenKind::Indent).count();
+        let dedent_count = tokens.iter().filter(|t| t.kind == TokenKind::Dedent).count();
+        
+        assert_eq!(indent_count, 2, "Should have 2 INDENT tokens");
+        assert_eq!(dedent_count, 2, "Should have 2 DEDENT tokens");
+    }
+    
+    #[test]
+    fn test_indentation_multiple_dedents() {
+        let source = "def foo():\n    if True:\n        x = 1\ny = 2";
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        
+        let dedent_count = tokens.iter().filter(|t| t.kind == TokenKind::Dedent).count();
+        
+        assert_eq!(dedent_count, 2, "Should have 2 DEDENT tokens when going from nested to top level");
     }
 }
 
