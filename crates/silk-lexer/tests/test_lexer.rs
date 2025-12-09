@@ -1568,3 +1568,181 @@ fn test_byte_string_non_ascii_error() {
         assert!(err.to_string().contains("Non-ASCII"));
     }
 }
+
+// ============================================================================
+// Byte Raw String Tests (br"..." or rb"...")
+// ============================================================================
+
+#[test]
+fn test_byte_raw_string_basic_br() {
+    let source = r#"br"Hello\nWorld""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2); // ByteRawString + EOF
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // Raw string should preserve \n literally (2 chars: backslash and 'n')
+        assert_eq!(bytes, b"Hello\\nWorld");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_basic_rb() {
+    let source = r#"rb"Hello\nWorld""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2); // ByteRawString + EOF
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // Raw string should preserve \n literally
+        assert_eq!(bytes, b"Hello\\nWorld");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_windows_path() {
+    let source = r#"br"C:\Users\username\file.txt""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // All backslashes preserved literally
+        assert_eq!(bytes, b"C:\\Users\\username\\file.txt");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_regex_pattern() {
+    let source = r#"br"\d+\.\d+""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // Regex pattern preserved with backslashes
+        assert_eq!(bytes, b"\\d+\\.\\d+");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_single_quotes() {
+    let source = r#"br'Hello\tWorld'"#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        assert_eq!(bytes, b"Hello\\tWorld");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_uppercase_br() {
+    let source = r#"BR"Test\n""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        assert_eq!(bytes, b"Test\\n");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_uppercase_rb() {
+    let source = r#"RB"Test\r\n""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        assert_eq!(bytes, b"Test\\r\\n");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_mixed_case() {
+    let source = r#"Br"Mixed\nCase""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        assert_eq!(bytes, b"Mixed\\nCase");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_triple_quoted() {
+    let source = r####"br"""Line 1\nLine 2\nLine 3""""####;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // Triple-quoted preserves actual newlines AND backslashes
+        let expected = b"Line 1\\nLine 2\\nLine 3";
+        assert_eq!(bytes, expected);
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_empty() {
+    let source = r#"br"""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        assert_eq!(bytes, b"");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}
+
+#[test]
+fn test_byte_raw_string_non_ascii_error() {
+    let source = r#"br"Hello 世界""#;  // Contains non-ASCII characters
+    let mut lexer = Lexer::new(source);
+    let result = lexer.tokenize();
+    
+    assert!(result.is_err());
+    if let Err(err) = result {
+        assert!(err.to_string().contains("Non-ASCII"));
+    }
+}
+
+#[test]
+fn test_byte_raw_string_hex_notation_preserved() {
+    // In byte raw strings, \x is NOT processed - it stays literal
+    let source = r#"br"\x41\x42\x43""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().expect("Failed to tokenize");
+    
+    assert_eq!(tokens.len(), 2);
+    if let TokenKind::ByteRawString(bytes) = &tokens[0].kind {
+        // \x41 stays as literal \x41 (not converted to 'A')
+        assert_eq!(bytes, b"\\x41\\x42\\x43");
+    } else {
+        panic!("Expected ByteRawString token");
+    }
+}

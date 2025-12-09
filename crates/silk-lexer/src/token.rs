@@ -88,6 +88,7 @@ pub enum TokenKind {
     String(String),
     RawString(String),  // r"text\n" - escape sequences not processed
     ByteString(Vec<u8>),  // b"bytes" - byte literal
+    ByteRawString(Vec<u8>),  // br"bytes\n" or rb"bytes\n" - raw byte literal
     FString(Vec<FStringPart>),  // f"text {expr} text"
     
     // Operators

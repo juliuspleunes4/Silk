@@ -2870,4 +2870,149 @@ fn test_byte_string_empty() {
     }
 }
 
+// ============================================================================
+// Byte Raw String Tests (br"..." or rb"...")
+// ============================================================================
+
+#[test]
+fn test_byte_raw_string_basic_br() {
+    let expr = parse_expr(r#"br"Hello\nWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Raw string preserves \n literally (backslash and 'n')
+            assert_eq!(bytes, b"Hello\\nWorld");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_basic_rb() {
+    let expr = parse_expr(r#"rb"Hello\tWorld""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Raw string preserves \t literally
+            assert_eq!(bytes, b"Hello\\tWorld");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_windows_path() {
+    let expr = parse_expr(r#"br"C:\Users\username\file.txt""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // All backslashes preserved
+            assert_eq!(bytes, b"C:\\Users\\username\\file.txt");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_regex_pattern() {
+    let expr = parse_expr(r#"br"\d+\.\d+""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            // Regex escapes preserved
+            assert_eq!(bytes, b"\\d+\\.\\d+");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_assignment() {
+    let stmt = parse_stmt(r#"pattern = br"\w+@\w+\.\w+""#).unwrap();
+    match stmt.kind {
+        StatementKind::Assign { ref targets, ref value, .. } => {
+            assert_eq!(targets.len(), 1);
+            match value.kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"\\w+@\\w+\\.\\w+");
+                }
+                _ => panic!("Expected byte raw string in assignment"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_function_call() {
+    let expr = parse_expr(r#"compile(br"[a-z]+\d+")"#).unwrap();
+    match expr.kind {
+        ExpressionKind::Call { ref args, .. } => {
+            assert_eq!(args.len(), 1);
+            match args[0].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"[a-z]+\\d+");
+                }
+                _ => panic!("Expected byte raw string argument"),
+            }
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_in_list() {
+    let expr = parse_expr(r#"[br"path1\n", rb"path2\t", br"path3\r"]"#).unwrap();
+    match expr.kind {
+        ExpressionKind::List { ref elements } => {
+            assert_eq!(elements.len(), 3);
+            
+            // First element: br"path1\n"
+            match elements[0].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"path1\\n");
+                }
+                _ => panic!("Expected byte raw string"),
+            }
+            
+            // Second element: rb"path2\t"
+            match elements[1].kind {
+                ExpressionKind::ByteRawString(ref bytes) => {
+                    assert_eq!(bytes, b"path2\\t");
+                }
+                _ => panic!("Expected byte raw string"),
+            }
+        }
+        _ => panic!("Expected list"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_empty() {
+    let expr = parse_expr(r#"br"""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes.len(), 0);
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
+#[test]
+fn test_byte_raw_string_uppercase_variants() {
+    // Test BR
+    let expr = parse_expr(r#"BR"Test\n""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes, b"Test\\n");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+    
+    // Test RB
+    let expr = parse_expr(r#"RB"Test\t""#).unwrap();
+    match expr.kind {
+        ExpressionKind::ByteRawString(ref bytes) => {
+            assert_eq!(bytes, b"Test\\t");
+        }
+        _ => panic!("Expected byte raw string"),
+    }
+}
+
 

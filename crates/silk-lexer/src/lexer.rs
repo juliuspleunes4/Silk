@@ -340,6 +340,18 @@ impl Lexer {
         let start_pos = self.position;
         let start_col = self.column;
         
+        // Check for byte raw string prefix (br"..." or rb"...")
+        if self.position + 2 < self.input.len() {
+            let ch1 = self.current_char().to_ascii_lowercase();
+            let ch2 = self.input[self.position + 1].to_ascii_lowercase();
+            let ch3 = self.input[self.position + 2];
+            
+            if ((ch1 == 'b' && ch2 == 'r') || (ch1 == 'r' && ch2 == 'b'))
+                && (ch3 == '"' || ch3 == '\'') {
+                return self.lex_byte_raw_string();
+            }
+        }
+        
         // Check for byte string prefix (b"..." or b'...')
         if (self.current_char() == 'b' || self.current_char() == 'B') 
             && !self.is_at_end() 
@@ -737,6 +749,82 @@ impl Lexer {
         
         Ok(Token {
             kind: TokenKind::RawString(value),
+            lexeme,
+            span: Span::new(start_pos, self.position, start_line, start_col),
+        })
+    }
+    
+    fn lex_byte_raw_string(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let start_col = self.column;
+        let start_line = self.line;
+        
+        // Consume prefix (br/rb/BR/RB/Br/etc.)
+        self.advance(); // first char (b/r)
+        self.advance(); // second char (r/b)
+        let quote = self.advance(); // opening quote
+        
+        // Check for triple-quoted byte raw strings
+        let is_triple = if self.peek_char(0) == Some(quote) && self.peek_char(1) == Some(quote) {
+            self.advance();
+            self.advance();
+            true
+        } else {
+            false
+        };
+        
+        let mut bytes = Vec::new();
+        
+        loop {
+            if self.is_at_end() {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            }
+            
+            let ch = self.current_char();
+            
+            // Check for closing quote(s)
+            if ch == quote {
+                if is_triple {
+                    if self.peek_char(1) == Some(quote) && self.peek_char(2) == Some(quote) {
+                        self.advance();
+                        self.advance();
+                        self.advance();
+                        break;
+                    } else {
+                        // Only ASCII characters allowed in byte strings
+                        if !ch.is_ascii() {
+                            return Err(LexError::InvalidByteString(
+                                "Non-ASCII character in byte raw string".to_string(),
+                                self.line,
+                                self.column,
+                            ));
+                        }
+                        bytes.push(self.advance() as u8);
+                    }
+                } else {
+                    self.advance();
+                    break;
+                }
+            } else if ch == '\n' && !is_triple {
+                return Err(LexError::UnterminatedString(start_line, start_col));
+            } else {
+                // Only ASCII characters allowed in byte strings
+                if !ch.is_ascii() {
+                    return Err(LexError::InvalidByteString(
+                        "Non-ASCII character in byte raw string".to_string(),
+                        self.line,
+                        self.column,
+                    ));
+                }
+                // Raw strings: preserve everything literally, including backslashes
+                bytes.push(self.advance() as u8);
+            }
+        }
+        
+        let lexeme: String = self.input[start_pos..self.position].iter().collect();
+        
+        Ok(Token {
+            kind: TokenKind::ByteRawString(bytes),
             lexeme,
             span: Span::new(start_pos, self.position, start_line, start_col),
         })

@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ FEATURE - Byte Raw Strings (br-strings) - December 9, 2025
+**Implemented byte raw string literals** - combining byte strings and raw strings for binary data with literal backslashes.
+
+**Lexer Enhancement (silk-lexer)** - Byte Raw String Parsing ✅:
+- ✅ Added ByteRawString token type: `TokenKind::ByteRawString(Vec<u8>)`
+- ✅ Byte raw string prefix detection: br"..." and rb"..." (case-insensitive BR/RB/Br/rB)
+- ✅ Triple-quoted byte raw strings: br"""...""" and rb'''...'''
+- ✅ Combines byte string and raw string behavior:
+  - ASCII-only validation (Non-ASCII characters produce InvalidByteString error)
+  - Escape sequences preserved literally (like raw strings, NOT processed)
+  - Stored as Vec<u8> (like byte strings)
+- ✅ Perfect for binary regex patterns: br"\d+\.\d+" preserves backslashes
+- ✅ Perfect for Windows paths as bytes: br"C:\Users\file.txt"
+- ✅ Perfect for binary protocol patterns: br"GET /\r\n" (literal backslashes)
+- ✅ No escape sequence processing: br"\n" stays as literal backslash-n (2 bytes: 92, 110)
+- ✅ Added 12 comprehensive tests:
+  - test_byte_raw_string_basic_br: Basic br"..." parsing
+  - test_byte_raw_string_basic_rb: Basic rb"..." parsing
+  - test_byte_raw_string_windows_path: Windows paths with backslashes
+  - test_byte_raw_string_regex_pattern: Regex patterns preserved
+  - test_byte_raw_string_single_quotes: br'...' variant
+  - test_byte_raw_string_uppercase_br: BR"..." variant
+  - test_byte_raw_string_uppercase_rb: RB"..." variant
+  - test_byte_raw_string_mixed_case: Br/rB variants
+  - test_byte_raw_string_triple_quoted: Triple-quoted variants
+  - test_byte_raw_string_empty: Empty byte raw string
+  - test_byte_raw_string_non_ascii_error: Error on non-ASCII
+  - test_byte_raw_string_hex_notation_preserved: \xHH stays literal
+- ✅ All 115 lexer tests passing (325 total workspace tests)
+
+**AST Enhancement (silk-ast)** - Byte Raw String Expression ✅:
+- ✅ Added ExpressionKind::ByteRawString(Vec<u8>) variant
+- ✅ Stores byte data with escape sequences preserved literally
+
+**Parser Expression Enhancement (silk-parser)** - Byte Raw String Support ✅:
+- ✅ Parse byte raw string tokens as primary expressions
+- ✅ Byte raw strings work in all expression contexts (assignments, function calls, lists)
+- ✅ Added 9 comprehensive tests:
+  - test_byte_raw_string_basic_br: Basic br"..." parsing
+  - test_byte_raw_string_basic_rb: Basic rb"..." parsing
+  - test_byte_raw_string_windows_path: Windows path parsing
+  - test_byte_raw_string_regex_pattern: Regex pattern parsing
+  - test_byte_raw_string_in_assignment: Byte raw strings in assignments
+  - test_byte_raw_string_in_function_call: Byte raw strings as function arguments
+  - test_byte_raw_string_in_list: Byte raw strings in list literals
+  - test_byte_raw_string_empty: Empty byte raw string
+  - test_byte_raw_string_uppercase_variants: BR/RB uppercase variants
+- ✅ All 199 parser tests passing (325 total workspace tests)
+
+**Impact**:
+- Completes Python-style string literal support (strings, f-strings, raw, byte, byte-raw)
+- Enables binary regex patterns without escape processing
+- Useful for binary data with literal backslashes (protocols, file paths)
+- Combines benefits of both byte strings (binary data) and raw strings (no escaping)
+
+**Testing**: 21 new tests (12 lexer + 9 parser) | All 325 tests passing (115 lexer + 199 parser + 11 unit)
+
+---
+
 ### ✅ FEATURE - Byte Strings (b-strings) - December 9, 2025
 **Implemented byte string literals** - enabling Python-style byte strings for binary data handling.
 

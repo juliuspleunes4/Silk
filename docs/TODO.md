@@ -7,14 +7,14 @@
 ### ✅ Completed
 - **Project Structure**: Cargo workspace with 5 crates (`silk-cli`, `silk-compiler`, `silk-lexer`, `silk-ast`, `silk-parser`)
 - **Lexer**: Fully functional lexical analyzer ✅
-  - 68 token types (35 keywords + operators + literals + delimiters)
+  - 69 token types (35 keywords + operators + literals + delimiters)
   - Complete Unicode support (identifiers and strings)
-  - String literals: single/double/triple-quoted with escape sequences, f-strings, raw strings (r"..."), byte strings (b"...")
+  - String literals: single/double/triple-quoted with escape sequences, f-strings, raw strings (r"..."), byte strings (b"..."), byte raw strings (br"..." or rb"...")
   - Number literals: integers, floats, scientific notation, binary (0b), octal (0o), hex (0x), underscores
   - Comment handling (single-line)
   - Source location tracking (line, column, span)
   - 8 error types with comprehensive error reporting
-  - **103 tests passing** (11 unit + 92 integration tests)
+  - **115 tests passing** (11 unit + 104 integration tests)
   - ✅ **INDENTATION TRACKING COMPLETE**: INDENT/DEDENT tokens now generated
     - `indent_stack` fully implemented with state tracking
     - Generates INDENT when indentation increases
@@ -45,7 +45,7 @@
     - Pattern matching (match/case with patterns and guards) ✅
     - global, nonlocal, assert, del, raise statements ✅
   - ParseError types with 8 error variants ✅
-  - **190 tests passing** covering all implemented features ✅
+  - **199 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
   - Function parameter parsing with type annotations, defaults, *args, **kwargs ✅
   - Type annotation parsing (simple types and generics) ✅
@@ -63,7 +63,7 @@
 
 ### ⏳ In Progress
 - **Phase 1: Foundation** - ~97% complete! Core statements functional, comprehensive expressions working
-  - Lexer ✅ (100% - all core features including f-strings, raw strings, byte strings, binary/octal/hex numbers, indentation)
+  - Lexer ✅ (100% - all core features including f-strings, raw strings, byte strings, byte raw strings, binary/octal/hex numbers, indentation)
   - AST ✅ (100% - all definitions complete)
   - Parser 🟡 (96% - all statements complete, comprehensive expressions work)
     - ✅ Complete: All statement types (if/while/for/def/class/import/try/with/match)
