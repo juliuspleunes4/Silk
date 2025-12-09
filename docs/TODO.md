@@ -74,7 +74,7 @@
     - ✅ Complete: Function params with *args/**kwargs support
     - ✅ Complete: Decorators for functions and classes
     - ✅ Complete: List/dict/set/generator comprehensions with multiple generators and filters
-- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (75% complete)**
+- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (80% complete)**
   - Symbol Table ✅ (100% - scope stack, define/resolve, 17 tests)
   - AST Visitor ✅ (100% - single-pass analyzer with pre-pass, ~700 lines)
   - Symbol Collection ✅ (100% - assignments, functions, classes, imports, 28 tests)
@@ -83,7 +83,13 @@
   - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 44 tests)
   - Forward References ✅ (100% - function/class forward refs, mutual recursion, 14 tests)
   - Architecture ✅ (100% - single-pass refactor complete)
-  - Type Checking ❌ (0% - **NEXT**)
+  - Type Inference ⏳ (25% - **IN PROGRESS**)
+    - ✅ Literal type inference (int, float, str, bool, None)
+    - ⏳ Binary operation type inference (arithmetic, comparison, logical) - **NEXT**
+    - ❌ Unary operation type inference (not yet started)
+    - ❌ Function call type inference (not yet started)
+    - ❌ Collection type inference (list, dict, set, tuple) (not yet started)
+  - Type Checking ❌ (0% - blocked on type inference completion)
   - Control Flow Analysis ❌ (0% - future)
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
@@ -300,13 +306,38 @@
     - ✅ Added 24 comprehensive tests covering all decorator, base class, and keyword scenarios
     - ✅ All 514 tests passing (115 lexer + 11 unit + 255 parser + 133 semantic)
 
-20. **TYPE CHECKING** ⏳ NEXT
-    - Implement type inference engine
-    - Type annotation validation
-    - Function return type checking
-    - Type compatibility checking
-    - Generic type support
-    - Union and Optional types
+20. **TYPE INFERENCE & TYPE CHECKING** ⏳ IN PROGRESS
+    - ✅ Type System Foundation (December 9, 2025)
+      - ✅ Type enum with basic types (Int, Float, Str, Bool, None, Any, Unknown)
+      - ✅ Type compatibility checking
+      - ✅ Literal type inference (int, float, str, bool, None literals)
+      - ✅ Variable reference type lookup
+      - ✅ Type annotation resolver infrastructure (blocked on parser for AnnAssign)
+      - ✅ 36 tests (8 type unit tests + 28 type inference tests)
+      - ✅ All 550 tests passing
+    - ⏳ Binary Operation Type Inference (December 9, 2025) - **NEXT**
+      - [ ] Arithmetic operations (+, -, *, /, //, %, **)
+        - Int op Int → Int
+        - Float op Float → Float
+        - Int op Float → Float
+        - String + String → Str
+      - [ ] Comparison operations (==, !=, <, >, <=, >=, in, not in, is, is not) → Bool
+      - [ ] Logical operations (and, or, not) → Bool for 'not', Unknown for 'and'/'or'
+      - [ ] Comprehensive tests for all operators and type combinations
+    - ❌ Future Type Inference Tasks
+      - Unary operations (-, +, ~, not)
+      - Function call return types
+      - Collection literal types (list, dict, set, tuple)
+      - Comprehension types
+      - Attribute access types
+      - Method call types
+    - ❌ Type Checking (after inference is complete)
+      - Type annotation validation (needs parser support first)
+      - Assignment type compatibility checking
+      - Function parameter type checking
+      - Return type validation
+      - Generic type support
+      - Union and Optional types
    
 9. Lexer enhancements (1-2 weeks):
    - Binary (0b), octal (0o), hexadecimal (0x) number formats
