@@ -3620,4 +3620,105 @@ fn test_generator_exp_in_function_call() {
     }
 }
 
+// Step 10: Edge Cases & Polish
+
+#[test]
+fn test_comp_empty_sequence() {
+    let source = "[x for x in []]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, generators } => {
+            assert_eq!(generators.len(), 1);
+            // Iterator is empty list
+            assert!(matches!(generators[0].iter.kind, ExpressionKind::List { .. }));
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_nested_comprehension() {
+    let source = "[[y for y in row] for row in matrix]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Outer comprehension has one generator
+            assert_eq!(generators.len(), 1);
+            
+            // Element is itself a list comprehension
+            match &element.kind {
+                ExpressionKind::ListComp { element: inner_elem, generators: inner_gens } => {
+                    // Inner comprehension: [y for y in row]
+                    assert!(matches!(inner_elem.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                    assert_eq!(inner_gens.len(), 1);
+                    assert!(matches!(inner_gens[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+                }
+                _ => panic!("Expected inner list comprehension"),
+            }
+        }
+        _ => panic!("Expected outer list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_in_function_call() {
+    let source = "func([x for x in items])";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::Call { func: _, ref args, keywords: _ } => {
+            assert_eq!(args.len(), 1);
+            assert!(matches!(args[0].kind, ExpressionKind::ListComp { .. }));
+        }
+        _ => panic!("Expected function call"),
+    }
+}
+
+#[test]
+fn test_comp_complex_filter() {
+    let source = "[x for x in items if x > 0 if x < 10]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            // Two filters
+            assert_eq!(generators[0].ifs.len(), 2);
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_with_call_in_iterator() {
+    let source = "[x for x in range(10)]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { element: _, ref generators } => {
+            assert_eq!(generators.len(), 1);
+            // Iterator is a function call
+            assert!(matches!(generators[0].iter.kind, ExpressionKind::Call { .. }));
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
+#[test]
+fn test_comp_with_attribute_access() {
+    let source = "[obj.name for obj in objects]";
+    let expr = parse_expr(source).unwrap();
+    
+    match expr.kind {
+        ExpressionKind::ListComp { ref element, ref generators } => {
+            // Element is attribute access
+            assert!(matches!(element.kind, ExpressionKind::Attribute { .. }));
+            assert_eq!(generators.len(), 1);
+        }
+        _ => panic!("Expected list comprehension"),
+    }
+}
+
 

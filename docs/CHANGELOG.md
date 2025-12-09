@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ **Multiple Generators**: Loop until no more `for` keywords detected
 - ✅ **Multiple Filters**: Loop to collect all `if` clauses for each generator
 
-**Added 9 comprehensive tests**:
+**Added 16 comprehensive tests**:
 - ✅ `test_list_comp_detection`: Verify detection doesn't break regular lists
 - ✅ `test_list_comp_simplest`: `[x for x in items]` basic case
 - ✅ `test_list_comp_single_filter`: `[x for x in items if x > 0]`
@@ -60,10 +60,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ `test_set_comp_simple`: `{x * 2 for x in items}`
 - ✅ `test_generator_exp_simple`: `(x for x in items)`
 - ✅ `test_generator_exp_with_filter`: `(x for x in items if x > 0)`
+- ✅ `test_generator_exp_in_function_call`: `sum(x*x for x in range(100))`
+- ✅ `test_comp_empty_sequence`: `[x for x in []]`
+- ✅ `test_comp_nested_comprehension`: `[[y for y in row] for row in matrix]`
+- ✅ `test_comp_in_function_call`: `func([x for x in items])`
+- ✅ `test_comp_complex_filter`: Multiple filters with complex conditions
+- ✅ `test_comp_with_call_in_iterator`: `[x for x in range(10)]`
+- ✅ `test_comp_with_attribute_access`: `[obj.name for obj in objects]`
 
 **Test Results**: 
-- Parser tests: 217 → 226 (+9 new tests)
-- Total workspace tests: 352 (115 lexer + 11 unit + 226 parser)
+- Parser tests: 217 → 233 (+16 new tests)
+- Total workspace tests: 359 (115 lexer + 11 unit + 233 parser)
 - All tests passing ✅
 
 **Files Modified**:
