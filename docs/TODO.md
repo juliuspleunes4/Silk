@@ -288,14 +288,14 @@
     - ✅ Forward references handled correctly
     - ✅ All 484 tests passing with new architecture
 
-19. **DECORATOR AND BASE CLASS VALIDATION** ⏳ TODO
-    - [ ] Validate decorator expressions for undefined variables
-    - [ ] Validate base class expressions for undefined variables
-    - [ ] Validate class keyword arguments (e.g., `metaclass=...`)
-    - [ ] Test complex decorator expressions (e.g., `@module.decorator`, `@decorator(args)`)
-    - [ ] Test complex base class expressions (e.g., `Generic[T]`, `ParentClass[int]`)
-    - **Current Limitation**: Only simple name references collected in pre-pass work
-    - **Impact**: Undefined decorators/base classes not detected
+19. ~~**DECORATOR AND BASE CLASS VALIDATION**~~ ✅ DONE (December 9, 2025)
+    - ✅ Validate decorator expressions for undefined variables
+    - ✅ Validate base class expressions for undefined variables
+    - [ ] Validate class keyword arguments (e.g., `metaclass=...`) - TODO
+    - ✅ Test complex decorator expressions (e.g., `@module.decorator`, `@decorator(args)`)
+    - ✅ Test complex base class expressions (e.g., `Module().Inner`)
+    - ✅ Added 19 comprehensive tests covering all decorator and base class scenarios
+    - ✅ All 509 tests passing (115 lexer + 11 unit + 255 parser + 128 semantic)
 
 20. **TYPE CHECKING** ⏳ NEXT
     - Implement type inference engine

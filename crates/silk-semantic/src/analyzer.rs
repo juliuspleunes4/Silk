@@ -127,7 +127,12 @@ impl SemanticAnalyzer {
             }
 
             // Function definition: already declared in pre-pass, now analyze body
-            StatementKind::FunctionDef { params, body, .. } => {
+            StatementKind::FunctionDef { params, body, decorator_list, .. } => {
+                // Analyze decorators BEFORE entering scope (evaluated in outer scope)
+                for decorator in decorator_list {
+                    self.analyze_expression(decorator);
+                }
+
                 // Analyze parameter defaults BEFORE entering scope (evaluated in outer scope)
                 for param in &params.args {
                     if let Some(default_expr) = &param.default {
@@ -169,7 +174,19 @@ impl SemanticAnalyzer {
             }
 
             // Class definition: already declared in pre-pass, now analyze body
-            StatementKind::ClassDef { body, .. } => {
+            StatementKind::ClassDef { bases, decorator_list, body, .. } => {
+                // Analyze decorators BEFORE entering scope (evaluated in outer scope)
+                for decorator in decorator_list {
+                    self.analyze_expression(decorator);
+                }
+
+                // Analyze base classes BEFORE entering scope (evaluated in outer scope)
+                for base in bases {
+                    self.analyze_expression(base);
+                }
+
+                // TODO: Analyze keywords (e.g., metaclass=...) once keyword validation is implemented
+
                 // Enter class scope
                 self.symbol_table.enter_scope(ScopeKind::Class);
 

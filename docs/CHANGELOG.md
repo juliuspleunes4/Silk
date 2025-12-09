@@ -28,6 +28,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Better foundation for type checking (next phase)
 - ✅ Less code, easier to maintain
 
+### 🎨 Decorator and Base Class Validation - December 9, 2025
+
+**Implemented comprehensive validation for decorators and base classes**.
+
+**Issue**: Decorator expressions and base class expressions were completely ignored during semantic analysis, allowing undefined variables to go undetected:
+- `@undefined_decorator` on functions would not raise an error
+- `@undefined_decorator` on classes would not raise an error  
+- `class MyClass(UndefinedBase):` would not raise an error
+- Forward references in decorators/bases were not validated
+
+**Fix**:
+- Decorator expressions now analyzed **before** entering function/class scope
+- Base class expressions now analyzed **before** entering class scope
+- Correctly matches Python behavior: decorators and bases evaluated in outer scope
+- Supports forward references (decorator/base defined later in module)
+- Validates all decorator forms:
+  - Simple decorators: `@decorator`
+  - Decorator calls: `@decorator(args)`
+  - Attribute decorators: `@module.decorator`
+  - Multiple stacked decorators
+
+**Tests Added**: 19 new comprehensive tests in `test_decorators_bases.rs`
+- Function decorator validation (undefined, defined, forward ref, attributes, multiple) ✅
+- Class decorator validation (undefined, defined, forward ref) ✅
+- Base class validation (undefined, defined, forward ref, multiple) ✅
+- Combined decorator + base class validation ✅
+
+**Note**: This resolves the limitation documented in the architecture fix changelog entry.
+
 ### 🔍 Parameter Default Value Validation - December 9, 2025
 
 **Fixed parameter default value scoping** to match Python semantics.
@@ -60,13 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nested function scope validation
 - Comprehension scope persistence
 
-**Known Limitations**:
-- Decorators and base class expressions are not yet validated for undefined variables
-- Only forward references to names collected in pre-pass (functions/classes) work
-- Complex decorator expressions (e.g., `@undefined_var` or `@module.decorator`) not checked
-
-**Total Test Count**: **490 tests** (115 lexer + 11 unit + 255 parser + 109 semantic)
-- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults
+**Total Test Count**: **509 tests** (115 lexer + 11 unit + 255 parser + 128 semantic)
+- Semantic: 28 analyzer + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 19 decorators/bases
 
 ---
 
