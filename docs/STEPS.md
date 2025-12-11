@@ -430,7 +430,70 @@ Ensure return consistency:
 **Checkpoint**: 1003 tests total (990 + 13 new)
 **Status**: ✅ All tests passing
 **Phase 5**: 🔄 In Progress (Step 15 complete)
-- `test_unused_walrus_variable`
+
+**⚠️ KNOWN LIMITATION - Must Fix Before Step 16**:
+**Nested Scope Variable Visibility**
+- **Problem**: Inner functions cannot see variables from outer scopes (closures don't work)
+- **Root Cause**: `initialized_variables.clear()` on function entry wipes outer scope completely
+- **Impact**: 
+  - Inner functions incorrectly report outer variables as uninitialized
+  - Breaks Python closure semantics
+  - Tests currently work around this limitation
+- **Example**:
+  ```python
+  def outer():
+      x = 5
+      def inner():
+          return x  # ❌ Incorrectly reports "x is uninitialized"
+      return inner()
+  ```
+- **Fix Required**:
+  - Implement scope stack (Vec<HashSet<String>>) to track nested scopes
+  - Inner functions should inherit outer scope's initialized variables
+  - Need to differentiate: reading from outer scope (OK) vs writing to outer scope (needs special handling)
+  - This is a prerequisite for proper closure analysis
+- **Test Coverage Needed After Fix**:
+  - Nested function reads outer variable
+  - Multiple nesting levels
+  - Inner function modifies outer variable (should it be allowed? Python uses `nonlocal`)
+  - Closure variable shadowing
+  - Lambda closures
+- **Status**: ❌ MUST FIX (blocking proper Python semantics)
+
+---
+
+### Step 15.5: Fix Nested Scope Variable Visibility ⚠️
+**File**: `crates/silk-semantic/src/control_flow.rs`
+**Priority**: CRITICAL (blocking Step 16)
+**Estimated Tests**: 8-10
+
+Implement proper scope tracking for nested functions:
+- Replace single `initialized_variables: HashSet<String>` with scope stack
+- Inner functions inherit outer scope variables (read access)
+- Track scope depth for proper variable resolution
+- Support closure semantics
+
+**Implementation**:
+- Add `scope_stack: Vec<HashSet<String>>` to ControlFlowAnalyzer
+- Push new scope on function entry (don't clear)
+- Pop scope on function exit
+- Check variable initialization across all scopes (inner to outer)
+- Track which scope owns each variable
+
+**Testing** (test_nested_scope_variables.rs):
+- `test_inner_function_reads_outer_variable`
+- `test_multiple_nesting_levels`
+- `test_inner_function_shadows_outer_variable`
+- `test_lambda_closure_reads_outer`
+- `test_nested_function_in_loop`
+- `test_closure_variable_lifetime`
+- `test_inner_function_cant_modify_outer_without_nonlocal` (if implementing nonlocal)
+- `test_nested_exception_handler_visibility`
+- `test_comprehension_closure`
+- `test_class_method_nested_function`
+
+**Checkpoint**: ~1011 tests total (1003 + 8 new)
+**Status**: ⚠️ NOT STARTED (must complete before Step 16)
 
 ---
 
