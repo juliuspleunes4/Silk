@@ -720,9 +720,12 @@ impl SemanticAnalyzer {
             ExpressionKind::List { elements } => {
                 self.infer_list_type(elements)
             }
+            ExpressionKind::Dict { keys, values } => {
+                self.infer_dict_type(keys, values)
+            }
             
             // For now, other expressions return Unknown
-            // TODO: Infer types for dict, set, tuple, comprehensions, etc.
+            // TODO: Infer types for set, tuple, comprehensions, etc.
             _ => Type::Unknown,
         }
     }
@@ -986,6 +989,65 @@ impl SemanticAnalyzer {
             // Heterogeneous list: mixed types, no union support yet
             // TODO: Return list[Union[...]] when union types are implemented
             Type::List(Box::new(Type::Unknown))
+        }
+    }
+
+    /// Infer type for dict literals
+    /// 
+    /// Analyzes all keys and values in the dict and determines the common types.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty dict: returns `dict[Unknown, Unknown]` (no entries to infer from)
+    /// - Homogeneous dict: returns `dict[KeyType, ValueType]` (all keys/values same type)
+    /// - Heterogeneous keys: returns `dict[Unknown, ValueType]` (mixed key types)
+    /// - Heterogeneous values: returns `dict[KeyType, Unknown]` (mixed value types)
+    /// - Both heterogeneous: returns `dict[Unknown, Unknown]`
+    /// 
+    /// **Examples**:
+    /// - `{1: "a", 2: "b"}` → `dict[int, str]`
+    /// - `{"a": 1, "b": 2}` → `dict[str, int]`
+    /// - `{}` → `dict[Unknown, Unknown]`
+    /// - `{1: "a", "b": 2}` → `dict[Unknown, Unknown]` (heterogeneous)
+    /// 
+    /// **Limitations**:
+    /// - No union type support: heterogeneous dicts return Unknown for that dimension
+    /// 
+    /// **TODO: Future Improvements**:
+    /// - Add union type support for heterogeneous dicts
+    /// - Type widening for numeric keys/values
+    fn infer_dict_type(&self, keys: &[silk_ast::Expression], values: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Empty dict: cannot infer types
+        if keys.is_empty() {
+            return Type::Dict {
+                key_type: Box::new(Type::Unknown),
+                value_type: Box::new(Type::Unknown),
+            };
+        }
+        
+        // Infer type of first key and value
+        let first_key_type = self.infer_type(&keys[0]);
+        let first_value_type = self.infer_type(&values[0]);
+        
+        // Check if all keys have the same type
+        let all_keys_same = keys[1..].iter().all(|key| {
+            let key_type = self.infer_type(key);
+            first_key_type.is_compatible_with(&key_type)
+        });
+        
+        // Check if all values have the same type
+        let all_values_same = values[1..].iter().all(|value| {
+            let value_type = self.infer_type(value);
+            first_value_type.is_compatible_with(&value_type)
+        });
+        
+        let key_type = if all_keys_same { first_key_type } else { Type::Unknown };
+        let value_type = if all_values_same { first_value_type } else { Type::Unknown };
+        
+        Type::Dict {
+            key_type: Box::new(key_type),
+            value_type: Box::new(value_type),
         }
     }
 
