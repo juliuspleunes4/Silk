@@ -45,7 +45,7 @@ impl Type {
     /// Check if this type is compatible with another type for assignment
     ///
     /// This is used for type checking in assignments, function calls, etc.
-    /// Returns true if a value of type `other` can be assigned to a variable of type `self`.
+    /// Returns true if a value of type `self` can be assigned to a variable of type `other`.
     pub fn is_compatible_with(&self, other: &Type) -> bool {
         // Same types are always compatible
         if self == other {

@@ -91,7 +91,7 @@ impl SemanticAnalyzer {
                     let func_symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Function,
-                        statement.span.clone(),
+                        statement.span,
                         func_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(func_symbol) {
@@ -100,7 +100,7 @@ impl SemanticAnalyzer {
                 }
                 StatementKind::ClassDef { name, .. } => {
                     let class_symbol =
-                        Symbol::new(name.clone(), SymbolKind::Class, statement.span.clone());
+                        Symbol::new(name.clone(), SymbolKind::Class, statement.span);
                     if let Err(err) = self.symbol_table.define_symbol(class_symbol) {
                         self.errors.push(err);
                     }
@@ -134,7 +134,7 @@ impl SemanticAnalyzer {
                         let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
-                            target.span.clone(),
+                            target.span,
                             inferred_type.clone(),
                         );
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
@@ -172,7 +172,7 @@ impl SemanticAnalyzer {
                     let symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Variable,
-                        target.span.clone(),
+                        target.span,
                         annotated_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
@@ -192,7 +192,7 @@ impl SemanticAnalyzer {
                             name: name.clone(),
                             line: target.span.line,
                             column: target.span.column,
-                            span: target.span.clone(),
+                            span: target.span,
                         });
                     }
                 }
@@ -310,7 +310,7 @@ impl SemanticAnalyzer {
                 for alias in names {
                     let import_name = alias.asname.as_ref().unwrap_or(&alias.name);
                     let symbol =
-                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span.clone());
+                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span);
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
                     }
@@ -322,7 +322,7 @@ impl SemanticAnalyzer {
                 for alias in names {
                     let import_name = alias.asname.as_ref().unwrap_or(&alias.name);
                     let symbol =
-                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span.clone());
+                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span);
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
                     }
