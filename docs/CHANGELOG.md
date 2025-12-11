@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 🐛 Code Review Fixes - December 11, 2025
+### � Control Flow Analysis - December 11, 2025
+
+**Phase 1: Infrastructure Setup - Step 1 Complete**
+
+**New Error Types**:
+- Added 5 new control flow error variants to `SemanticError` enum:
+  - `UnreachableCode` - Code after return/break/continue/raise that will never execute
+  - `UninitializedVariable` - Variable used before being initialized
+  - `MissingReturn` - Function missing return statement on some execution paths
+  - `InfiniteLoop` - Loop that never terminates (while True without break)
+  - `DeadCode` - Code that can never be executed for various reasons
+
+**Testing**:
+- Created `test_control_flow_errors.rs` with 8 comprehensive tests
+- Tests verify error construction, messages, and span tracking
+- Tests distinguish between unreachable code vs dead code
+- Tests validate error messages for different statement types
+
+**Test Count**: 838 tests passing (+8 new control flow error tests)
+
+**Status**: Infrastructure ready for control flow analysis implementation
+
+### �🐛 Code Review Fixes - December 11, 2025
 
 **Critical bug fix, documentation correction, and performance improvements**.
 

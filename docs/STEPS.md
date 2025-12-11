@@ -474,6 +474,7 @@ Update documentation:
 
 - [x] Branch created: `feat/control-flow-analysis`
 - [ ] **Phase 1**: Infrastructure Setup (Steps 1-4)
+  - [x] **Step 1**: Create Control Flow Error Types ✅ (8 tests)
 - [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
 - [ ] **Phase 3**: Variable Initialization Tracking (Steps 9-11)
 - [ ] **Phase 4**: Return Path Validation (Steps 12-14)
