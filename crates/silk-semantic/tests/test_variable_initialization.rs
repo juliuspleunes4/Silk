@@ -77,11 +77,13 @@ if cond:
     x = 1
 y = x
 "#;
-    // Note: Step 9 only tracks if variable was initialized at all, not per-path
-    // Step 10 will handle "initialized in all branches" logic
-    // For now, x is initialized in the if branch, so it's considered initialized
+    // Step 10: Variable must be initialized in ALL reachable branches
+    // x is only initialized in the if branch, not the else path
     let result = analyze_control_flow(source);
-    assert!(result.is_ok(), "Step 9: Variable initialized in any branch is considered initialized");
+    assert!(result.is_err(), "Step 10: Variable must be initialized in all branches");
+    let errors = result.unwrap_err();
+    assert_eq!(errors.len(), 1, "Should have exactly 1 error");
+    assert!(is_uninitialized_variable_error(&errors[0]), "Should be UninitializedVariable error");
 }
 
 #[test]

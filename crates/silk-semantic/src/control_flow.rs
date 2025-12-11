@@ -374,6 +374,7 @@ impl ControlFlowAnalyzer {
                 
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
+                let previous_initialized = self.initialized_variables.clone();
                 
                 // Analyze if body
                 self.is_reachable = previous_reachable;
@@ -382,23 +383,42 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
                 let if_reachable = self.is_reachable;
+                let if_initialized = self.initialized_variables.clone();
 
                 // Analyze else body (orelse is Vec, not Option)
                 // If orelse is empty, it's implicitly reachable (no code to execute)
-                let else_reachable = if orelse.is_empty() {
-                    previous_reachable
+                let (else_reachable, else_initialized) = if orelse.is_empty() {
+                    // No else clause - restore previous state
+                    (previous_reachable, previous_initialized.clone())
                 } else {
                     self.is_reachable = previous_reachable;
+                    self.initialized_variables = previous_initialized.clone();
                     self.unreachable_reported = false; // Reset for else block
                     for stmt in orelse {
                         self.analyze_statement(stmt);
                     }
-                    self.is_reachable
+                    (self.is_reachable, self.initialized_variables.clone())
                 };
                 
                 // Code after if is reachable if either branch is reachable
                 self.is_reachable = if_reachable || else_reachable;
                 self.unreachable_reported = previous_unreachable_reported; // Restore
+                
+                // Variable is initialized after if/else based on which branches are reachable:
+                // - If both branches reachable: must be in both (intersection)
+                // - If only if branch reachable: use if branch state
+                // - If only else branch reachable: use else branch state
+                // - If neither reachable: doesn't matter (code is unreachable)
+                self.initialized_variables = if if_reachable && else_reachable {
+                    // Both reachable: intersection (must be in both)
+                    if_initialized.intersection(&else_initialized).cloned().collect()
+                } else if if_reachable {
+                    // Only if reachable
+                    if_initialized
+                } else {
+                    // Only else reachable (or neither, but we use else state)
+                    else_initialized
+                };
             }
 
             StatementKind::While {
@@ -494,6 +514,7 @@ impl ControlFlowAnalyzer {
             } => {
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
+                let previous_initialized = self.initialized_variables.clone();
                 
                 // Analyze try body
                 self.is_reachable = previous_reachable;
@@ -502,12 +523,16 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
                 let try_reachable = self.is_reachable;
+                let try_initialized = self.initialized_variables.clone();
 
                 // Analyze exception handlers
-                // If handlers exist, at least one is potentially reachable (exceptions can occur)
+                // Track initialization state from all handlers
                 let mut handlers_reachable = false;
+                let mut handlers_initialized_sets: Vec<HashSet<String>> = Vec::new();
+                
                 for handler in handlers {
                     self.is_reachable = previous_reachable; // Each handler starts fresh
+                    self.initialized_variables = previous_initialized.clone();
                     self.unreachable_reported = false;
                     
                     // Mark exception variable as initialized
@@ -519,21 +544,47 @@ impl ControlFlowAnalyzer {
                         self.analyze_statement(stmt);
                     }
                     handlers_reachable = handlers_reachable || self.is_reachable;
+                    handlers_initialized_sets.push(self.initialized_variables.clone());
                 }
 
                 // After try/except, code is reachable if:
                 // - Try block exits normally (no return/raise), OR
                 // - At least one handler exists and is reachable
-                // Exception handlers are always potentially executed if they exist
                 let after_except_reachable = if handlers.is_empty() {
                     try_reachable
                 } else {
-                    // If no handlers are reachable (all return/raise), check if try is reachable
-                    // If try is unreachable too, then code after is unreachable
                     try_reachable || handlers_reachable
                 };
                 
                 self.is_reachable = after_except_reachable;
+                
+                // Merge initialization state based on which paths are reachable:
+                // - If try and all handlers are reachable: must be in all (intersection)
+                // - If only some paths are reachable: only use those paths
+                if handlers.is_empty() {
+                    // No handlers: just use try state
+                    self.initialized_variables = try_initialized;
+                } else if try_reachable && handlers_reachable {
+                    // Both try and at least one handler are reachable: intersection
+                    let mut merged_initialized = try_initialized;
+                    for handler_initialized in handlers_initialized_sets {
+                        merged_initialized = merged_initialized.intersection(&handler_initialized).cloned().collect();
+                    }
+                    self.initialized_variables = merged_initialized;
+                } else if try_reachable {
+                    // Only try block is reachable (all handlers return/raise)
+                    self.initialized_variables = try_initialized;
+                } else {
+                    // Only handlers are reachable (try returns/raises)
+                    // Use intersection of all handlers
+                    if let Some(first) = handlers_initialized_sets.first() {
+                        let mut merged_initialized = first.clone();
+                        for handler_initialized in handlers_initialized_sets.iter().skip(1) {
+                            merged_initialized = merged_initialized.intersection(handler_initialized).cloned().collect();
+                        }
+                        self.initialized_variables = merged_initialized;
+                    }
+                }
 
                 // Analyze else clause (executes if no exception occurred)
                 if !orelse.is_empty() {

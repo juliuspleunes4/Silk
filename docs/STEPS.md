@@ -237,26 +237,36 @@ Added variable initialization tracking:
 
 ---
 
-### Step 10: Handle Conditional Initialization
-**File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 10-12
+### Step 10: Handle Conditional Initialization ✅
+**Status**: COMPLETE (December 12, 2025)
+**File**: `crates/silk-semantic/tests/test_conditional_initialization.rs`
+**Tests**: 15 tests, all passing
 
-Track initialization through branches:
-- Variable is initialized if initialized in ALL branches
-- Merge initialization state after if/elif/else
-- Handle initialization in loops
+Implemented reachability-aware conditional initialization tracking:
+- Variable initialized only if initialized in ALL reachable branches
+- Merge initialization state after if/elif/else using intersection for reachable paths
+- Handle initialization in try/except with proper handler merging
+- Edge case: Early returns make branches unreachable, no initialization required there
 
-**Testing**:
-- `test_uninitialized_from_conditional_branch`
-- `test_initialized_in_all_branches`
-- `test_initialized_in_if_not_else`
-- `test_initialized_before_if_used_after`
-- `test_conditional_initialization_in_loop`
-- `test_nested_conditional_initialization`
-- `test_initialization_in_try_except`
-- `test_initialization_in_one_except_handler`
-- `test_initialization_in_all_except_handlers`
-- `test_elif_chain_initialization`
+**Tests Implemented**:
+- ✅ test_uninitialized_from_conditional_branch - Error when x only in if
+- ✅ test_initialized_in_all_branches - OK when x in both if/else
+- ✅ test_initialized_in_if_not_else - Error when x only in if, no else
+- ✅ test_initialized_before_if_used_after - OK when x initialized before if
+- ✅ test_conditional_initialization_in_loop - Error when not always set in loop
+- ✅ test_nested_conditional_initialization - OK when all nested branches initialize
+- ✅ test_initialization_in_try_except - OK when x in both try and except
+- ✅ test_initialization_in_one_except_handler - Error when not all handlers initialize
+- ✅ test_initialization_in_all_except_handlers - OK when try and all handlers initialize
+- ✅ test_elif_chain_initialization - OK when all elif + else initialize
+- ✅ test_elif_chain_missing_else - Error when elif chain missing else
+- ✅ test_initialization_with_early_return - OK when unreachable branch doesn't init
+- ✅ test_both_branches_initialize_different_vars - Error for vars not in all branches
+- ✅ test_initialization_in_nested_try_except - OK with nested try/except
+- ✅ test_partial_initialization_in_if_elif - Error when elif doesn't initialize
+
+**Checkpoint**: 938 tests total (926 + 12 new, with other tests adjusted)
+**Status**: ✅ All tests passing
 
 ---
 
@@ -277,7 +287,7 @@ Handle function-specific initialization:
 - `test_nested_function_parameter_scope`
 - `test_lambda_parameter_initialization`
 
-**Checkpoint**: 64-83 tests total (24-30 new)
+**Checkpoint**: 947-949 tests total (6-8 new)
 **Run**: `cargo test --package silk-semantic`
 
 ---

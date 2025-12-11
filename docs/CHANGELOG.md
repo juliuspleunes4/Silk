@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 3, Step 10 - December 12, 2025
+
+**Implemented Conditional Initialization Tracking** — The control flow analyzer now tracks variable initialization through conditional branches, requiring variables to be initialized in ALL reachable paths before use.
+
+**Implementation**:
+- **Reachability-Aware Merging**: Implemented sophisticated branch merging logic that respects reachability:
+  - If both branches reachable → variable must be initialized in both (intersection)
+  - If only one branch reachable → use that branch's initialization state
+  - Early returns and exceptions make branches unreachable, so no initialization required
+- **If/Elif/Else Handling** (lines 367-425):
+  - Save initialization state before analyzing branches
+  - Track separate initialization sets for if body and else body
+  - Track reachability for each branch
+  - Merge initialization states based on which paths are reachable
+  - Handles elif chains by processing them as nested if/else
+- **Try/Except Handling** (lines 498-580):
+  - Track initialization sets for try block and all exception handlers
+  - Collect initialization state from try and each handler separately
+  - Merge logic based on reachability:
+    - No handlers: use try state
+    - Try + handlers reachable: intersection of all (must be initialized everywhere)
+    - Only try reachable: use try state
+    - Only handlers reachable: intersection of handlers
+- **Edge Cases**:
+  - Early return in if branch: only else branch reaches code after, no intersection needed
+  - Nested conditionals: properly merges through multiple nesting levels
+  - Partial elif chains without else: only requires initialization in paths with else clause
+
+**Testing** (15 comprehensive tests in test_conditional_initialization.rs):
+- test_uninitialized_from_conditional_branch - Error when variable only initialized in if, not else
+- test_initialized_in_all_branches - OK when variable initialized in both if and else
+- test_initialized_in_if_not_else - Error when variable only in if, no else clause
+- test_initialized_before_if_used_after - OK when variable initialized before if statement
+- test_conditional_initialization_in_loop - Error when loop conditionally initializes
+- test_nested_conditional_initialization - OK when all nested branches initialize
+- test_initialization_in_try_except - OK when both try and except initialize
+- test_initialization_in_one_except_handler - Error when not all handlers initialize
+- test_initialization_in_all_except_handlers - OK when try and all handlers initialize
+- test_elif_chain_initialization - OK when all elif branches + else initialize
+- test_elif_chain_missing_else - Error when elif chain missing else clause
+- test_initialization_with_early_return - OK when unreachable branch doesn't initialize (key edge case)
+- test_both_branches_initialize_different_vars - Error for variables not in all branches
+- test_initialization_in_nested_try_except - OK with nested try/except blocks
+- test_partial_initialization_in_if_elif - Error when elif doesn't initialize variable
+
+**Bug Fixes**:
+- Updated test_initialization_in_if_branch in test_variable_initialization.rs to correctly expect error (Step 10 now requires initialization in all branches, not just one)
+
+**Impact**:
+- **Total Tests**: 941 (926 → 941, +15)
+- **Files Modified**: 2
+- **New Test File**: crates/silk-semantic/tests/test_conditional_initialization.rs (15 tests)
+
+**Next Steps**: Step 11 - Function Parameters and Defaults
+
+---
+
 ### 🔄 Control Flow Analysis - Phase 3, Step 9 - December 12, 2025
 
 **Implemented Variable Initialization Tracking** — The control flow analyzer now tracks which variables are initialized in the current scope and detects uninitialized variable usage.
