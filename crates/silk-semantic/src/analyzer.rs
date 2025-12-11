@@ -1432,7 +1432,7 @@ impl SemanticAnalyzer {
                 value_type: value_type.to_string(),
                 line: value.span.line,
                 column: value.span.column,
-                span: value.span.clone(),
+                span: value.span,
             });
         }
 
@@ -1461,7 +1461,7 @@ impl SemanticAnalyzer {
                 actual: args.len(),
                 line: func_expr.span.line,
                 column: func_expr.span.column,
-                span: func_expr.span.clone(),
+                span: func_expr.span,
             });
         }
 
@@ -1477,7 +1477,7 @@ impl SemanticAnalyzer {
                     actual_type: arg_type.to_string(),
                     line: arg.span.line,
                     column: arg.span.column,
-                    span: arg.span.clone(),
+                    span: arg.span,
                 });
             }
         }
@@ -1517,7 +1517,7 @@ impl SemanticAnalyzer {
                 actual_type: actual_type.to_string(),
                 line: return_stmt.span.line,
                 column: return_stmt.span.column,
-                span: return_stmt.span.clone(),
+                span: return_stmt.span,
             });
         }
 
@@ -1563,7 +1563,7 @@ impl SemanticAnalyzer {
                         right_type: right_type.to_string(),
                         line: left_expr.span.line,
                         column: left_expr.span.column,
-                        span: left_expr.span.clone(),
+                        span: left_expr.span,
                     });
                 }
             }
@@ -1600,7 +1600,7 @@ impl SemanticAnalyzer {
                         right_type: right_type.to_string(),
                         line: left_expr.span.line,
                         column: left_expr.span.column,
-                        span: left_expr.span.clone(),
+                        span: left_expr.span,
                     });
                 }
             }
@@ -1629,7 +1629,7 @@ impl SemanticAnalyzer {
                         right_type: right_type.to_string(),
                         line: left_expr.span.line,
                         column: left_expr.span.column,
-                        span: left_expr.span.clone(),
+                        span: left_expr.span,
                     });
                 }
             }
