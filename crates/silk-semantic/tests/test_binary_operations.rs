@@ -50,7 +50,6 @@ fn test_int_divide_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_floordiv_int() {
     let source = "result = 10 // 3";
     let program = Parser::parse(source).unwrap();
@@ -62,7 +61,6 @@ fn test_int_floordiv_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_mod_int() {
     let source = "result = 10 % 3";
     let program = Parser::parse(source).unwrap();
@@ -185,7 +183,6 @@ result = first + second
 // ========== BITWISE OPERATIONS ==========
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_bitor_int() {
     let source = "result = 5 | 3";
     let program = Parser::parse(source).unwrap();
@@ -197,7 +194,6 @@ fn test_int_bitor_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_bitand_int() {
     let source = "result = 5 & 3";
     let program = Parser::parse(source).unwrap();
@@ -209,7 +205,6 @@ fn test_int_bitand_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_bitxor_int() {
     let source = "result = 5 ^ 3";
     let program = Parser::parse(source).unwrap();
@@ -221,7 +216,6 @@ fn test_int_bitxor_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_lshift_int() {
     let source = "result = 5 << 2";
     let program = Parser::parse(source).unwrap();
@@ -233,7 +227,6 @@ fn test_int_lshift_int() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_int_rshift_int() {
     let source = "result = 20 >> 2";
     let program = Parser::parse(source).unwrap();
@@ -313,7 +306,6 @@ fn test_comparison_greater_equal() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_comparison_is() {
     let source = "result = x is None";
     let program = Parser::parse(source).unwrap();
@@ -325,7 +317,6 @@ fn test_comparison_is() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_comparison_in() {
     let source = "result = 5 in [1, 2, 3]";
     let program = Parser::parse(source).unwrap();
@@ -468,19 +459,20 @@ fn test_string_multiply_unsupported() {
 }
 
 #[test]
-#[ignore = "TODO: investigate hanging issue"]
 fn test_bitwise_on_float_unsupported() {
+    // Bitwise operations on floats should be rejected
     let source = "result = 5.0 | 3.0";
     let program = Parser::parse(source).unwrap();
     let mut analyzer = SemanticAnalyzer::new();
-    analyzer.analyze(&program).unwrap();
+    let result = analyzer.analyze(&program);
 
-    let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
-    assert_eq!(
-        symbol.ty,
-        Type::Unknown,
-        "Bitwise operations on floats not supported"
-    );
+    // Should produce InvalidBinaryOperation error
+    assert!(result.is_err());
+    let errors = result.err().unwrap();
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        SemanticError::InvalidBinaryOperation { operator, .. } if operator == "|"
+    )));
 }
 
 #[test]

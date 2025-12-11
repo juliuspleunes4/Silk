@@ -552,6 +552,24 @@ impl Parser {
                     comparators: vec![right],
                 }
             }
+            TokenKind::Is => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::Is],
+                    comparators: vec![right],
+                }
+            }
+            TokenKind::In => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Comparison.succ())?;
+                ExpressionKind::Compare {
+                    left: Box::new(left),
+                    ops: vec![CompareOperator::In],
+                    comparators: vec![right],
+                }
+            }
 
             // Logical operators
             TokenKind::And => {
