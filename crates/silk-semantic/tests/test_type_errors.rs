@@ -98,7 +98,7 @@ fn test_invalid_unary_operation_error() {
 #[test]
 fn test_invalid_subscript_error() {
     let error = SemanticError::InvalidSubscript {
-        container_type: "list[int]".to_string(),
+        collection_type: "list[int]".to_string(),
         index_type: "str".to_string(),
         line: 35,
         column: 8,

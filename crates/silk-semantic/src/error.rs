@@ -114,10 +114,10 @@ pub enum SemanticError {
         span: Span,
     },
 
-    /// Invalid subscript operation - wrong index type
-    #[error("Invalid subscript at line {line}, column {column}: cannot index '{container_type}' with '{index_type}'")]
+    /// Invalid subscript operation - wrong index type or non-subscriptable type
+    #[error("Invalid subscript at line {line}, column {column}: cannot index '{collection_type}' with '{index_type}'")]
     InvalidSubscript {
-        container_type: String,
+        collection_type: String,
         index_type: String,
         line: usize,
         column: usize,

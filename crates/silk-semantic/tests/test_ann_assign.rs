@@ -120,9 +120,9 @@ fn test_ann_assign_bool_type() {
 }
 
 #[test]
-fn test_ann_assign_generic_type_fallback() {
-    // Generic types like list[int] should currently return Unknown
-    // This test documents current behavior (will improve later)
+fn test_ann_assign_generic_type() {
+    // Generic types like list[int] are now properly resolved
+    // Test that generic types are now properly resolved
     let source = "items: list[int] = []";
     let program = Parser::parse(source).unwrap();
     
@@ -130,6 +130,6 @@ fn test_ann_assign_generic_type_fallback() {
     analyzer.analyze(&program).unwrap();
     
     let symbol = analyzer.symbol_table().resolve_symbol("items").unwrap();
-    // Currently generic types resolve to Unknown (future improvement)
-    assert_eq!(symbol.ty, Type::Unknown);
+    // Generic types are now properly resolved
+    assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
 }

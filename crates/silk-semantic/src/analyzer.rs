@@ -582,6 +582,13 @@ impl SemanticAnalyzer {
             ExpressionKind::Subscript { value, index } => {
                 self.analyze_expression(value);
                 self.analyze_expression(index);
+                
+                // Validate subscript operation
+                let value_type = self.infer_type(value);
+                let index_type = self.infer_type(index);
+                if let Err(err) = self.validate_subscript(&value_type, &index_type, value, index) {
+                    self.errors.push(err);
+                }
             }
 
             // Collections
@@ -777,6 +784,19 @@ impl SemanticAnalyzer {
             }
             ExpressionKind::Tuple { elements } => {
                 self.infer_tuple_type(elements)
+            }
+            
+            // Subscript operations
+            ExpressionKind::Subscript { value, .. } => {
+                self.infer_subscript_type(value)
+            }
+            
+            // Attribute access
+            ExpressionKind::Attribute { value, .. } => {
+                // For now, return Unknown for attribute access
+                // TODO: Implement proper attribute type resolution
+                let _ = self.infer_type(value);
+                Type::Unknown
             }
             
             // For now, other expressions return Unknown
@@ -1212,8 +1232,55 @@ impl SemanticAnalyzer {
                 Type::from_str(name).unwrap_or(Type::Unknown)
             }
             
-            // For now, complex types return Unknown
-            // TODO: Handle Generic, Union, Optional, Callable, etc.
+            silk_ast::TypeKind::Generic { base, args } => {
+                // Extract the base type name
+                if let silk_ast::TypeKind::Name(base_name) = &base.kind {
+                    match base_name.as_str() {
+                        "list" => {
+                            if args.len() == 1 {
+                                let element_type = self.resolve_type_annotation(&args[0]);
+                                Type::List(Box::new(element_type))
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "dict" => {
+                            if args.len() == 2 {
+                                let key_type = self.resolve_type_annotation(&args[0]);
+                                let value_type = self.resolve_type_annotation(&args[1]);
+                                Type::Dict {
+                                    key_type: Box::new(key_type),
+                                    value_type: Box::new(value_type),
+                                }
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "set" => {
+                            if args.len() == 1 {
+                                let element_type = self.resolve_type_annotation(&args[0]);
+                                Type::Set(Box::new(element_type))
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "tuple" => {
+                            // tuple[T1, T2, ...] with specific element types
+                            let element_types: Vec<Type> = args
+                                .iter()
+                                .map(|t| self.resolve_type_annotation(t))
+                                .collect();
+                            Type::Tuple(element_types)
+                        }
+                        _ => Type::Unknown,
+                    }
+                } else {
+                    Type::Unknown
+                }
+            }
+            
+            // For now, other complex types return Unknown
+            // TODO: Handle Union, Optional, Callable, etc.
             _ => Type::Unknown,
         }
     }
@@ -1450,6 +1517,117 @@ impl SemanticAnalyzer {
             }
         }
 
+        Ok(())
+    }
+    
+    /// Infer the result type of a subscript operation
+    /// 
+    /// Returns the element type for lists/tuples/sets, value type for dicts, or Unknown
+    fn infer_subscript_type(&mut self, value: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+        
+        let value_type = self.infer_type(value);
+        
+        match value_type {
+            // List[T] -> T
+            Type::List(element_type) => (*element_type).clone(),
+            
+            // Dict[K, V] -> V
+            Type::Dict { value_type, .. } => (*value_type).clone(),
+            
+            // Tuple[T1, T2, ...] -> Unknown (we don't track individual element types yet)
+            Type::Tuple(_) => Type::Unknown,
+            
+            // Set[T] -> T (though subscripting a set is invalid in Python)
+            Type::Set(element_type) => (*element_type).clone(),
+            
+            // Str[int] -> Str (string subscript returns a string)
+            Type::Str => Type::Str,
+            
+            // Unknown or Any pass through
+            Type::Unknown | Type::Any => Type::Unknown,
+            
+            // Everything else is Unknown (invalid subscript, but we'll catch that in validation)
+            _ => Type::Unknown,
+        }
+    }
+    
+    /// Validate a subscript operation
+    /// 
+    /// Checks that:
+    /// - The value being subscripted is a valid collection type
+    /// - The index type matches what the collection expects
+    fn validate_subscript(
+        &self,
+        value_type: &crate::types::Type,
+        index_type: &crate::types::Type,
+        value_expr: &Expression,
+        index_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        use crate::types::Type;
+        
+        // Unknown types pass validation (gradual typing)
+        if *value_type == Type::Unknown || *index_type == Type::Unknown {
+            return Ok(());
+        }
+        
+        // Check if the value type supports subscripting
+        match value_type {
+            // List, Tuple, Str require int index
+            Type::List(_) | Type::Tuple(_) | Type::Str => {
+                if *index_type != Type::Int {
+                    return Err(SemanticError::InvalidSubscript {
+                        collection_type: value_type.to_string(),
+                        index_type: index_type.to_string(),
+                        line: index_expr.span.line,
+                        column: index_expr.span.column,
+                        span: index_expr.span.clone(),
+                    });
+                }
+            }
+            
+            // Dict requires index type to match key type
+            Type::Dict { key_type, .. } => {
+                // Check if index type is compatible with key type
+                if !key_type.is_compatible_with(index_type) {
+                    return Err(SemanticError::InvalidSubscript {
+                        collection_type: value_type.to_string(),
+                        index_type: index_type.to_string(),
+                        line: index_expr.span.line,
+                        column: index_expr.span.column,
+                        span: index_expr.span.clone(),
+                    });
+                }
+            }
+            
+            // Set doesn't support subscripting
+            Type::Set(_) => {
+                return Err(SemanticError::InvalidSubscript {
+                    collection_type: value_type.to_string(),
+                    index_type: index_type.to_string(),
+                    line: value_expr.span.line,
+                    column: value_expr.span.column,
+                    span: value_expr.span.clone(),
+                });
+            }
+            
+            // Any passes
+            Type::Any => {
+                return Ok(());
+            }
+            
+            // Other types don't support subscripting
+            _ => {
+                return Err(SemanticError::InvalidSubscript {
+                    collection_type: value_type.to_string(),
+                    index_type: index_type.to_string(),
+                    line: value_expr.span.line,
+                    column: value_expr.span.column,
+                    span: value_expr.span.clone(),
+                });
+            }
+        }
+        
         Ok(())
     }
 }
