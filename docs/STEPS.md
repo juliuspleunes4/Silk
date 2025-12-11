@@ -26,7 +26,7 @@ Validate annotated assignments receive compatible values
 ### Phase 3: Function Call Type Checking (Steps 8-11) ✅ COMPLETE
 Validate function arguments match parameter types
 
-### Phase 4: Return Type Checking (Steps 12-14)
+### Phase 4: Return Type Checking (Steps 12-14) ✅ COMPLETE
 Validate return values match declared return types
 
 ### Phase 5: Binary Operation Validation (Steps 15-17)
@@ -177,39 +177,40 @@ Advanced tests, full validation, documentation updates
 
 ---
 
-### **Phase 4: Return Type Checking**
+### **Phase 4: Return Type Checking** ✅ COMPLETE
 
-#### Step 12: Implement Return Statement Type Validation
+#### Step 12: Implement Return Statement Type Validation ✅
 - **File**: `crates/silk-semantic/src/analyzer.rs`
-- **Action**: Add type checking for return statements
-- **Logic**:
-  - Track current function's return type
-  - When analyzing Return statement, infer return value type
-  - Check if compatible with declared return type
-  - Add error if incompatible
-- **Method**: Add `check_return_type()` helper (~30 lines)
-- **Context**: Add `current_function_return_type: Option<Type>` to analyzer
+- **Action**: Added type checking for return statements
+- **Changes**:
+  - Added `current_function_return_type: Option<Type>` field to SemanticAnalyzer
+  - Updated FunctionDef handling to set/restore current_function_return_type
+  - Enhanced Return statement handling to validate return type
+  - Handles both value returns and empty returns
+- **Method**: Added `check_return_type()` helper (~40 lines)
+- **Status**: Implementation complete ✅
 
-#### Step 13: Add Return Type Checking Tests
+#### Step 13: Add Return Type Checking Tests ✅
 - **File**: `crates/silk-semantic/tests/test_return_type_checking.rs`
-- **Action**: Create comprehensive test file
-- **Tests** (12 tests):
-  - Valid: `def f() -> int: return 42` ✓
-  - Invalid: `def f() -> int: return "hello"` ✗
-  - Valid: `def f() -> str: return "hello"` ✓
-  - Invalid: `def f() -> str: return 3.14` ✗
-  - Valid: `def f() -> list[int]: return [1, 2, 3]` ✓
-  - Invalid: `def f() -> list[int]: return [1, "a"]` ✗
-  - Function with no return type (should pass)
-  - Empty return in function with return type
-  - Multiple returns with errors
-  - Return Unknown (should pass)
-  - Nested function returns
+- **Action**: Created comprehensive test file with 20 tests
+- **Tests**:
+  - Valid returns (6 tests): int, str, float, bool, int→float widening, no annotation
+  - Invalid returns (4 tests): wrong types, float→int narrowing rejected
+  - Empty returns (2 tests): with/without return type annotation
+  - Expression returns (2 tests): valid/invalid expressions
+  - Multiple returns (2 tests): all valid, mixed valid/invalid
+  - Nested functions (2 tests): different return types, mismatch in inner
+  - Function call returns (2 tests): valid/invalid return type from call
+- **Status**: All 20 tests passing ✅
 
-#### Step 14: Verify Return Type Checking
-- **Action**: Run all tests
-- **Verify**: New tests pass, all existing tests still pass
-- **Debug**: Fix any issues
+#### Step 14: Verify Return Type Checking ✅
+- **Action**: Run full test suite
+- **Type System Integration**:
+  - Uses existing `infer_type()` for return expressions
+  - Uses `is_compatible_with()` for validation (supports widening)
+  - Handles gradual typing (Unknown return type)
+- **Result**: **772 tests passing** (was 752, +20 new tests)
+- **Status**: Phase 4 complete ✅
 
 ---
 
@@ -358,7 +359,11 @@ Advanced tests, full validation, documentation updates
   - [x] Step 10: Implement Function Call Argument Type Validation ✅
   - [x] Step 11: Add Function Call Type Checking Tests ✅ (20 tests passing)
   - [x] Step 12: Verify Function Call Type Checking ✅ (752 tests total, +20 from baseline)
-- [ ] Phase 4: Return Type Checking (Steps 12-14)
+- [x] Phase 4: Return Type Checking (Steps 12-14) ✅ COMPLETE
+  - [x] Step 12: Implement Return Statement Type Validation ✅
+  - [x] Step 13: Add Return Type Checking Tests ✅ (20 tests passing)
+  - [x] Step 14: Verify Return Type Checking ✅ (772 tests total, +20 from baseline)
+- [ ] Phase 5: Binary Operation Validation (Steps 15-17)
 - [ ] Phase 5: Binary Operation Validation (Steps 15-17)
 - [ ] Phase 6: Collection Operations (Steps 18-20)
 - [ ] Phase 7: Integration & Documentation (Steps 21-25)

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ↩️ Return Type Checking - December 11, 2025
+
+**Implemented type checking for return statements (Phase 4, Steps 12-14 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Added `current_function_return_type` field**: Tracks return type of current function during analysis
+- **Enhanced `analyze_statement` for FunctionDef**:
+  - Sets `current_function_return_type` before analyzing function body
+  - Restores previous return type after analysis (supports nested functions)
+  - Resolves return type annotation from AST
+- **Updated Return statement handling**:
+  - Validates return value type against declared return type
+  - Checks empty returns against function return type
+  - Reports `ReturnTypeMismatch` error for incompatible types
+- **New method `check_return_type()`** (~40 lines):
+  - Infers type of return expression
+  - Validates compatibility with function's declared return type
+  - Uses `is_compatible_with()` for type checking (supports widening)
+  - Returns detailed error with expected/actual types and location
+
+**Testing**:
+- **New test file `test_return_type_checking.rs`** with 20 comprehensive tests:
+  - **Valid returns** (6 tests): int, str, float, bool, int→float widening, no annotation
+  - **Invalid returns** (4 tests): wrong types, float→int narrowing
+  - **Empty returns** (2 tests): with/without return type annotation
+  - **Expression returns** (2 tests): valid/invalid expressions
+  - **Multiple returns** (2 tests): all valid, mixed valid/invalid
+  - **Nested functions** (2 tests): different return types, mismatch in inner
+  - **Function call returns** (2 tests): valid/invalid return type from call
+- **Total tests**: 772 (increased from 752, +20 new tests)
+
+**Architecture Notes**:
+- Return type tracked per-function via context field
+- Nested functions supported by save/restore pattern
+- Gradual typing preserved: functions without return type accept any return
+- Empty return validates as None type
+- Integration with existing type inference and compatibility system
+
 ### 🎯 Function Call Type Checking - December 11, 2025
 
 **Implemented type checking for function call arguments (Phase 3, Steps 8-11 of Type Checking feature)**.
