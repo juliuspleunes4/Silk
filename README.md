@@ -137,25 +137,25 @@ cargo test --package silk-semantic
 
 **Current test coverage:** 690 tests across all components (13 ignored)
 - 126 lexer tests (11 unit + 115 integration)
-- 264 parser tests
+- 264 parser tests (9 annotated assignment + 255 comprehensive)
 - 8 type system unit tests
-- 286 semantic analysis tests:
-  - 28 analyzer tests (3 ignored)
-  - 8 annotated assignment tests
+- 292 semantic analysis tests:
+  - 31 analyzer tests (3 ignored)
+  - 9 annotated assignment tests
+  - 41 binary operation tests (10 ignored)
   - 19 function call type inference tests
-  - 4 function type storage tests
-  - 14 forward reference tests
-  - 44 name resolution tests
-  - 17 symbol table tests
-  - 6 parameter defaults tests
-  - 24 decorators/bases/keywords tests
-  - 28 type inference tests
-  - 31 binary operation tests (10 ignored)
   - 12 collection type system tests
-  - 13 list type inference tests
+  - 24 decorators/bases/keywords tests
   - 11 dict type inference tests
+  - 14 forward reference tests
+  - 4 function type storage tests
+  - 13 list type inference tests
+  - 44 name resolution tests
+  - 6 parameter defaults tests
   - 8 set type inference tests
-  - 11 tuple type inference tests (note: 1 tuple test missing from total due to test deduplication)
+  - 17 symbol table tests
+  - 11 tuple type inference tests
+  - 28 type inference tests
 
 ## Contributing
 
