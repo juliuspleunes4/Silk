@@ -130,6 +130,93 @@ impl Type {
             Type::Int | Type::Float | Type::Str | Type::Bool | Type::None | Type::Any
         )
     }
+
+    /// Check if this type can be used in numeric operations (+ - * / etc)
+    /// 
+    /// Returns true for Int, Float, and Unknown (for gradual typing)
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, Type::Int | Type::Float | Type::Unknown)
+    }
+
+    /// Check if this type can be used in comparison operations (< > <= >=)
+    /// 
+    /// Returns true for Int, Float, Str, and Unknown
+    pub fn is_comparable(&self) -> bool {
+        matches!(self, Type::Int | Type::Float | Type::Str | Type::Unknown)
+    }
+
+    /// Check if this type can be indexed/subscripted
+    /// 
+    /// Returns true for List, Dict, Tuple, Str, and Unknown
+    pub fn is_indexable(&self) -> bool {
+        matches!(self, Type::List(_) | Type::Dict { .. } | Type::Tuple(_) | Type::Str | Type::Unknown)
+    }
+
+    /// Check if this type can be iterated over (for loops)
+    /// 
+    /// Returns true for List, Dict, Set, Tuple, Str, and Unknown
+    pub fn is_iterable(&self) -> bool {
+        matches!(self, Type::List(_) | Type::Dict { .. } | Type::Set(_) | Type::Tuple(_) | Type::Str | Type::Unknown)
+    }
+
+    /// Get the index type for this container type
+    /// 
+    /// For lists/tuples/strings: returns int
+    /// For dicts: returns the key type
+    /// For others: returns Unknown
+    pub fn expected_index_type(&self) -> Type {
+        match self {
+            Type::List(_) | Type::Tuple(_) | Type::Str => Type::Int,
+            Type::Dict { key_type, .. } => (**key_type).clone(),
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Get the element/value type when indexing this container
+    /// 
+    /// For lists: returns element type
+    /// For dicts: returns value type
+    /// For tuples: returns Unknown (varies by index)
+    /// For strings: returns str
+    pub fn index_result_type(&self) -> Type {
+        match self {
+            Type::List(elem_type) => (**elem_type).clone(),
+            Type::Dict { value_type, .. } => (**value_type).clone(),
+            Type::Tuple(_) => Type::Unknown, // Could be any element type
+            Type::Str => Type::Str,
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Check if two types can be used together in a binary operation
+    /// 
+    /// This is a stricter check than is_compatible_with, used for operations
+    /// Returns true if the operation makes sense (doesn't check result type)
+    pub fn can_operate_with(&self, other: &Type, is_arithmetic: bool) -> bool {
+        // Unknown is always allowed (gradual typing)
+        if matches!(self, Type::Unknown) || matches!(other, Type::Unknown) {
+            return true;
+        }
+
+        if is_arithmetic {
+            // Arithmetic operations: both must be numeric
+            // Int and Float can be mixed
+            self.is_numeric() && other.is_numeric()
+        } else {
+            // Other operations (comparisons, etc): types should be compatible
+            self.is_compatible_with(other) || other.is_compatible_with(self)
+        }
+    }
+
+    /// Check if this type requires exact type matching (no coercion)
+    /// 
+    /// Returns true for collection types where element types matter
+    pub fn requires_exact_match(&self) -> bool {
+        matches!(
+            self,
+            Type::List(_) | Type::Dict { .. } | Type::Set(_) | Type::Tuple(_)
+        )
+    }
 }
 
 impl fmt::Display for Type {
