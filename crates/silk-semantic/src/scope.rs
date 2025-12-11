@@ -1,7 +1,7 @@
 //! Scope management for semantic analysis
 
-use std::collections::HashMap;
 use crate::symbol_table::Symbol;
+use std::collections::HashMap;
 
 /// Types of scopes in Silk
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,6 +45,11 @@ impl Scope {
     /// Look up a symbol in this scope only (does not search parent scopes)
     pub fn lookup_local(&self, name: &str) -> Option<&Symbol> {
         self.symbols.get(name)
+    }
+
+    /// Look up a symbol mutably in this scope only (does not search parent scopes)
+    pub fn lookup_local_mut(&mut self, name: &str) -> Option<&mut Symbol> {
+        self.symbols.get_mut(name)
     }
 
     /// Get parent scope index

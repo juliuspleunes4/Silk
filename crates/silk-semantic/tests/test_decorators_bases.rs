@@ -6,7 +6,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper to parse and analyze source code
 fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -23,7 +23,9 @@ def my_function():
     let result = analyze(source);
     assert!(result.is_err(), "Should detect undefined decorator");
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator")
+    );
 }
 
 #[test]
@@ -37,7 +39,11 @@ def my_function():
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Defined decorator should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Defined decorator should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -51,7 +57,11 @@ def decorator(func):
     return func
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Forward reference decorator should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Forward reference decorator should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -65,7 +75,11 @@ def my_function():
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Decorator with call should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Decorator with call should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -83,7 +97,11 @@ def my_function():
     let result = analyze(source);
     // Note: This will pass because we validate 'module' exists, not that it has a 'decorator' attribute
     // Attribute checking is beyond current scope
-    assert!(result.is_ok(), "Decorator with attribute should validate object: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Decorator with attribute should validate object: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -105,7 +123,11 @@ def decorator3(func):
     return func
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Multiple decorators should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Multiple decorators should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -124,9 +146,14 @@ def decorator3(func):
     return func
     "#;
     let result = analyze(source);
-    assert!(result.is_err(), "Should detect undefined decorator in chain");
+    assert!(
+        result.is_err(),
+        "Should detect undefined decorator in chain"
+    );
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator")
+    );
 }
 
 // ========== CLASS DECORATORS ==========
@@ -141,7 +168,9 @@ class MyClass:
     let result = analyze(source);
     assert!(result.is_err(), "Should detect undefined class decorator");
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator")
+    );
 }
 
 #[test]
@@ -155,7 +184,11 @@ class MyClass:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Defined class decorator should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Defined class decorator should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -169,7 +202,11 @@ def dataclass(cls):
     return cls
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Forward reference class decorator should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Forward reference class decorator should work: {:?}",
+        result
+    );
 }
 
 // ========== BASE CLASSES ==========
@@ -183,7 +220,9 @@ class MyClass(UndefinedBase):
     let result = analyze(source);
     assert!(result.is_err(), "Should detect undefined base class");
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase")
+    );
 }
 
 #[test]
@@ -196,7 +235,11 @@ class MyClass(BaseClass):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Defined base class should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Defined base class should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -209,7 +252,11 @@ class BaseClass:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Forward reference base class should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Forward reference base class should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -225,7 +272,11 @@ class MyClass(Base1, Base2):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Multiple base classes should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Multiple base classes should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -243,7 +294,9 @@ class Base3:
     let result = analyze(source);
     assert!(result.is_err(), "Should detect undefined base class");
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase")
+    );
 }
 
 #[test]
@@ -260,7 +313,11 @@ class MyClass(module.Inner):
     "#;
     let result = analyze(source);
     // Note: This validates 'module' exists, not that it has 'Inner' attribute
-    assert!(result.is_ok(), "Base class with attribute should validate object: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Base class with attribute should validate object: {:?}",
+        result
+    );
 }
 
 // ========== COMBINED DECORATORS AND BASE CLASSES ==========
@@ -279,7 +336,11 @@ class MyClass(BaseClass):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Decorated class with base should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Decorated class with base should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -293,9 +354,14 @@ class MyClass(BaseClass):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_err(), "Should detect undefined decorator even with valid base");
+    assert!(
+        result.is_err(),
+        "Should detect undefined decorator even with valid base"
+    );
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_decorator")
+    );
 }
 
 #[test]
@@ -309,9 +375,14 @@ class MyClass(UndefinedBase):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_err(), "Should detect undefined base even with valid decorator");
+    assert!(
+        result.is_err(),
+        "Should detect undefined base even with valid decorator"
+    );
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedBase")
+    );
 }
 
 // ========== CLASS KEYWORD ARGUMENTS ==========
@@ -325,7 +396,9 @@ class MyClass(metaclass=UndefinedMeta):
     let result = analyze(source);
     assert!(result.is_err(), "Should detect undefined metaclass");
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedMeta"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "UndefinedMeta")
+    );
 }
 
 #[test]
@@ -338,7 +411,11 @@ class MyClass(metaclass=MetaClass):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Defined metaclass should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Defined metaclass should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -351,7 +428,11 @@ class MetaClass:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Forward reference metaclass should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Forward reference metaclass should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -361,7 +442,10 @@ class MyClass(UndefinedBase, metaclass=UndefinedMeta):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_err(), "Should detect both undefined base and metaclass");
+    assert!(
+        result.is_err(),
+        "Should detect both undefined base and metaclass"
+    );
     let errors = result.unwrap_err();
     // Should have 2 errors
     assert_eq!(errors.len(), 2);
@@ -380,5 +464,9 @@ class MyClass(BaseClass, metaclass=MetaClass):
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Both base and metaclass defined should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Both base and metaclass defined should work: {:?}",
+        result
+    );
 }

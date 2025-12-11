@@ -7,6 +7,335 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Code Review Fixes - December 11, 2025
+
+**Critical bug fix, documentation correction, and performance improvements**.
+
+**Fixes**:
+- **Fixed critical dict subscript compatibility bug** that prevented valid numeric widening
+  - Bug: Compatibility check was backwards (`key_type.is_compatible_with(index_type)`)
+  - Fix: Reversed to `index_type.is_compatible_with(key_type)`
+  - Impact: Now correctly allows `dict[float, str][42]` (int widens to float)
+  - Added regression test `test_dict_subscript_int_to_float_widening`
+- **Corrected misleading docstring** for `Type::is_compatible_with()` method
+  - Now accurately states: "Returns true if a value of type `self` can be assigned to a variable of type `other`"
+- **Removed 22 unnecessary `.clone()` calls** on `Span` (implements `Copy` trait)
+  - Affects error construction in parser (`expr.rs`) and semantic analyzer (`analyzer.rs`)
+  - Minor performance improvement
+
+**Test Count**: 830 tests passing (+1 regression test)
+
+### 🐛 Parser Bug Fix - `is` and `in` Operators - December 11, 2025
+
+**Fixed missing comparison operators in parser causing infinite loops**.
+
+**Parser Fix**:
+- **Added missing `is` operator case** in `parse_infix()` method
+- **Added missing `in` operator case** in `parse_infix()` method
+- Both operators now correctly parse as comparison expressions
+- Previously these tokens were only in the precedence function but missing from the actual parsing logic
+- Parser would return without advancing token → infinite loop
+
+**Test Updates**:
+- **Removed all `#[ignore]` attributes** from `test_binary_operations.rs`
+- All 10 previously ignored tests now pass:
+  - `test_int_floordiv_int` - floor division
+  - `test_int_mod_int` - modulo
+  - `test_int_bitor_int` - bitwise OR
+  - `test_int_bitand_int` - bitwise AND
+  - `test_int_bitxor_int` - bitwise XOR
+  - `test_int_lshift_int` - left shift
+  - `test_int_rshift_int` - right shift
+  - `test_comparison_is` - identity comparison
+  - `test_comparison_in` - membership test
+  - `test_bitwise_on_float_unsupported` - updated to expect error (correct behavior)
+- Updated `test_bitwise_on_float_unsupported` to expect `InvalidBinaryOperation` error instead of Unknown type
+
+**Impact**:
+- Fixes all remaining parser hanging issues
+- All 41 binary operation tests now pass (previously 31 passing, 10 ignored)
+- Test count increased: 819 → 829 tests passing
+- Complete binary operation support: arithmetic, bitwise, comparison, logical
+
+### 🎯 Integration Testing & Documentation - December 11, 2025
+
+**Completed comprehensive integration testing (Phase 7, Steps 21-25 of Type Checking feature)**.
+
+**Integration Testing**:
+- **Created `test_advanced_type_checking.rs`** with 10 comprehensive integration tests:
+  - `test_annotated_assignment_with_function_call_result`: Combines annotated assignment with function call validation
+  - `test_function_returning_collection_used_in_subscript`: Tests function calls returning collections with subscript validation
+  - `test_nested_function_calls_with_type_checking`: Validates nested function call type checking
+  - `test_binary_operations_with_function_calls`: Tests binary operations with function call results
+  - `test_mixed_valid_and_invalid_operations`: Multiple valid and invalid operations together
+  - `test_function_with_multiple_returns_and_calls`: Multiple return paths with type validation
+  - `test_collection_operations_chain`: Chained subscript operations (nested collections)
+  - `test_dict_operations_with_wrong_key_type`: Dictionary subscript with type checking
+  - `test_function_parameter_and_return_validation`: Dual validation of parameters and returns
+  - `test_complex_nested_scenario`: Combines all features (assignments, calls, returns, operations, subscripts)
+- Tests validate that all type checking phases work together correctly
+- All 10 integration tests passing ✅
+
+**Code Quality**:
+- Ran `cargo fmt --all`: All code formatted to Rust standards
+- Ran `cargo clippy --workspace`: Minor warnings only (large Result variants, unnecessary .clone() calls)
+- Clippy warnings are informational and non-blocking
+
+**Testing Summary**:
+- **Total: 819 tests passing**
+  - Lexer: 115 tests
+  - Parser: 255 tests  
+  - Semantic: 390 tests (including all type checking)
+  - Integration: 10 tests (advanced scenarios)
+  - Other: 49 tests
+- Test coverage: All type checking phases validated
+- Zero test failures ✅
+
+**Documentation**:
+- Updated README.md test count badge: 809 → 819
+- Updated CHANGELOG.md with Phase 7 completion
+- Updated TODO.md: Type checking feature marked complete (100%)
+- Updated STEPS.md: All 7 phases complete
+
+**Type Checking Feature Status**:
+- ✅ Phase 1: Error Infrastructure (33 tests)
+- ✅ Phase 2: Assignment Type Checking (22 tests)
+- ✅ Phase 3: Function Call Type Checking (20 tests)
+- ✅ Phase 4: Return Type Checking (20 tests)
+- ✅ Phase 5: Binary Operation Validation (21 tests)
+- ✅ Phase 6: Collection Operations (16 tests)
+- ✅ Phase 7: Integration & Documentation (10 tests)
+- **Total: 142 new tests for type checking**
+
+**Impact**:
+- Complete type checking system for Silk language
+- Comprehensive test coverage across all features
+- Integration tests validate multi-feature scenarios
+- Clean codebase with proper formatting
+- Full documentation of implementation
+
+### 🔍 Collection Operations - December 11, 2025
+
+**Implemented subscript type validation (Phase 6, Steps 18-20 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Added subscript validation** in `analyze_expression` for `Subscript` expressions
+- **New method `validate_subscript()`** (~60 lines):
+  - Validates subscriptable types: list, dict, tuple, str support subscripting
+  - List/Tuple/Str require int index
+  - Dict requires index type to match key type
+  - Set subscripting is invalid (returns error)
+  - Other types (int, float, bool, etc.) don't support subscripting
+  - Gradual typing: Unknown types pass validation
+  - Returns `InvalidSubscript` error for invalid subscript operations
+- **New method `infer_subscript_type()`** (~20 lines):
+  - List[T] → T
+  - Dict[K, V] → V  
+  - Tuple[...] → Unknown (no per-element tracking yet)
+  - Str[int] → Str
+  - Returns Unknown for invalid subscripts
+- **Enhanced `resolve_type_annotation()`** (~50 lines):
+  - **Added Generic type support**: Now properly resolves `list[int]`, `dict[str, int]`, `set[float]`, `tuple[int, str]`
+  - Recursively resolves nested generic type arguments
+  - Previously returned Unknown for all generic types
+- **Added attribute access type inference**: Returns Unknown for now (future: proper class attribute resolution)
+
+**Bug Fixes**:
+- Fixed `InvalidSubscript` error field name: `container_type` → `collection_type` for consistency
+- Updated `test_ann_assign_generic_type_fallback` → `test_ann_assign_generic_type` to reflect new generic type support
+
+**Testing**:
+- **16 new tests** in `test_collection_operations.rs`:
+  - Valid subscripts (4 tests): list[int], tuple, dict[str,int], str with correct index types
+  - Invalid subscripts (7 tests): wrong index types (str on list, int on dict[str,*]), non-subscriptable types (set, int)
+  - Edge cases (5 tests): Unknown type handling, nested subscripts, subscripts in expressions/function calls, multiple errors
+- Updated 1 existing test to expect `List(Int)` instead of `Unknown` for generic types
+- Updated 1 test to use `collection_type` field name
+- All 809 tests passing ✅
+
+**Impact**:
+- Enables compile-time detection of invalid subscript operations
+- Generic type annotations now fully functional (`list[int]`, `dict[str, int]`, etc.)
+- Provides clear error messages for subscript type mismatches
+- Maintains gradual typing flexibility
+
+### ✅ Binary Operation Validation - December 11, 2025
+
+**Implemented type validation for binary operations (Phase 5, Steps 15-17 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Modified `infer_binary_op_type` method**: Added validation call before type inference
+- **New method `validate_binary_operation()`** (~110 lines):
+  - Validates arithmetic operations:
+    - Addition (`+`): allows numeric+numeric OR str+str
+    - Subtraction, multiplication, division, floor div, modulo, power (`-`, `*`, `/`, `//`, `%`, `**`): require numeric operands only
+  - Validates bitwise operations:
+    - Bitwise OR, XOR, AND (`|`, `^`, `&`): require int+int
+    - Left/right shift (`<<`, `>>`): require int+int
+  - Gradual typing support: Unknown types pass all validation
+  - Returns `InvalidBinaryOperation` error for incompatible type combinations
+- **Unused parameter warning**: Marked `right_expr` parameter as unused with `_right_expr`
+
+**Parser Bug Fix**:
+- **CRITICAL**: Fixed infinite loop in parser when encountering bitwise operators
+- Root cause: `parse_infix()` was missing cases for bitwise operators (`Pipe`, `Caret`, `Ampersand`, `LeftShift`, `RightShift`)
+- Parser would return without advancing token, causing infinite loop in precedence climbing
+- Added all missing bitwise operator cases:
+  - `TokenKind::Pipe` → `BinaryOperator::BitOr` (BitwiseOr precedence)
+  - `TokenKind::Caret` → `BinaryOperator::BitXor` (BitwiseXor precedence)
+  - `TokenKind::Ampersand` → `BinaryOperator::BitAnd` (BitwiseAnd precedence)
+  - `TokenKind::LeftShift` → `BinaryOperator::LShift` (Shift precedence)
+  - `TokenKind::RightShift` → `BinaryOperator::RShift` (Shift precedence)
+- Also added missing arithmetic operator cases:
+  - `TokenKind::DoubleSlash` → `BinaryOperator::FloorDiv`
+  - `TokenKind::Percent` → `BinaryOperator::Mod`
+
+**Testing**:
+- **21 new tests** in `test_binary_operation_validation.rs`:
+  - Valid arithmetic operations (8 tests): int+int, float+float, int+float, str+str, subtraction, multiplication, division, bitwise ops
+  - Invalid type mismatches (6 tests): int+str, str+int, str-str, str*float, bool+bool, float|float
+  - Bitwise operations (4 tests): valid int bitwise, invalid float bitwise, invalid string bitwise, invalid shift on float
+  - Special cases (3 tests): unknown type handling, nested operations, operations in expressions
+- Updated existing test `test_string_multiply_unsupported` to expect error instead of Unknown type
+- All 793 tests passing ✅
+
+**Impact**:
+- Catches type errors in binary operations at compile time
+- Provides clear error messages with operator, operand types, and location
+- Maintains gradual typing support for flexibility
+- Fixed critical parser bug that blocked all bitwise operation parsing
+
+### ↩️ Return Type Checking - December 11, 2025
+
+**Implemented type checking for return statements (Phase 4, Steps 12-14 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Added `current_function_return_type` field**: Tracks return type of current function during analysis
+- **Enhanced `analyze_statement` for FunctionDef**:
+  - Sets `current_function_return_type` before analyzing function body
+  - Restores previous return type after analysis (supports nested functions)
+  - Resolves return type annotation from AST
+- **Updated Return statement handling**:
+  - Validates return value type against declared return type
+  - Checks empty returns against function return type
+  - Reports `ReturnTypeMismatch` error for incompatible types
+- **New method `check_return_type()`** (~40 lines):
+  - Infers type of return expression
+  - Validates compatibility with function's declared return type
+  - Uses `is_compatible_with()` for type checking (supports widening)
+  - Returns detailed error with expected/actual types and location
+
+**Testing**:
+- **New test file `test_return_type_checking.rs`** with 20 comprehensive tests:
+  - **Valid returns** (6 tests): int, str, float, bool, int→float widening, no annotation
+  - **Invalid returns** (4 tests): wrong types, float→int narrowing
+  - **Empty returns** (2 tests): with/without return type annotation
+  - **Expression returns** (2 tests): valid/invalid expressions
+  - **Multiple returns** (2 tests): all valid, mixed valid/invalid
+  - **Nested functions** (2 tests): different return types, mismatch in inner
+  - **Function call returns** (2 tests): valid/invalid return type from call
+- **Total tests**: 772 (increased from 752, +20 new tests)
+
+**Architecture Notes**:
+- Return type tracked per-function via context field
+- Nested functions supported by save/restore pattern
+- Gradual typing preserved: functions without return type accept any return
+- Empty return validates as None type
+- Integration with existing type inference and compatibility system
+
+### 🎯 Function Call Type Checking - December 11, 2025
+
+**Implemented type checking for function call arguments (Phase 3, Steps 8-11 of Type Checking feature)**.
+
+**Type System Enhancements**:
+- **Extended `Type::Function` variant**:
+  - Added `params` field: `Option<Vec<(String, Type)>>`
+  - Stores parameter names and their types
+  - `None` indicates no type annotations (gradual typing)
+- **Updated all `Type::Function` pattern matches** across codebase to use `..` wildcard for params field
+
+**Symbol Table Enhancements**:
+- **New method `resolve_symbol_mut()`**: Returns mutable reference to symbol across scope hierarchy
+- **New method `lookup_local_mut()` in Scope**: Enables mutable access to symbols in single scope
+- Supports updating function symbols after initial definition
+
+**Semantic Analyzer Improvements**:
+- **Enhanced `collect_forward_declarations()`**:
+  - Now collects parameter names and types during pre-pass
+  - Stores params in symbol table for forward reference support
+  - Handles both annotated and unannotated parameters
+- **Refactored all `infer_*` methods**: Changed from `&self` to `&mut self` for error collection during type inference
+- **New method `check_function_call_types()`** (~40 lines):
+  - Validates argument count matches parameter count
+  - Checks each argument type compatible with corresponding parameter type
+  - Returns `ArgumentCountMismatch` or `ArgumentTypeMismatch` errors
+- **Updated `infer_call_type()`**:
+  - Extracts params and return_type from Function symbol
+  - Calls validation if params available
+  - Integrates error collection into type inference flow
+- **Fixed `analyze_expression()` for Call expressions**: Added `self.infer_type(expr)` call to trigger type checking for standalone function calls
+
+**Testing**:
+- **New test file `test_function_call_type_checking.rs`** with 20 comprehensive tests:
+  - **Valid calls** (6 tests): single/multiple params, mixed types, int→float widening, no params, unannotated
+  - **Argument count mismatch** (4 tests): too few, too many, zero args
+  - **Argument type mismatch** (4 tests): wrong type on various params, narrowing rejection
+  - **Expression arguments** (2 tests): arithmetic expressions, wrong expression type
+  - **Nested calls** (2 tests): valid nesting, wrong nested return type
+  - **Multiple errors** (1 test)
+  - **Forward references** (2 tests): call before definition with correct/wrong types
+- **Updated `test_function_types.rs`**: Fixed pattern matches to include `..` for params field (5 matches updated)
+- **Total tests**: 752 (increased from 732, +20 new tests)
+
+**Architecture Notes**:
+- Params collected in pre-pass (not main pass) to support forward references
+- Validation integrated into type inference phase for consistency
+- Gradual typing preserved: functions without type annotations accept any arguments
+- Critical fix ensures all function calls (standalone or nested) are validated
+
+### 🔍 Assignment Type Checking - December 11, 2025
+
+**Implemented type checking for annotated assignments (Phase 2, Steps 4-7 of Type Checking feature)**.
+
+**Type System Improvements**:
+- Enhanced `is_compatible_with()` to support numeric widening conversion:
+  - `int` can now be assigned to `float` (safe widening)
+  - `float` cannot be assigned to `int` (narrowing loses precision)
+- Extended `Type::from_str()` to parse collection type annotations:
+  - `"list"` → `Type::List(Box::new(Type::Unknown))`
+  - `"dict"` → `Type::Dict { key_type: Unknown, value_type: Unknown }`
+  - `"set"` → `Type::Set(Box::new(Type::Unknown))`
+  - `"tuple"` → `Type::Tuple(vec![])`
+- Updated `test_type_compatibility_different()` unit test to reflect widening behavior
+
+**Semantic Analyzer Additions**:
+- **New method `check_assignment_type()`** (~25 lines):
+  - Validates value type matches declared annotation type
+  - Uses `is_compatible_with()` for compatibility checking
+  - Reports `AssignmentTypeMismatch` error with line/column info
+  - Supports gradual typing (Unknown type always compatible)
+- **Updated `analyze_statement()` for AnnAssign**:
+  - Integrated type checking into annotated assignment handling
+  - Infers value type and validates against annotation
+  - Errors collected and reported to user
+
+**Testing**:
+- **New test file `test_assignment_type_checking.rs`** with 22 comprehensive tests:
+  - Valid assignments: int, float, str, bool, collections
+  - Invalid assignments: type mismatches with proper error checking
+  - Numeric compatibility: int→float allowed, float→int rejected
+  - Collection types: list, dict, set validation
+  - Expression type checking: arithmetic, string concat
+  - Multiple assignments and errors
+  - Edge cases: None, empty collections
+- All 22 tests passing ✅
+- Total workspace tests: **732 passing** (was 710, +22 new tests)
+
+**Documentation**:
+- Updated STEPS.md to mark Phase 2 (Steps 4-7) as complete
+- Phase 1 (Error Infrastructure) already complete
+- Ready to proceed to Phase 3 (Function Call Type Checking)
+
 ### 📦 Collection Type Inference - December 11, 2025
 
 **Implemented full type inference for all collection literals: lists, dicts, sets, and tuples**.

@@ -1,14 +1,14 @@
 use silk_parser::Parser;
-use silk_semantic::{SemanticAnalyzer, types::Type};
+use silk_semantic::{types::Type, SemanticAnalyzer};
 
 #[test]
 fn test_empty_tuple() {
     let source = "x = ()";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::Tuple(vec![]));
     assert_eq!(symbol.ty.to_string(), "tuple[]");
@@ -18,10 +18,10 @@ fn test_empty_tuple() {
 fn test_single_element_tuple() {
     let source = "x = (42,)";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int]));
     assert_eq!(symbol.ty.to_string(), "tuple[int]");
@@ -31,12 +31,15 @@ fn test_single_element_tuple() {
 fn test_homogeneous_tuple() {
     let source = "x = (1, 2, 3)";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Int, Type::Int]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![Type::Int, Type::Int, Type::Int])
+    );
     assert_eq!(symbol.ty.to_string(), "tuple[int, int, int]");
 }
 
@@ -44,13 +47,16 @@ fn test_homogeneous_tuple() {
 fn test_heterogeneous_tuple() {
     let source = r#"x = (1, "a", 3.0)"#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     // Tuples preserve individual element types (this is expected!)
-    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Str, Type::Float]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![Type::Int, Type::Str, Type::Float])
+    );
     assert_eq!(symbol.ty.to_string(), "tuple[int, str, float]");
 }
 
@@ -58,10 +64,10 @@ fn test_heterogeneous_tuple() {
 fn test_tuple_two_elements() {
     let source = r#"x = (42, "hello")"#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Str]));
     assert_eq!(symbol.ty.to_string(), "tuple[int, str]");
@@ -71,16 +77,22 @@ fn test_tuple_two_elements() {
 fn test_nested_tuple() {
     let source = "x = ((1, 2), (3, 4))";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![
-        Type::Tuple(vec![Type::Int, Type::Int]),
-        Type::Tuple(vec![Type::Int, Type::Int]),
-    ]));
-    assert_eq!(symbol.ty.to_string(), "tuple[tuple[int, int], tuple[int, int]]");
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![
+            Type::Tuple(vec![Type::Int, Type::Int]),
+            Type::Tuple(vec![Type::Int, Type::Int]),
+        ])
+    );
+    assert_eq!(
+        symbol.ty.to_string(),
+        "tuple[tuple[int, int], tuple[int, int]]"
+    );
 }
 
 #[test]
@@ -91,39 +103,48 @@ b = "test"
 x = (a, b, 3.14)
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Str, Type::Float]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![Type::Int, Type::Str, Type::Float])
+    );
 }
 
 #[test]
 fn test_tuple_with_expressions() {
     let source = "x = (1 + 1, 2 * 3, 5 - 1)";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Int, Type::Int]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![Type::Int, Type::Int, Type::Int])
+    );
 }
 
 #[test]
 fn test_tuple_mixed_collections() {
     let source = "x = ([1, 2], (3, 4))";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![
-        Type::List(Box::new(Type::Int)),
-        Type::Tuple(vec![Type::Int, Type::Int]),
-    ]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![
+            Type::List(Box::new(Type::Int)),
+            Type::Tuple(vec![Type::Int, Type::Int]),
+        ])
+    );
     assert_eq!(symbol.ty.to_string(), "tuple[list[int], tuple[int, int]]");
 }
 
@@ -139,10 +160,10 @@ def get_str() -> str:
 x = (get_num(), get_str())
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Str]));
 }
@@ -151,10 +172,13 @@ x = (get_num(), get_str())
 fn test_tuple_bool_and_none() {
     let source = "x = (True, False, None)";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Bool, Type::Bool, Type::None]));
+    assert_eq!(
+        symbol.ty,
+        Type::Tuple(vec![Type::Bool, Type::Bool, Type::None])
+    );
 }

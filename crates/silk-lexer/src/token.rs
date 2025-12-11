@@ -1,7 +1,6 @@
 /// Token types for the Silk programming language
-/// 
+///
 /// Represents all possible token types in Python/Silk syntax.
-
 use std::fmt;
 
 /// Parts of an f-string: literal text or embedded expression
@@ -10,9 +9,9 @@ pub enum FStringPart {
     /// Literal string text
     Text(String),
     /// Expression code to be evaluated (stored as string, parsed later)
-    Expression { 
+    Expression {
         code: String,
-        format_spec: Option<String>,  // e.g., ".2f" in {value:.2f}
+        format_spec: Option<String>, // e.g., ".2f" in {value:.2f}
     },
 }
 
@@ -35,7 +34,12 @@ pub struct Span {
 
 impl Span {
     pub fn new(start: usize, end: usize, line: usize, column: usize) -> Self {
-        Self { start, end, line, column }
+        Self {
+            start,
+            end,
+            line,
+            column,
+        }
     }
 }
 
@@ -87,71 +91,71 @@ pub enum TokenKind {
     Integer(i64),
     Float(f64),
     String(String),
-    RawString(String),  // r"text\n" - escape sequences not processed
-    ByteString(Vec<u8>),  // b"bytes" - byte literal
-    ByteRawString(Vec<u8>),  // br"bytes\n" or rb"bytes\n" - raw byte literal
-    FString(Vec<FStringPart>),  // f"text {expr} text"
-    
+    RawString(String),         // r"text\n" - escape sequences not processed
+    ByteString(Vec<u8>),       // b"bytes" - byte literal
+    ByteRawString(Vec<u8>),    // br"bytes\n" or rb"bytes\n" - raw byte literal
+    FString(Vec<FStringPart>), // f"text {expr} text"
+
     // Operators
-    Plus,           // +
-    Minus,          // -
-    Star,           // *
-    Slash,          // /
-    DoubleSlash,    // //
-    Percent,        // %
-    DoubleStar,     // **
-    
-    Ampersand,      // &
-    Pipe,           // |
-    Caret,          // ^
-    Tilde,          // ~
-    LeftShift,      // <<
-    RightShift,     // >>
-    
-    Equal,          // ==
-    NotEqual,       // !=
-    Less,           // <
-    Greater,        // >
-    LessEqual,      // <=
-    GreaterEqual,   // >=
-    
-    Assign,         // =
-    PlusAssign,     // +=
-    MinusAssign,    // -=
-    StarAssign,     // *=
-    SlashAssign,    // /=
+    Plus,        // +
+    Minus,       // -
+    Star,        // *
+    Slash,       // /
+    DoubleSlash, // //
+    Percent,     // %
+    DoubleStar,  // **
+
+    Ampersand,  // &
+    Pipe,       // |
+    Caret,      // ^
+    Tilde,      // ~
+    LeftShift,  // <<
+    RightShift, // >>
+
+    Equal,        // ==
+    NotEqual,     // !=
+    Less,         // <
+    Greater,      // >
+    LessEqual,    // <=
+    GreaterEqual, // >=
+
+    Assign,            // =
+    PlusAssign,        // +=
+    MinusAssign,       // -=
+    StarAssign,        // *=
+    SlashAssign,       // /=
     DoubleSlashAssign, // //=
-    PercentAssign,  // %=
-    DoubleStarAssign, // **=
-    AmpersandAssign, // &=
-    PipeAssign,     // |=
-    CaretAssign,    // ^=
-    LeftShiftAssign, // <<=
-    RightShiftAssign, // >>=
-    
+    PercentAssign,     // %=
+    DoubleStarAssign,  // **=
+    AmpersandAssign,   // &=
+    PipeAssign,        // |=
+    CaretAssign,       // ^=
+    LeftShiftAssign,   // <<=
+    RightShiftAssign,  // >>=
+
     // Delimiters
-    LeftParen,      // (
-    RightParen,     // )
-    LeftBracket,    // [
-    RightBracket,   // ]
-    LeftBrace,      // {
-    RightBrace,     // }
-    
-    Comma,          // ,
-    Colon,          // :
-    ColonEqual,     // :=
-    Semicolon,      // ;
-    Dot,            // .
-    Arrow,          // ->
-    Ellipsis,       // ...
-    At,             // @
-    
+    LeftParen,    // (
+    RightParen,   // )
+    LeftBracket,  // [
+    RightBracket, // ]
+    LeftBrace,    // {
+    RightBrace,   // }
+
+    Comma,      // ,
+    Colon,      // :
+    ColonEqual, // :=
+    Semicolon,  // ;
+    Dot,        // .
+    Arrow,      // ->
+    Ellipsis,   // ...
+    At,         // @
+
     // Special tokens
     Newline,
     Indent,
     Dedent,
     Eof,
-    
+
     // Comments (usually ignored but tracked for completeness)
     Comment,
 }
@@ -201,7 +205,7 @@ impl TokenKind {
                 | TokenKind::Case
         )
     }
-    
+
     /// Get keyword from string, if it exists
     pub fn keyword(s: &str) -> Option<TokenKind> {
         match s {

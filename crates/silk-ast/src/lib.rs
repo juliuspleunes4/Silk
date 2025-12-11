@@ -1,17 +1,16 @@
 /// Abstract Syntax Tree definitions for Silk
-/// 
+///
 /// Represents the parsed structure of Silk source code.
 /// Each node preserves source location information for error reporting.
-
 pub mod expr;
+pub mod pattern;
 pub mod stmt;
 pub mod types;
-pub mod pattern;
 
 pub use expr::*;
+pub use pattern::*;
 pub use stmt::*;
 pub use types::*;
-pub use pattern::*;
 
 use silk_lexer::Span;
 

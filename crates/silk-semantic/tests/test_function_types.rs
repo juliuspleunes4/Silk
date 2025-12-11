@@ -1,9 +1,9 @@
 //! Tests for function type storage in the symbol table
 
 use silk_parser::Parser;
+use silk_semantic::types::Type;
 use silk_semantic::SemanticAnalyzer;
 use silk_semantic::SymbolKind;
-use silk_semantic::types::Type;
 
 #[test]
 fn test_function_with_return_type_creates_symbol() {
@@ -13,13 +13,13 @@ def foo() -> int:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).expect("Analysis failed");
-    
+
     let symbol_table = analyzer.symbol_table();
     let symbol = symbol_table.resolve_symbol("foo").expect("foo not found");
-    
+
     assert_eq!(symbol.kind, SymbolKind::Function);
     assert_eq!(symbol.name, "foo");
 }
@@ -32,18 +32,18 @@ def bar():
     pass
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).expect("Analysis failed");
-    
+
     let symbol_table = analyzer.symbol_table();
     let symbol = symbol_table.resolve_symbol("bar").expect("bar not found");
-    
+
     assert_eq!(symbol.kind, SymbolKind::Function);
-    
+
     // Check that it's a Function type with Unknown return type
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Unknown);
         }
         _ => panic!("Expected Function type, got {:?}", symbol.ty),
@@ -58,13 +58,13 @@ def add(x: int, y: int) -> int:
     return x + y
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).expect("Analysis failed");
-    
+
     let symbol_table = analyzer.symbol_table();
     let symbol = symbol_table.resolve_symbol("add").expect("add not found");
-    
+
     // Verify it's a Function type
     match &symbol.ty {
         Type::Function { .. } => {
@@ -91,43 +91,51 @@ def get_bool() -> bool:
     return True
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).expect("Analysis failed");
-    
+
     let symbol_table = analyzer.symbol_table();
-    
+
     // Check get_int
-    let symbol = symbol_table.resolve_symbol("get_int").expect("get_int not found");
+    let symbol = symbol_table
+        .resolve_symbol("get_int")
+        .expect("get_int not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Int);
         }
         _ => panic!("Expected Function type"),
     }
-    
+
     // Check get_str
-    let symbol = symbol_table.resolve_symbol("get_str").expect("get_str not found");
+    let symbol = symbol_table
+        .resolve_symbol("get_str")
+        .expect("get_str not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Str);
         }
         _ => panic!("Expected Function type"),
     }
-    
+
     // Check get_float
-    let symbol = symbol_table.resolve_symbol("get_float").expect("get_float not found");
+    let symbol = symbol_table
+        .resolve_symbol("get_float")
+        .expect("get_float not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Float);
         }
         _ => panic!("Expected Function type"),
     }
-    
+
     // Check get_bool
-    let symbol = symbol_table.resolve_symbol("get_bool").expect("get_bool not found");
+    let symbol = symbol_table
+        .resolve_symbol("get_bool")
+        .expect("get_bool not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Bool);
         }
         _ => panic!("Expected Function type"),

@@ -19,8 +19,10 @@ pub enum Type {
     Any,
     /// Unknown type - type hasn't been inferred yet
     Unknown,
-    /// Function type with return type
+    /// Function type with parameter and return types
     Function {
+        /// Parameter types (name, type) - None means no parameters stored yet
+        params: Option<Vec<(String, Type)>>,
         /// Return type of the function
         return_type: Box<Type>,
     },
@@ -41,9 +43,9 @@ pub enum Type {
 
 impl Type {
     /// Check if this type is compatible with another type for assignment
-    /// 
+    ///
     /// This is used for type checking in assignments, function calls, etc.
-    /// Returns true if a value of type `other` can be assigned to a variable of type `self`.
+    /// Returns true if a value of type `self` can be assigned to a variable of type `other`.
     pub fn is_compatible_with(&self, other: &Type) -> bool {
         // Same types are always compatible
         if self == other {
@@ -60,8 +62,21 @@ impl Type {
             return true;
         }
 
+        // Special case: int can be assigned to float (widening conversion)
+        if matches!(self, Type::Int) && matches!(other, Type::Float) {
+            return true;
+        }
+
         // Functions are compatible if their return types are compatible
-        if let (Type::Function { return_type: rt1 }, Type::Function { return_type: rt2 }) = (self, other) {
+        if let (
+            Type::Function {
+                return_type: rt1, ..
+            },
+            Type::Function {
+                return_type: rt2, ..
+            },
+        ) = (self, other)
+        {
             return rt1.is_compatible_with(rt2);
         }
 
@@ -71,7 +86,17 @@ impl Type {
         }
 
         // Dicts are compatible if both key and value types are compatible
-        if let (Type::Dict { key_type: k1, value_type: v1 }, Type::Dict { key_type: k2, value_type: v2 }) = (self, other) {
+        if let (
+            Type::Dict {
+                key_type: k1,
+                value_type: v1,
+            },
+            Type::Dict {
+                key_type: k2,
+                value_type: v2,
+            },
+        ) = (self, other)
+        {
             return k1.is_compatible_with(k2) && v1.is_compatible_with(v2);
         }
 
@@ -85,7 +110,10 @@ impl Type {
             if elems1.len() != elems2.len() {
                 return false;
             }
-            return elems1.iter().zip(elems2.iter()).all(|(t1, t2)| t1.is_compatible_with(t2));
+            return elems1
+                .iter()
+                .zip(elems2.iter())
+                .all(|(t1, t2)| t1.is_compatible_with(t2));
         }
 
         // Otherwise, types must match exactly
@@ -119,6 +147,14 @@ impl Type {
             "bool" => Some(Type::Bool),
             "None" => Some(Type::None),
             "Any" => Some(Type::Any),
+            // Collection types without parameters (element type is Unknown)
+            "list" => Some(Type::List(Box::new(Type::Unknown))),
+            "dict" => Some(Type::Dict {
+                key_type: Box::new(Type::Unknown),
+                value_type: Box::new(Type::Unknown),
+            }),
+            "set" => Some(Type::Set(Box::new(Type::Unknown))),
+            "tuple" => Some(Type::Tuple(vec![])),
             _ => None,
         }
     }
@@ -130,18 +166,119 @@ impl Type {
             Type::Int | Type::Float | Type::Str | Type::Bool | Type::None | Type::Any
         )
     }
+
+    /// Check if this type can be used in numeric operations (+ - * / etc)
+    ///
+    /// Returns true for Int, Float, and Unknown (for gradual typing)
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, Type::Int | Type::Float | Type::Unknown)
+    }
+
+    /// Check if this type can be used in comparison operations (< > <= >=)
+    ///
+    /// Returns true for Int, Float, Str, and Unknown
+    pub fn is_comparable(&self) -> bool {
+        matches!(self, Type::Int | Type::Float | Type::Str | Type::Unknown)
+    }
+
+    /// Check if this type can be indexed/subscripted
+    ///
+    /// Returns true for List, Dict, Tuple, Str, and Unknown
+    pub fn is_indexable(&self) -> bool {
+        matches!(
+            self,
+            Type::List(_) | Type::Dict { .. } | Type::Tuple(_) | Type::Str | Type::Unknown
+        )
+    }
+
+    /// Check if this type can be iterated over (for loops)
+    ///
+    /// Returns true for List, Dict, Set, Tuple, Str, and Unknown
+    pub fn is_iterable(&self) -> bool {
+        matches!(
+            self,
+            Type::List(_)
+                | Type::Dict { .. }
+                | Type::Set(_)
+                | Type::Tuple(_)
+                | Type::Str
+                | Type::Unknown
+        )
+    }
+
+    /// Get the index type for this container type
+    ///
+    /// For lists/tuples/strings: returns int
+    /// For dicts: returns the key type
+    /// For others: returns Unknown
+    pub fn expected_index_type(&self) -> Type {
+        match self {
+            Type::List(_) | Type::Tuple(_) | Type::Str => Type::Int,
+            Type::Dict { key_type, .. } => (**key_type).clone(),
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Get the element/value type when indexing this container
+    ///
+    /// For lists: returns element type
+    /// For dicts: returns value type
+    /// For tuples: returns Unknown (varies by index)
+    /// For strings: returns str
+    pub fn index_result_type(&self) -> Type {
+        match self {
+            Type::List(elem_type) => (**elem_type).clone(),
+            Type::Dict { value_type, .. } => (**value_type).clone(),
+            Type::Tuple(_) => Type::Unknown, // Could be any element type
+            Type::Str => Type::Str,
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Check if two types can be used together in a binary operation
+    ///
+    /// This is a stricter check than is_compatible_with, used for operations
+    /// Returns true if the operation makes sense (doesn't check result type)
+    pub fn can_operate_with(&self, other: &Type, is_arithmetic: bool) -> bool {
+        // Unknown is always allowed (gradual typing)
+        if matches!(self, Type::Unknown) || matches!(other, Type::Unknown) {
+            return true;
+        }
+
+        if is_arithmetic {
+            // Arithmetic operations: both must be numeric
+            // Int and Float can be mixed
+            self.is_numeric() && other.is_numeric()
+        } else {
+            // Other operations (comparisons, etc): types should be compatible
+            self.is_compatible_with(other) || other.is_compatible_with(self)
+        }
+    }
+
+    /// Check if this type requires exact type matching (no coercion)
+    ///
+    /// Returns true for collection types where element types matter
+    pub fn requires_exact_match(&self) -> bool {
+        matches!(
+            self,
+            Type::List(_) | Type::Dict { .. } | Type::Set(_) | Type::Tuple(_)
+        )
+    }
 }
 
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Type::Function { return_type } => {
-                write!(f, "function -> {}", return_type)
+            Type::Function { return_type, .. } => {
+                write!(f, "function() -> {}", return_type)
             }
             Type::List(element_type) => {
                 write!(f, "list[{}]", element_type)
             }
-            Type::Dict { key_type, value_type } => {
+            Type::Dict {
+                key_type,
+                value_type,
+            } => {
                 write!(f, "dict[{}, {}]", key_type, value_type)
             }
             Type::Set(element_type) => {
@@ -151,11 +288,15 @@ impl fmt::Display for Type {
                 if elements.is_empty() {
                     write!(f, "tuple[]")
                 } else {
-                    write!(f, "tuple[{}]", 
-                        elements.iter()
+                    write!(
+                        f,
+                        "tuple[{}]",
+                        elements
+                            .iter()
                             .map(|t| t.to_string())
                             .collect::<Vec<_>>()
-                            .join(", "))
+                            .join(", ")
+                    )
                 }
             }
             _ => write!(f, "{}", self.as_str()),
@@ -178,7 +319,11 @@ mod tests {
 
     #[test]
     fn test_type_compatibility_different() {
-        assert!(!Type::Int.is_compatible_with(&Type::Float));
+        // Int can widen to Float (safe conversion)
+        assert!(Type::Int.is_compatible_with(&Type::Float));
+        // But Float cannot narrow to Int (loses precision)
+        assert!(!Type::Float.is_compatible_with(&Type::Int));
+        // Other types are still incompatible
         assert!(!Type::Str.is_compatible_with(&Type::Int));
         assert!(!Type::Bool.is_compatible_with(&Type::Str));
     }

@@ -1,5 +1,5 @@
 //! Semantic Analysis for Silk
-//! 
+//!
 //! This crate implements semantic analysis including:
 //! - Symbol table management
 //! - Scope tracking and resolution

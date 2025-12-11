@@ -1,9 +1,9 @@
 //! Symbol table for tracking declarations and their types
 
-use silk_lexer::Span;
-use crate::scope::{Scope, ScopeKind};
 use crate::error::{SemanticError, SemanticResult};
+use crate::scope::{Scope, ScopeKind};
 use crate::types::Type;
+use silk_lexer::Span;
 
 /// Kind of symbol
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -137,6 +137,24 @@ impl SymbolTable {
             // Check current scope
             if let Some(symbol) = self.scopes[current].lookup_local(name) {
                 return Some(symbol);
+            }
+
+            // Move to parent scope
+            match self.scopes[current].parent() {
+                Some(parent) => current = parent,
+                None => return None, // Reached global scope, symbol not found
+            }
+        }
+    }
+
+    /// Resolve a symbol mutably by searching current scope and parent scopes
+    pub fn resolve_symbol_mut(&mut self, name: &str) -> Option<&mut Symbol> {
+        let mut current = self.current_scope;
+
+        loop {
+            // Check current scope
+            if self.scopes[current].lookup_local(name).is_some() {
+                return self.scopes[current].lookup_local_mut(name);
             }
 
             // Move to parent scope

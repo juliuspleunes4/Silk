@@ -1,14 +1,14 @@
 use silk_parser::Parser;
-use silk_semantic::{SemanticAnalyzer, types::Type};
+use silk_semantic::{types::Type, SemanticAnalyzer};
 
 #[test]
 fn test_homogeneous_int_list() {
     let source = "x = [1, 2, 3]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
     assert_eq!(symbol.ty.to_string(), "list[int]");
@@ -18,10 +18,10 @@ fn test_homogeneous_int_list() {
 fn test_homogeneous_str_list() {
     let source = r#"x = ["a", "b", "c"]"#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Str)));
     assert_eq!(symbol.ty.to_string(), "list[str]");
@@ -31,10 +31,10 @@ fn test_homogeneous_str_list() {
 fn test_homogeneous_float_list() {
     let source = "x = [1.0, 2.5, 3.14]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Float)));
     assert_eq!(symbol.ty.to_string(), "list[float]");
@@ -44,10 +44,10 @@ fn test_homogeneous_float_list() {
 fn test_homogeneous_bool_list() {
     let source = "x = [True, False, True]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Bool)));
     assert_eq!(symbol.ty.to_string(), "list[bool]");
@@ -57,10 +57,10 @@ fn test_homogeneous_bool_list() {
 fn test_empty_list() {
     let source = "x = []";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Unknown)));
     assert_eq!(symbol.ty.to_string(), "list[<unknown>]");
@@ -70,10 +70,10 @@ fn test_empty_list() {
 fn test_heterogeneous_list() {
     let source = r#"x = [1, "a", 3.0]"#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     // Mixed types should return list[Unknown] (no union support yet)
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Unknown)));
@@ -84,12 +84,15 @@ fn test_heterogeneous_list() {
 fn test_nested_list() {
     let source = "x = [[1, 2], [3, 4]]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::List(Box::new(Type::List(Box::new(Type::Int)))));
+    assert_eq!(
+        symbol.ty,
+        Type::List(Box::new(Type::List(Box::new(Type::Int))))
+    );
     assert_eq!(symbol.ty.to_string(), "list[list[int]]");
 }
 
@@ -97,14 +100,16 @@ fn test_nested_list() {
 fn test_deeply_nested_list() {
     let source = "x = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(
         symbol.ty,
-        Type::List(Box::new(Type::List(Box::new(Type::List(Box::new(Type::Int))))))
+        Type::List(Box::new(Type::List(Box::new(Type::List(Box::new(
+            Type::Int
+        ))))))
     );
     assert_eq!(symbol.ty.to_string(), "list[list[list[int]]]");
 }
@@ -117,10 +122,10 @@ b = 100
 x = [a, b, 7]
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
     assert_eq!(symbol.ty.to_string(), "list[int]");
@@ -130,10 +135,10 @@ x = [a, b, 7]
 fn test_list_with_expressions() {
     let source = "x = [1 + 2, 3 * 4, 5 - 1]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
     assert_eq!(symbol.ty.to_string(), "list[int]");
@@ -143,10 +148,10 @@ fn test_list_with_expressions() {
 fn test_list_single_element() {
     let source = "x = [42]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
     assert_eq!(symbol.ty.to_string(), "list[int]");
@@ -161,10 +166,10 @@ def get_num() -> int:
 x = [get_num(), get_num()]
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
     assert_eq!(symbol.ty.to_string(), "list[int]");
@@ -174,11 +179,14 @@ x = [get_num(), get_num()]
 fn test_nested_empty_lists() {
     let source = "x = [[], []]";
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::List(Box::new(Type::List(Box::new(Type::Unknown)))));
+    assert_eq!(
+        symbol.ty,
+        Type::List(Box::new(Type::List(Box::new(Type::Unknown))))
+    );
     assert_eq!(symbol.ty.to_string(), "list[list[<unknown>]]");
 }

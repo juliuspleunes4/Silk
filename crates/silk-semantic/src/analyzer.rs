@@ -1,11 +1,11 @@
 //! Semantic analyzer for Silk programs
-//! 
+//!
 //! Performs single-pass semantic analysis with a lightweight pre-pass:
 //! 1. Pre-pass: Collect function and class names for forward references
 //! 2. Main pass: Define symbols and validate references in one traversal
 
-use silk_ast::{Program, Statement, StatementKind, Expression, ExpressionKind, PatternKind};
-use crate::{SymbolTable, Symbol, SymbolKind, SemanticError, ScopeKind};
+use crate::{ScopeKind, SemanticError, Symbol, SymbolKind, SymbolTable};
+use silk_ast::{Expression, ExpressionKind, PatternKind, Program, Statement, StatementKind};
 
 /// Semantic analyzer for single-pass analysis
 pub struct SemanticAnalyzer {
@@ -13,6 +13,8 @@ pub struct SemanticAnalyzer {
     symbol_table: SymbolTable,
     /// Errors collected during analysis
     errors: Vec<SemanticError>,
+    /// Current function's return type (for return statement validation)
+    current_function_return_type: Option<crate::types::Type>,
 }
 
 impl SemanticAnalyzer {
@@ -21,6 +23,7 @@ impl SemanticAnalyzer {
         Self {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
+            current_function_return_type: None,
         }
     }
 
@@ -53,24 +56,42 @@ impl SemanticAnalyzer {
     fn collect_forward_declarations(&mut self, program: &Program) {
         for statement in &program.statements {
             match &statement.kind {
-                StatementKind::FunctionDef { name, returns, .. } => {
+                StatementKind::FunctionDef {
+                    name,
+                    params,
+                    returns,
+                    ..
+                } => {
+                    // Collect parameter types
+                    let mut param_types = Vec::new();
+                    for param in &params.args {
+                        let param_type = if let Some(ann) = &param.annotation {
+                            self.resolve_type_annotation(ann)
+                        } else {
+                            crate::types::Type::Unknown
+                        };
+                        param_types.push((param.name.clone(), param_type));
+                    }
+
                     // Resolve return type annotation if present
                     let func_type = if let Some(return_type_ann) = returns {
                         let return_type = self.resolve_type_annotation(return_type_ann);
                         crate::types::Type::Function {
+                            params: Some(param_types),
                             return_type: Box::new(return_type),
                         }
                     } else {
                         // No return type annotation means Unknown
                         crate::types::Type::Function {
+                            params: Some(param_types),
                             return_type: Box::new(crate::types::Type::Unknown),
                         }
                     };
-                    
+
                     let func_symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Function,
-                        statement.span.clone(),
+                        statement.span,
                         func_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(func_symbol) {
@@ -78,11 +99,8 @@ impl SemanticAnalyzer {
                     }
                 }
                 StatementKind::ClassDef { name, .. } => {
-                    let class_symbol = Symbol::new(
-                        name.clone(),
-                        SymbolKind::Class,
-                        statement.span.clone(),
-                    );
+                    let class_symbol =
+                        Symbol::new(name.clone(), SymbolKind::Class, statement.span);
                     if let Err(err) = self.symbol_table.define_symbol(class_symbol) {
                         self.errors.push(err);
                     }
@@ -106,17 +124,17 @@ impl SemanticAnalyzer {
             StatementKind::Assign { targets, value, .. } => {
                 // Validate the value expression first
                 self.analyze_expression(value);
-                
+
                 // Infer type from the value
                 let inferred_type = self.infer_type(value);
-                
+
                 // Define the target variables
                 for target in targets {
                     if let ExpressionKind::Identifier(name) = &target.kind {
                         let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
-                            target.span.clone(),
+                            target.span,
                             inferred_type.clone(),
                         );
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
@@ -128,21 +146,27 @@ impl SemanticAnalyzer {
             }
 
             // Annotated assignment: use type annotation instead of inference
-            StatementKind::AnnAssign { target, annotation, value } => {
+            StatementKind::AnnAssign {
+                target,
+                annotation,
+                value,
+            } => {
                 // Resolve the type annotation to semantic Type
                 let annotated_type = self.resolve_type_annotation(annotation);
-                
+
                 // If value exists, validate it
                 if let Some(val_expr) = value {
                     self.analyze_expression(val_expr);
-                    
-                    // TODO (future): Check type compatibility
-                    // let value_type = self.infer_type(val_expr);
-                    // if !annotated_type.is_compatible_with(&value_type) {
-                    //     self.errors.push(...type mismatch error...);
-                    // }
+
+                    // Check type compatibility between annotated type and value type
+                    let value_type = self.infer_type(val_expr);
+                    if let Err(err) =
+                        self.check_assignment_type(&annotated_type, &value_type, target, val_expr)
+                    {
+                        self.errors.push(err);
+                    }
                 }
-                
+
                 // Define the target variable with annotated type
                 if let ExpressionKind::Identifier(name) = &target.kind {
                     let symbol = Symbol::with_type(
@@ -177,7 +201,14 @@ impl SemanticAnalyzer {
             }
 
             // Function definition: already declared in pre-pass, now analyze body
-            StatementKind::FunctionDef { params, body, decorator_list, .. } => {
+            StatementKind::FunctionDef {
+                name: _,
+                params,
+                body,
+                decorator_list,
+                returns,
+                ..
+            } => {
                 // Analyze decorators BEFORE entering scope (evaluated in outer scope)
                 for decorator in decorator_list {
                     self.analyze_expression(decorator);
@@ -194,7 +225,18 @@ impl SemanticAnalyzer {
                         self.analyze_expression(default_expr);
                     }
                 }
-                
+
+                // Parameter types were already collected in pre-pass
+                // No need to update symbol again
+
+                // Set current function return type for return statement validation
+                let return_type = if let Some(return_ann) = returns {
+                    self.resolve_type_annotation(return_ann)
+                } else {
+                    crate::types::Type::Unknown
+                };
+                let previous_return_type = self.current_function_return_type.replace(return_type);
+
                 // Enter function scope
                 self.symbol_table.enter_scope(ScopeKind::Function);
 
@@ -221,10 +263,19 @@ impl SemanticAnalyzer {
                 if let Err(err) = self.symbol_table.exit_scope() {
                     self.errors.push(err);
                 }
+
+                // Restore previous function return type (for nested functions)
+                self.current_function_return_type = previous_return_type;
             }
 
             // Class definition: already declared in pre-pass, now analyze body
-            StatementKind::ClassDef { bases, keywords, decorator_list, body, .. } => {
+            StatementKind::ClassDef {
+                bases,
+                keywords,
+                decorator_list,
+                body,
+                ..
+            } => {
                 // Analyze decorators BEFORE entering scope (evaluated in outer scope)
                 for decorator in decorator_list {
                     self.analyze_expression(decorator);
@@ -258,11 +309,8 @@ impl SemanticAnalyzer {
             StatementKind::Import { names } => {
                 for alias in names {
                     let import_name = alias.asname.as_ref().unwrap_or(&alias.name);
-                    let symbol = Symbol::new(
-                        import_name.clone(),
-                        SymbolKind::Module,
-                        stmt.span.clone(),
-                    );
+                    let symbol =
+                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span.clone());
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
                     }
@@ -273,11 +321,8 @@ impl SemanticAnalyzer {
             StatementKind::ImportFrom { names, .. } => {
                 for alias in names {
                     let import_name = alias.asname.as_ref().unwrap_or(&alias.name);
-                    let symbol = Symbol::new(
-                        import_name.clone(),
-                        SymbolKind::Module,
-                        stmt.span.clone(),
-                    );
+                    let symbol =
+                        Symbol::new(import_name.clone(), SymbolKind::Module, stmt.span.clone());
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
                     }
@@ -298,41 +343,44 @@ impl SemanticAnalyzer {
             // Control flow: while loop
             StatementKind::While { test, body, orelse } => {
                 self.analyze_expression(test);
-                
+
                 self.symbol_table.enter_loop();
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
                 self.symbol_table.exit_loop();
-                
+
                 for stmt in orelse {
                     self.analyze_statement(stmt);
                 }
             }
 
             // Control flow: for loop
-            StatementKind::For { target, iter, body, orelse, .. } => {
+            StatementKind::For {
+                target,
+                iter,
+                body,
+                orelse,
+                ..
+            } => {
                 // Validate iterator
                 self.analyze_expression(iter);
-                
+
                 // Define loop variable
                 if let PatternKind::Name(name) = &target.kind {
-                    let symbol = Symbol::new(
-                        name.clone(),
-                        SymbolKind::Variable,
-                        target.span.clone(),
-                    );
+                    let symbol =
+                        Symbol::new(name.clone(), SymbolKind::Variable, target.span.clone());
                     if let Err(err) = self.symbol_table.define_symbol(symbol) {
                         self.errors.push(err);
                     }
                 }
-                
+
                 self.symbol_table.enter_loop();
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
                 self.symbol_table.exit_loop();
-                
+
                 for stmt in orelse {
                     self.analyze_statement(stmt);
                 }
@@ -342,7 +390,7 @@ impl SemanticAnalyzer {
             StatementKind::With { items, body, .. } => {
                 for item in items {
                     self.analyze_expression(&item.context_expr);
-                    
+
                     // Define context manager variable if present
                     if let Some(var_expr) = &item.optional_vars {
                         if let ExpressionKind::Identifier(name) = &var_expr.kind {
@@ -357,40 +405,42 @@ impl SemanticAnalyzer {
                         }
                     }
                 }
-                
+
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
             }
 
             // Exception handling: try statement
-            StatementKind::Try { body, handlers, orelse, finalbody } => {
+            StatementKind::Try {
+                body,
+                handlers,
+                orelse,
+                finalbody,
+            } => {
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
-                
+
                 for handler in handlers {
                     if let Some(type_expr) = &handler.typ {
                         self.analyze_expression(type_expr);
                     }
-                    
+
                     // Define exception variable if present
                     if let Some(name) = &handler.name {
-                        let symbol = Symbol::new(
-                            name.clone(),
-                            SymbolKind::Variable,
-                            stmt.span.clone(),
-                        );
+                        let symbol =
+                            Symbol::new(name.clone(), SymbolKind::Variable, stmt.span.clone());
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
                             self.errors.push(err);
                         }
                     }
-                    
+
                     for stmt in &handler.body {
                         self.analyze_statement(stmt);
                     }
                 }
-                
+
                 for stmt in orelse {
                     self.analyze_statement(stmt);
                 }
@@ -410,6 +460,25 @@ impl SemanticAnalyzer {
                 }
                 if let Some(expr) = value {
                     self.analyze_expression(expr);
+                    // Type check return value against declared return type
+                    if let Err(err) = self.check_return_type(expr, stmt) {
+                        self.errors.push(err);
+                    }
+                } else {
+                    // Empty return statement - check if function expects a return value
+                    if let Some(expected_type) = &self.current_function_return_type {
+                        if *expected_type != crate::types::Type::Unknown
+                            && *expected_type != crate::types::Type::None
+                        {
+                            self.errors.push(SemanticError::ReturnTypeMismatch {
+                                expected_type: expected_type.to_string(),
+                                actual_type: "None".to_string(),
+                                line: stmt.span.line,
+                                column: stmt.span.column,
+                                span: stmt.span.clone(),
+                            });
+                        }
+                    }
                 }
             }
 
@@ -484,7 +553,9 @@ impl SemanticAnalyzer {
         match &expr.kind {
             // Identifier: check if defined
             ExpressionKind::Identifier(name) => {
-                if self.symbol_table.resolve_symbol(name).is_none() && !Self::is_builtin_function(name) {
+                if self.symbol_table.resolve_symbol(name).is_none()
+                    && !Self::is_builtin_function(name)
+                {
                     self.errors.push(SemanticError::UndefinedVariable {
                         name: name.clone(),
                         line: expr.span.line,
@@ -506,7 +577,9 @@ impl SemanticAnalyzer {
             }
 
             // Comparison
-            ExpressionKind::Compare { left, comparators, .. } => {
+            ExpressionKind::Compare {
+                left, comparators, ..
+            } => {
                 self.analyze_expression(left);
                 for comp in comparators {
                     self.analyze_expression(comp);
@@ -514,7 +587,11 @@ impl SemanticAnalyzer {
             }
 
             // Function call
-            ExpressionKind::Call { func, args, keywords } => {
+            ExpressionKind::Call {
+                func,
+                args,
+                keywords,
+            } => {
                 self.analyze_expression(func);
                 for arg in args {
                     self.analyze_expression(arg);
@@ -522,6 +599,8 @@ impl SemanticAnalyzer {
                 for keyword in keywords {
                     self.analyze_expression(&keyword.value);
                 }
+                // Infer type to trigger function call type checking
+                self.infer_type(expr);
             }
 
             // Attribute access
@@ -533,12 +612,19 @@ impl SemanticAnalyzer {
             ExpressionKind::Subscript { value, index } => {
                 self.analyze_expression(value);
                 self.analyze_expression(index);
+
+                // Validate subscript operation
+                let value_type = self.infer_type(value);
+                let index_type = self.infer_type(index);
+                if let Err(err) = self.validate_subscript(&value_type, &index_type, value, index) {
+                    self.errors.push(err);
+                }
             }
 
             // Collections
-            ExpressionKind::List { elements } |
-            ExpressionKind::Tuple { elements } |
-            ExpressionKind::Set { elements } => {
+            ExpressionKind::List { elements }
+            | ExpressionKind::Tuple { elements }
+            | ExpressionKind::Set { elements } => {
                 for elem in elements {
                     self.analyze_expression(elem);
                 }
@@ -569,9 +655,9 @@ impl SemanticAnalyzer {
                         self.analyze_expression(default_expr);
                     }
                 }
-                
+
                 self.symbol_table.enter_scope(ScopeKind::Function);
-                
+
                 // Define lambda parameters
                 for param in params {
                     let param_symbol = Symbol::new(
@@ -583,21 +669,30 @@ impl SemanticAnalyzer {
                         self.errors.push(err);
                     }
                 }
-                
+
                 self.analyze_expression(body);
                 let _ = self.symbol_table.exit_scope();
             }
 
             // List/set/generator comprehensions
-            ExpressionKind::ListComp { element, generators } |
-            ExpressionKind::SetComp { element, generators } |
-            ExpressionKind::GeneratorExp { element, generators } => {
+            ExpressionKind::ListComp {
+                element,
+                generators,
+            }
+            | ExpressionKind::SetComp {
+                element,
+                generators,
+            }
+            | ExpressionKind::GeneratorExp {
+                element,
+                generators,
+            } => {
                 self.symbol_table.enter_scope(ScopeKind::Local);
-                
+
                 // Process generators
                 for gen in generators {
                     self.analyze_expression(&gen.iter);
-                    
+
                     // Define generator variable
                     if let PatternKind::Name(name) = &gen.target.kind {
                         let symbol = Symbol::new(
@@ -607,23 +702,27 @@ impl SemanticAnalyzer {
                         );
                         let _ = self.symbol_table.define_symbol(symbol);
                     }
-                    
+
                     for filter in &gen.ifs {
                         self.analyze_expression(filter);
                     }
                 }
-                
+
                 self.analyze_expression(element);
                 let _ = self.symbol_table.exit_scope();
             }
 
             // Dictionary comprehension
-            ExpressionKind::DictComp { key, value, generators } => {
+            ExpressionKind::DictComp {
+                key,
+                value,
+                generators,
+            } => {
                 self.symbol_table.enter_scope(ScopeKind::Local);
-                
+
                 for gen in generators {
                     self.analyze_expression(&gen.iter);
-                    
+
                     if let PatternKind::Name(name) = &gen.target.kind {
                         let symbol = Symbol::new(
                             name.clone(),
@@ -632,12 +731,12 @@ impl SemanticAnalyzer {
                         );
                         let _ = self.symbol_table.define_symbol(symbol);
                     }
-                    
+
                     for filter in &gen.ifs {
                         self.analyze_expression(filter);
                     }
                 }
-                
+
                 self.analyze_expression(key);
                 self.analyze_expression(value);
                 let _ = self.symbol_table.exit_scope();
@@ -646,10 +745,10 @@ impl SemanticAnalyzer {
             // Walrus operator (named expression)
             ExpressionKind::NamedExpr { target, value } => {
                 self.analyze_expression(value);
-                
+
                 // Infer type from the value
                 let inferred_type = self.infer_type(value);
-                
+
                 // Define the target variable
                 if let ExpressionKind::Identifier(name) = &target.kind {
                     let symbol = Symbol::with_type(
@@ -670,20 +769,22 @@ impl SemanticAnalyzer {
     }
 
     /// Infer the type of an expression
-    /// 
+    ///
     /// Returns the inferred type based on the expression kind.
     /// For now, this handles simple cases like literals.
-    fn infer_type(&self, expr: &Expression) -> crate::types::Type {
+    fn infer_type(&mut self, expr: &Expression) -> crate::types::Type {
         use crate::types::Type;
-        
+
         match &expr.kind {
             // Literal types
             ExpressionKind::Integer(_) => Type::Int,
             ExpressionKind::Float(_) => Type::Float,
-            ExpressionKind::String(_) | ExpressionKind::RawString(_) | ExpressionKind::FString { .. } => Type::Str,
+            ExpressionKind::String(_)
+            | ExpressionKind::RawString(_)
+            | ExpressionKind::FString { .. } => Type::Str,
             ExpressionKind::Boolean(_) => Type::Bool,
             ExpressionKind::None => Type::None,
-            
+
             // For identifiers, look up their type in the symbol table
             ExpressionKind::Identifier(name) => {
                 if let Some(symbol) = self.symbol_table.resolve_symbol(name) {
@@ -692,58 +793,71 @@ impl SemanticAnalyzer {
                     Type::Unknown
                 }
             }
-            
+
             // Binary operations
             ExpressionKind::BinaryOp { left, op, right } => {
                 self.infer_binary_op_type(left, *op, right)
             }
-            
+
             // Comparison operations (always return Bool)
             ExpressionKind::Compare { .. } => Type::Bool,
-            
+
             // Logical operations
             ExpressionKind::LogicalOp { left, op, right } => {
                 self.infer_logical_op_type(left, *op, right)
             }
-            
+
             // Unary operations
-            ExpressionKind::UnaryOp { op, operand } => {
-                self.infer_unary_op_type(*op, operand)
-            }
-            
+            ExpressionKind::UnaryOp { op, operand } => self.infer_unary_op_type(*op, operand),
+
             // Function calls
-            ExpressionKind::Call { func, args, keywords } => {
-                self.infer_call_type(func, args, keywords)
-            }
-            
+            ExpressionKind::Call {
+                func,
+                args,
+                keywords,
+            } => self.infer_call_type(func, args, keywords),
+
             // Collection literals
-            ExpressionKind::List { elements } => {
-                self.infer_list_type(elements)
+            ExpressionKind::List { elements } => self.infer_list_type(elements),
+            ExpressionKind::Dict { keys, values } => self.infer_dict_type(keys, values),
+            ExpressionKind::Set { elements } => self.infer_set_type(elements),
+            ExpressionKind::Tuple { elements } => self.infer_tuple_type(elements),
+
+            // Subscript operations
+            ExpressionKind::Subscript { value, .. } => self.infer_subscript_type(value),
+
+            // Attribute access
+            ExpressionKind::Attribute { value, .. } => {
+                // For now, return Unknown for attribute access
+                // TODO: Implement proper attribute type resolution
+                let _ = self.infer_type(value);
+                Type::Unknown
             }
-            ExpressionKind::Dict { keys, values } => {
-                self.infer_dict_type(keys, values)
-            }
-            ExpressionKind::Set { elements } => {
-                self.infer_set_type(elements)
-            }
-            ExpressionKind::Tuple { elements } => {
-                self.infer_tuple_type(elements)
-            }
-            
+
             // For now, other expressions return Unknown
             // TODO: Infer types for comprehensions, etc.
             _ => Type::Unknown,
         }
     }
-    
+
     /// Infer type for binary arithmetic operations
-    fn infer_binary_op_type(&self, left: &Expression, op: silk_ast::BinaryOperator, right: &Expression) -> crate::types::Type {
+    fn infer_binary_op_type(
+        &mut self,
+        left: &Expression,
+        op: silk_ast::BinaryOperator,
+        right: &Expression,
+    ) -> crate::types::Type {
         use crate::types::Type;
         use silk_ast::BinaryOperator;
-        
+
         let left_type = self.infer_type(left);
         let right_type = self.infer_type(right);
-        
+
+        // Validate operation before inferring result type
+        if let Err(err) = self.validate_binary_operation(&left_type, op, &right_type, left, right) {
+            self.errors.push(err);
+        }
+
         match op {
             // Arithmetic operators
             BinaryOperator::Add => {
@@ -760,8 +874,12 @@ impl SemanticAnalyzer {
                     _ => Type::Unknown,
                 }
             }
-            BinaryOperator::Sub | BinaryOperator::Mult | BinaryOperator::Div | 
-            BinaryOperator::FloorDiv | BinaryOperator::Mod | BinaryOperator::Pow => {
+            BinaryOperator::Sub
+            | BinaryOperator::Mult
+            | BinaryOperator::Div
+            | BinaryOperator::FloorDiv
+            | BinaryOperator::Mod
+            | BinaryOperator::Pow => {
                 match (&left_type, &right_type) {
                     // Int op Int = Int
                     (Type::Int, Type::Int) => Type::Int,
@@ -774,32 +892,42 @@ impl SemanticAnalyzer {
                 }
             }
             // Bitwise operators (only work with integers)
-            BinaryOperator::BitOr | BinaryOperator::BitXor | BinaryOperator::BitAnd |
-            BinaryOperator::LShift | BinaryOperator::RShift => {
-                match (&left_type, &right_type) {
-                    (Type::Int, Type::Int) => Type::Int,
-                    _ => Type::Unknown,
-                }
-            }
+            BinaryOperator::BitOr
+            | BinaryOperator::BitXor
+            | BinaryOperator::BitAnd
+            | BinaryOperator::LShift
+            | BinaryOperator::RShift => match (&left_type, &right_type) {
+                (Type::Int, Type::Int) => Type::Int,
+                _ => Type::Unknown,
+            },
         }
     }
-    
+
     /// Infer type for logical operations
-    fn infer_logical_op_type(&self, left: &Expression, op: silk_ast::LogicalOperator, right: &Expression) -> crate::types::Type {
+    fn infer_logical_op_type(
+        &mut self,
+        left: &Expression,
+        op: silk_ast::LogicalOperator,
+        right: &Expression,
+    ) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // In Python, 'and' and 'or' return one of the operands, not necessarily Bool
         // For now, we simplify and return Unknown
         // TODO: Implement proper 'and'/'or' semantics (return type of last evaluated operand)
         let _ = (left, op, right);
         Type::Unknown
     }
-    
+
     /// Infer type for unary operations
-    fn infer_unary_op_type(&self, op: silk_ast::UnaryOperator, operand: &Expression) -> crate::types::Type {
+    fn infer_unary_op_type(
+        &mut self,
+        op: silk_ast::UnaryOperator,
+        operand: &Expression,
+    ) -> crate::types::Type {
         use crate::types::Type;
         use silk_ast::UnaryOperator;
-        
+
         match op {
             UnaryOperator::Not => Type::Bool,
             UnaryOperator::UAdd | UnaryOperator::USub => {
@@ -849,28 +977,51 @@ impl SemanticAnalyzer {
     ///    - `min([int])` → int, `max([str])` → str
     /// 5. Add collection type support (generics): `list[int]`, `dict[str, int]`
     /// 6. Implement callable objects (classes with `__call__` method)
-    fn infer_call_type(&self, func: &Expression, _args: &[Expression], _keywords: &[silk_ast::CallKeyword]) -> crate::types::Type {
+    fn infer_call_type(
+        &mut self,
+        func: &Expression,
+        args: &[Expression],
+        _keywords: &[silk_ast::CallKeyword],
+    ) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // Get the function expression type
         match &func.kind {
             ExpressionKind::Identifier(func_name) => {
-                // Look up function in symbol table
-                if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
-                    return match &symbol.ty {
-                        Type::Function { return_type } => {
-                            // TODO: Validate argument count and types against function signature
-                            // Currently just returns the declared return type without validation
-                            return_type.as_ref().clone()
+                // Look up function in symbol table and extract params/return_type
+                let (params_opt, return_type) =
+                    if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
+                        match &symbol.ty {
+                            Type::Function {
+                                params,
+                                return_type,
+                            } => (params.clone(), return_type.as_ref().clone()),
+                            _ => {
+                                // Not a function (e.g., calling an integer or string)
+                                return Type::Unknown;
+                            }
                         }
-                        _ => {
-                            // Not a function (e.g., calling an integer or string)
-                            // TODO: Check for __call__ method on objects
-                            Type::Unknown
-                        }
+                    } else {
+                        // Not found in symbol table, might be built-in
+                        (None, Type::Unknown)
                     };
+
+                // If we got function info, validate the call
+                if let Some(param_list) = params_opt {
+                    if let Err(err) =
+                        self.check_function_call_types(func_name, &param_list, args, func)
+                    {
+                        self.errors.push(err);
+                    }
+                    return return_type;
+                } else {
+                    // Params not available - might be untyped function or built-in
+                    // For user functions without type annotations, allow any args
+                    if return_type != Type::Unknown {
+                        return return_type;
+                    }
                 }
-                
+
                 // Check if it's a built-in function
                 match func_name.as_str() {
                     // Built-ins with fixed return types
@@ -881,7 +1032,7 @@ impl SemanticAnalyzer {
                     "bool" => Type::Bool,
                     "print" => Type::None,
                     "input" => Type::Str,
-                    
+
                     // Type-preserving built-ins (need argument analysis)
                     "abs" => {
                         // TODO: abs(int) -> int, abs(float) -> float
@@ -893,27 +1044,27 @@ impl SemanticAnalyzer {
                         // Need to analyze argument/iterable element types
                         Type::Unknown
                     }
-                    
+
                     // Collection constructors (need generic type support)
                     "list" | "dict" | "set" | "tuple" | "range" => {
                         // TODO: Return proper collection types (list[T], dict[K, V], etc.)
                         // Requires implementing generic type system
                         Type::Unknown
                     }
-                    
+
                     // Type introspection
                     "type" => {
                         // TODO: Return Type type (requires type object support)
                         Type::Unknown
                     }
-                    
+
                     _ => {
                         // Undefined function - error already reported in analyze_expression
                         Type::Unknown
                     }
                 }
             }
-            
+
             // Method calls: obj.method()
             // Attribute access calls: module.function()
             // Lambda calls: (lambda x: x)(5)
@@ -931,63 +1082,106 @@ impl SemanticAnalyzer {
     fn is_builtin_function(name: &str) -> bool {
         matches!(
             name,
-            "len" | "str" | "int" | "float" | "bool" | "print" | "input" |
-            "abs" | "min" | "max" | "sum" |
-            "list" | "dict" | "set" | "tuple" | "range" |
-            "type" | "isinstance" | "issubclass" |
-            "chr" | "ord" | "hex" | "oct" | "bin" |
-            "round" | "pow" | "divmod" |
-            "all" | "any" | "enumerate" | "filter" | "map" | "zip" |
-            "sorted" | "reversed" | "iter" | "next" |
-            "open" | "help" | "dir" | "vars" | "globals" | "locals" |
-            "eval" | "exec" | "compile" |
-            "getattr" | "setattr" | "hasattr" | "delattr" |
-            "id" | "hash" | "repr" | "ascii" | "format"
+            "len"
+                | "str"
+                | "int"
+                | "float"
+                | "bool"
+                | "print"
+                | "input"
+                | "abs"
+                | "min"
+                | "max"
+                | "sum"
+                | "list"
+                | "dict"
+                | "set"
+                | "tuple"
+                | "range"
+                | "type"
+                | "isinstance"
+                | "issubclass"
+                | "chr"
+                | "ord"
+                | "hex"
+                | "oct"
+                | "bin"
+                | "round"
+                | "pow"
+                | "divmod"
+                | "all"
+                | "any"
+                | "enumerate"
+                | "filter"
+                | "map"
+                | "zip"
+                | "sorted"
+                | "reversed"
+                | "iter"
+                | "next"
+                | "open"
+                | "help"
+                | "dir"
+                | "vars"
+                | "globals"
+                | "locals"
+                | "eval"
+                | "exec"
+                | "compile"
+                | "getattr"
+                | "setattr"
+                | "hasattr"
+                | "delattr"
+                | "id"
+                | "hash"
+                | "repr"
+                | "ascii"
+                | "format"
         )
     }
 
     /// Infer type for list literals
-    /// 
+    ///
     /// Analyzes all elements in the list and determines the common element type.
-    /// 
+    ///
     /// **Current Behavior**:
     /// - Empty list: returns `list[Unknown]` (no elements to infer from)
     /// - Homogeneous list: returns `list[ElementType]` (all elements same type)
     /// - Heterogeneous list: returns `list[Unknown]` (mixed types, no union support yet)
     /// - Nested lists: recursively infers inner list types
-    /// 
+    ///
     /// **Examples**:
     /// - `[1, 2, 3]` → `list[int]`
     /// - `["a", "b"]` → `list[str]`
     /// - `[]` → `list[Unknown]`
     /// - `[1, "a"]` → `list[Unknown]` (heterogeneous)
     /// - `[[1, 2], [3, 4]]` → `list[list[int]]`
-    /// 
+    ///
     /// **Limitations**:
     /// - No union type support: heterogeneous lists return `list[Unknown]`
     /// - No type widening: `[1, 1.0]` returns `list[Unknown]`, not `list[float]`
-    /// 
+    ///
     /// **TODO: Future Improvements**:
     /// - Add union type support for heterogeneous lists: `[1, "a"]` → `list[int | str]`
     /// - Add type widening: int → float when mixed
     /// - Consider context/annotation: `x: list[float] = [1, 2]` should validate
-    fn infer_list_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_list_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // Empty list: cannot infer element type
         if elements.is_empty() {
             return Type::List(Box::new(Type::Unknown));
         }
-        
+
         // Infer type of first element
         let first_type = self.infer_type(&elements[0]);
-        
+
         // Check if all elements have the same type
         let all_same = elements[1..].iter().all(|elem| {
             let elem_type = self.infer_type(elem);
             first_type.is_compatible_with(&elem_type)
         });
-        
+
         if all_same {
             // Homogeneous list: all elements same type
             Type::List(Box::new(first_type))
@@ -999,31 +1193,35 @@ impl SemanticAnalyzer {
     }
 
     /// Infer type for dict literals
-    /// 
+    ///
     /// Analyzes all keys and values in the dict and determines the common types.
-    /// 
+    ///
     /// **Current Behavior**:
     /// - Empty dict: returns `dict[Unknown, Unknown]` (no entries to infer from)
     /// - Homogeneous dict: returns `dict[KeyType, ValueType]` (all keys/values same type)
     /// - Heterogeneous keys: returns `dict[Unknown, ValueType]` (mixed key types)
     /// - Heterogeneous values: returns `dict[KeyType, Unknown]` (mixed value types)
     /// - Both heterogeneous: returns `dict[Unknown, Unknown]`
-    /// 
+    ///
     /// **Examples**:
     /// - `{1: "a", 2: "b"}` → `dict[int, str]`
     /// - `{"a": 1, "b": 2}` → `dict[str, int]`
     /// - `{}` → `dict[Unknown, Unknown]`
     /// - `{1: "a", "b": 2}` → `dict[Unknown, Unknown]` (heterogeneous)
-    /// 
+    ///
     /// **Limitations**:
     /// - No union type support: heterogeneous dicts return Unknown for that dimension
-    /// 
+    ///
     /// **TODO: Future Improvements**:
     /// - Add union type support for heterogeneous dicts
     /// - Type widening for numeric keys/values
-    fn infer_dict_type(&self, keys: &[silk_ast::Expression], values: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_dict_type(
+        &mut self,
+        keys: &[silk_ast::Expression],
+        values: &[silk_ast::Expression],
+    ) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // Empty dict: cannot infer types
         if keys.is_empty() {
             return Type::Dict {
@@ -1031,26 +1229,34 @@ impl SemanticAnalyzer {
                 value_type: Box::new(Type::Unknown),
             };
         }
-        
+
         // Infer type of first key and value
         let first_key_type = self.infer_type(&keys[0]);
         let first_value_type = self.infer_type(&values[0]);
-        
+
         // Check if all keys have the same type
         let all_keys_same = keys[1..].iter().all(|key| {
             let key_type = self.infer_type(key);
             first_key_type.is_compatible_with(&key_type)
         });
-        
+
         // Check if all values have the same type
         let all_values_same = values[1..].iter().all(|value| {
             let value_type = self.infer_type(value);
             first_value_type.is_compatible_with(&value_type)
         });
-        
-        let key_type = if all_keys_same { first_key_type } else { Type::Unknown };
-        let value_type = if all_values_same { first_value_type } else { Type::Unknown };
-        
+
+        let key_type = if all_keys_same {
+            first_key_type
+        } else {
+            Type::Unknown
+        };
+        let value_type = if all_values_same {
+            first_value_type
+        } else {
+            Type::Unknown
+        };
+
         Type::Dict {
             key_type: Box::new(key_type),
             value_type: Box::new(value_type),
@@ -1058,40 +1264,40 @@ impl SemanticAnalyzer {
     }
 
     /// Infer type for set literals
-    /// 
+    ///
     /// Analyzes all elements in the set and determines the common element type.
     /// Similar to list inference, but for sets.
-    /// 
+    ///
     /// **Current Behavior**:
     /// - Empty set: Note that `{}` is an empty dict, not a set. Empty sets use `set()` call.
     /// - Homogeneous set: returns `set[ElementType]` (all elements same type)
     /// - Heterogeneous set: returns `set[Unknown]` (mixed types, no union support yet)
-    /// 
+    ///
     /// **Examples**:
     /// - `{1, 2, 3}` → `set[int]`
     /// - `{"a", "b"}` → `set[str]`
     /// - `{1, "a"}` → `set[Unknown]` (heterogeneous)
-    /// 
+    ///
     /// **Note**: Python doesn't have empty set literal syntax. `{}` is empty dict, `set()` is a call.
-    fn infer_set_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_set_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // Sets always have at least one element (parser creates Set only for non-empty)
         // Empty {} is Dict, not Set
         if elements.is_empty() {
             // This shouldn't happen in practice, but handle it gracefully
             return Type::Set(Box::new(Type::Unknown));
         }
-        
+
         // Infer type of first element
         let first_type = self.infer_type(&elements[0]);
-        
+
         // Check if all elements have the same type
         let all_same = elements[1..].iter().all(|elem| {
             let elem_type = self.infer_type(elem);
             first_type.is_compatible_with(&elem_type)
         });
-        
+
         if all_same {
             Type::Set(Box::new(first_type))
         } else {
@@ -1100,66 +1306,447 @@ impl SemanticAnalyzer {
     }
 
     /// Infer type for tuple literals
-    /// 
+    ///
     /// Tuples are heterogeneous collections where each position can have a different type.
     /// This is different from lists/sets which are homogeneous.
-    /// 
+    ///
     /// **Current Behavior**:
     /// - Empty tuple: returns `tuple[]`
     /// - Single element: returns `tuple[Type]`
     /// - Multiple elements: returns `tuple[Type1, Type2, ...]` with each inferred independently
-    /// 
+    ///
     /// **Examples**:
     /// - `()` → `tuple[]`
     /// - `(42,)` → `tuple[int]`
     /// - `(1, 2, 3)` → `tuple[int, int, int]`
     /// - `(1, "a", 3.0)` → `tuple[int, str, float]` (heterogeneous is normal)
     /// - `((1, 2), (3, 4))` → `tuple[tuple[int, int], tuple[int, int]]`
-    fn infer_tuple_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_tuple_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
-        
+
         // Infer type of each element independently
-        let element_types: Vec<Type> = elements
-            .iter()
-            .map(|elem| self.infer_type(elem))
-            .collect();
-        
+        let element_types: Vec<Type> = elements.iter().map(|elem| self.infer_type(elem)).collect();
+
         Type::Tuple(element_types)
     }
 
     /// Resolve a type annotation from AST to semantic Type
-    /// 
+    ///
     /// Converts AST TypeKind to semantic Type enum.
     /// For now, handles built-in named types (int, str, bool, float).
     /// Returns Unknown for non-built-in types.
-    /// 
+    ///
     /// Resolve a type annotation from AST to semantic Type.
     /// Used by AnnAssign statements to determine the type from annotation.
     fn resolve_type_annotation(&self, type_ann: &silk_ast::Type) -> crate::types::Type {
         use crate::types::Type;
-        
+
         match &type_ann.kind {
             silk_ast::TypeKind::Name(name) => {
                 // Try to parse as built-in type
                 Type::from_str(name).unwrap_or(Type::Unknown)
             }
-            
-            // For now, complex types return Unknown
-            // TODO: Handle Generic, Union, Optional, Callable, etc.
+
+            silk_ast::TypeKind::Generic { base, args } => {
+                // Extract the base type name
+                if let silk_ast::TypeKind::Name(base_name) = &base.kind {
+                    match base_name.as_str() {
+                        "list" => {
+                            if args.len() == 1 {
+                                let element_type = self.resolve_type_annotation(&args[0]);
+                                Type::List(Box::new(element_type))
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "dict" => {
+                            if args.len() == 2 {
+                                let key_type = self.resolve_type_annotation(&args[0]);
+                                let value_type = self.resolve_type_annotation(&args[1]);
+                                Type::Dict {
+                                    key_type: Box::new(key_type),
+                                    value_type: Box::new(value_type),
+                                }
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "set" => {
+                            if args.len() == 1 {
+                                let element_type = self.resolve_type_annotation(&args[0]);
+                                Type::Set(Box::new(element_type))
+                            } else {
+                                Type::Unknown
+                            }
+                        }
+                        "tuple" => {
+                            // tuple[T1, T2, ...] with specific element types
+                            let element_types: Vec<Type> = args
+                                .iter()
+                                .map(|t| self.resolve_type_annotation(t))
+                                .collect();
+                            Type::Tuple(element_types)
+                        }
+                        _ => Type::Unknown,
+                    }
+                } else {
+                    Type::Unknown
+                }
+            }
+
+            // For now, other complex types return Unknown
+            // TODO: Handle Union, Optional, Callable, etc.
             _ => Type::Unknown,
         }
     }
 
     /// Define a function parameter
     fn define_parameter(&mut self, arg: &silk_ast::FunctionArg) {
-        let param_symbol = Symbol::new(
-            arg.name.clone(),
-            SymbolKind::Parameter,
-            arg.span,
-        );
+        let param_symbol = Symbol::new(arg.name.clone(), SymbolKind::Parameter, arg.span);
         if let Err(err) = self.symbol_table.define_symbol(param_symbol) {
             self.errors.push(err);
         }
+    }
+
+    /// Check type compatibility for annotated assignments
+    ///
+    /// Validates that the value type is compatible with the declared type annotation.
+    /// Uses Type::is_compatible_with() for the check, which supports:
+    /// - Exact type matches (int = int, str = str)
+    /// - Numeric type compatibility (int can be assigned to float)
+    /// - Unknown type (always compatible - gradual typing)
+    /// - Collection type structural compatibility
+    ///
+    /// Returns Ok(()) if compatible, Err(SemanticError) if not.
+    fn check_assignment_type(
+        &self,
+        expected_type: &crate::types::Type,
+        value_type: &crate::types::Type,
+        _target: &Expression,
+        value: &Expression,
+    ) -> Result<(), SemanticError> {
+        // Check if value type is compatible with expected type
+        if !value_type.is_compatible_with(expected_type) {
+            return Err(SemanticError::AssignmentTypeMismatch {
+                expected_type: expected_type.to_string(),
+                value_type: value_type.to_string(),
+                line: value.span.line,
+                column: value.span.column,
+                span: value.span,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Check function call argument types and count
+    ///
+    /// Validates that:
+    /// 1. Argument count matches parameter count
+    /// 2. Each argument type is compatible with its corresponding parameter type
+    ///
+    /// Returns Ok(()) if valid, Err(SemanticError) if not.
+    fn check_function_call_types(
+        &mut self,
+        func_name: &str,
+        params: &[(String, crate::types::Type)],
+        args: &[Expression],
+        func_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        // Check argument count
+        if args.len() != params.len() {
+            return Err(SemanticError::ArgumentCountMismatch {
+                function_name: func_name.to_string(),
+                expected: params.len(),
+                actual: args.len(),
+                line: func_expr.span.line,
+                column: func_expr.span.column,
+                span: func_expr.span,
+            });
+        }
+
+        // Check each argument type
+        for (i, (arg, (param_name, param_type))) in args.iter().zip(params.iter()).enumerate() {
+            let arg_type = self.infer_type(arg);
+
+            if !arg_type.is_compatible_with(param_type) {
+                return Err(SemanticError::ArgumentTypeMismatch {
+                    param_name: param_name.clone(),
+                    arg_index: i + 1,
+                    expected_type: param_type.to_string(),
+                    actual_type: arg_type.to_string(),
+                    line: arg.span.line,
+                    column: arg.span.column,
+                    span: arg.span,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check return statement type against declared function return type
+    ///
+    /// Validates that the return value type is compatible with the declared
+    /// return type of the current function.
+    ///
+    /// Returns Ok(()) if valid, Err(SemanticError) if not.
+    fn check_return_type(
+        &mut self,
+        return_expr: &Expression,
+        return_stmt: &Statement,
+    ) -> Result<(), SemanticError> {
+        // Get the expected return type from current function
+        let expected_type = match &self.current_function_return_type {
+            Some(ty) => ty.clone(),
+            None => return Ok(()), // No function context (shouldn't happen if ReturnOutsideFunction check passes)
+        };
+
+        // Unknown return type means no type annotation - allow anything
+        if expected_type == crate::types::Type::Unknown {
+            return Ok(());
+        }
+
+        // Infer the actual type of the return expression
+        let actual_type = self.infer_type(return_expr);
+
+        // Check if actual type is compatible with expected type
+        if !actual_type.is_compatible_with(&expected_type) {
+            return Err(SemanticError::ReturnTypeMismatch {
+                expected_type: expected_type.to_string(),
+                actual_type: actual_type.to_string(),
+                line: return_stmt.span.line,
+                column: return_stmt.span.column,
+                span: return_stmt.span,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Validate binary operation operand types
+    ///
+    /// Checks that operand types are compatible with the operator.
+    /// Returns Ok(()) if valid, Err(SemanticError) if invalid.
+    fn validate_binary_operation(
+        &self,
+        left_type: &crate::types::Type,
+        op: silk_ast::BinaryOperator,
+        right_type: &crate::types::Type,
+        left_expr: &Expression,
+        _right_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        use crate::types::Type;
+        use silk_ast::BinaryOperator;
+
+        // Unknown types pass validation (gradual typing)
+        if *left_type == Type::Unknown || *right_type == Type::Unknown {
+            return Ok(());
+        }
+
+        match op {
+            // Addition: numeric + numeric, or str + str
+            BinaryOperator::Add => {
+                let valid = matches!(
+                    (left_type, right_type),
+                    (Type::Int, Type::Int)
+                        | (Type::Float, Type::Float)
+                        | (Type::Int, Type::Float)
+                        | (Type::Float, Type::Int)
+                        | (Type::Str, Type::Str)
+                );
+
+                if !valid {
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: "+".to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
+
+            // Arithmetic operators: only numeric types
+            BinaryOperator::Sub
+            | BinaryOperator::Mult
+            | BinaryOperator::Div
+            | BinaryOperator::FloorDiv
+            | BinaryOperator::Mod
+            | BinaryOperator::Pow => {
+                let valid = matches!(
+                    (left_type, right_type),
+                    (Type::Int, Type::Int)
+                        | (Type::Float, Type::Float)
+                        | (Type::Int, Type::Float)
+                        | (Type::Float, Type::Int)
+                );
+
+                if !valid {
+                    let op_str = match op {
+                        BinaryOperator::Sub => "-",
+                        BinaryOperator::Mult => "*",
+                        BinaryOperator::Div => "/",
+                        BinaryOperator::FloorDiv => "//",
+                        BinaryOperator::Mod => "%",
+                        BinaryOperator::Pow => "**",
+                        _ => "?",
+                    };
+
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: op_str.to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
+
+            // Bitwise operators: only integers
+            BinaryOperator::BitOr
+            | BinaryOperator::BitXor
+            | BinaryOperator::BitAnd
+            | BinaryOperator::LShift
+            | BinaryOperator::RShift => {
+                let valid = matches!((left_type, right_type), (Type::Int, Type::Int));
+
+                if !valid {
+                    let op_str = match op {
+                        BinaryOperator::BitOr => "|",
+                        BinaryOperator::BitXor => "^",
+                        BinaryOperator::BitAnd => "&",
+                        BinaryOperator::LShift => "<<",
+                        BinaryOperator::RShift => ">>",
+                        _ => "?",
+                    };
+
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: op_str.to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Infer the result type of a subscript operation
+    ///
+    /// Returns the element type for lists/tuples/sets, value type for dicts, or Unknown
+    fn infer_subscript_type(&mut self, value: &Expression) -> crate::types::Type {
+        use crate::types::Type;
+
+        let value_type = self.infer_type(value);
+
+        match value_type {
+            // List[T] -> T
+            Type::List(element_type) => (*element_type).clone(),
+
+            // Dict[K, V] -> V
+            Type::Dict { value_type, .. } => (*value_type).clone(),
+
+            // Tuple[T1, T2, ...] -> Unknown (we don't track individual element types yet)
+            Type::Tuple(_) => Type::Unknown,
+
+            // Set[T] -> T (though subscripting a set is invalid in Python)
+            Type::Set(element_type) => (*element_type).clone(),
+
+            // Str[int] -> Str (string subscript returns a string)
+            Type::Str => Type::Str,
+
+            // Unknown or Any pass through
+            Type::Unknown | Type::Any => Type::Unknown,
+
+            // Everything else is Unknown (invalid subscript, but we'll catch that in validation)
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Validate a subscript operation
+    ///
+    /// Checks that:
+    /// - The value being subscripted is a valid collection type
+    /// - The index type matches what the collection expects
+    fn validate_subscript(
+        &self,
+        value_type: &crate::types::Type,
+        index_type: &crate::types::Type,
+        value_expr: &Expression,
+        index_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        use crate::types::Type;
+
+        // Unknown types pass validation (gradual typing)
+        if *value_type == Type::Unknown || *index_type == Type::Unknown {
+            return Ok(());
+        }
+
+        // Check if the value type supports subscripting
+        match value_type {
+            // List, Tuple, Str require int index
+            Type::List(_) | Type::Tuple(_) | Type::Str => {
+                if *index_type != Type::Int {
+                    return Err(SemanticError::InvalidSubscript {
+                        collection_type: value_type.to_string(),
+                        index_type: index_type.to_string(),
+                        line: index_expr.span.line,
+                        column: index_expr.span.column,
+                        span: index_expr.span,
+                    });
+                }
+            }
+
+            // Dict requires index type to match key type
+            Type::Dict { key_type, .. } => {
+                // Check if index type is compatible with key type
+                if !index_type.is_compatible_with(key_type) {
+                    return Err(SemanticError::InvalidSubscript {
+                        collection_type: value_type.to_string(),
+                        index_type: index_type.to_string(),
+                        line: index_expr.span.line,
+                        column: index_expr.span.column,
+                        span: index_expr.span,
+                    });
+                }
+            }
+
+            // Set doesn't support subscripting
+            Type::Set(_) => {
+                return Err(SemanticError::InvalidSubscript {
+                    collection_type: value_type.to_string(),
+                    index_type: index_type.to_string(),
+                    line: value_expr.span.line,
+                    column: value_expr.span.column,
+                    span: value_expr.span,
+                });
+            }
+
+            // Any passes
+            Type::Any => {
+                return Ok(());
+            }
+
+            // Other types don't support subscripting
+            _ => {
+                return Err(SemanticError::InvalidSubscript {
+                    collection_type: value_type.to_string(),
+                    index_type: index_type.to_string(),
+                    line: value_expr.span.line,
+                    column: value_expr.span.column,
+                    span: value_expr.span,
+                });
+            }
+        }
+
+        Ok(())
     }
 }
 

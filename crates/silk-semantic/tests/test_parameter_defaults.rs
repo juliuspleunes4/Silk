@@ -1,6 +1,5 @@
 /// Tests for parameter default value validation.
 /// Default expressions are evaluated in the outer scope, not the function scope.
-
 use silk_parser::Parser;
 use silk_semantic::SemanticAnalyzer;
 
@@ -8,7 +7,8 @@ use silk_semantic::SemanticAnalyzer;
 fn analyze(source: &str) -> Result<(), String> {
     let program = Parser::parse(source).expect("Parser should succeed");
     let mut analyzer = SemanticAnalyzer::new();
-    analyzer.analyze(&program)
+    analyzer
+        .analyze(&program)
         .map_err(|errors| format!("{:?}", errors))
 }
 
