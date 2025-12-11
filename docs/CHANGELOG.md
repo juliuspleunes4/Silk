@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔍 Collection Operations - December 11, 2025
+
+**Implemented subscript type validation (Phase 6, Steps 18-20 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Added subscript validation** in `analyze_expression` for `Subscript` expressions
+- **New method `validate_subscript()`** (~60 lines):
+  - Validates subscriptable types: list, dict, tuple, str support subscripting
+  - List/Tuple/Str require int index
+  - Dict requires index type to match key type
+  - Set subscripting is invalid (returns error)
+  - Other types (int, float, bool, etc.) don't support subscripting
+  - Gradual typing: Unknown types pass validation
+  - Returns `InvalidSubscript` error for invalid subscript operations
+- **New method `infer_subscript_type()`** (~20 lines):
+  - List[T] → T
+  - Dict[K, V] → V  
+  - Tuple[...] → Unknown (no per-element tracking yet)
+  - Str[int] → Str
+  - Returns Unknown for invalid subscripts
+- **Enhanced `resolve_type_annotation()`** (~50 lines):
+  - **Added Generic type support**: Now properly resolves `list[int]`, `dict[str, int]`, `set[float]`, `tuple[int, str]`
+  - Recursively resolves nested generic type arguments
+  - Previously returned Unknown for all generic types
+- **Added attribute access type inference**: Returns Unknown for now (future: proper class attribute resolution)
+
+**Bug Fixes**:
+- Fixed `InvalidSubscript` error field name: `container_type` → `collection_type` for consistency
+- Updated `test_ann_assign_generic_type_fallback` → `test_ann_assign_generic_type` to reflect new generic type support
+
+**Testing**:
+- **16 new tests** in `test_collection_operations.rs`:
+  - Valid subscripts (4 tests): list[int], tuple, dict[str,int], str with correct index types
+  - Invalid subscripts (7 tests): wrong index types (str on list, int on dict[str,*]), non-subscriptable types (set, int)
+  - Edge cases (5 tests): Unknown type handling, nested subscripts, subscripts in expressions/function calls, multiple errors
+- Updated 1 existing test to expect `List(Int)` instead of `Unknown` for generic types
+- Updated 1 test to use `collection_type` field name
+- All 809 tests passing ✅
+
+**Impact**:
+- Enables compile-time detection of invalid subscript operations
+- Generic type annotations now fully functional (`list[int]`, `dict[str, int]`, etc.)
+- Provides clear error messages for subscript type mismatches
+- Maintains gradual typing flexibility
+
 ### ✅ Binary Operation Validation - December 11, 2025
 
 **Implemented type validation for binary operations (Phase 5, Steps 15-17 of Type Checking feature)**.
