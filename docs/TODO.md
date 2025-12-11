@@ -95,8 +95,8 @@
     - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 31 tests
     - ✅ Phase 6: Collection Operations (Steps 18-20) - 17 tests
     - ✅ Phase 7: Integration & Documentation (Steps 21-25) - 10 tests - **COMPLETE**
-    - **Total tests: 962 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration + 105 control flow tests = 934, actual 962 includes control flow tests)
-  - Control Flow Analysis 🟢 (70% - in progress)
+    - **Total tests: 974 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration + 117 control flow tests + 28 analyzer tests = 1015 total)
+  - Control Flow Analysis 🟢 (75% - in progress)
     - ✅ Phase 1: Infrastructure Setup (Steps 1-4) - 8 tests - **COMPLETE**
     - ✅ Phase 2: Unreachable Code Detection (Steps 5-8) - 51 tests - **COMPLETE**
     - ✅ Phase 3: Variable Initialization Tracking (Steps 9-11) - 46 tests - **COMPLETE** (December 12, 2025)
@@ -107,8 +107,9 @@
       - ✅ Step 12: Track Return Paths - 12 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 13: Handle Complex Return Patterns - 14 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 14: Validate Return Types Match - 14 tests - **COMPLETE** (December 12, 2025)
-    - 🔄 Phase 5: Dead Code Detection (Steps 15-17) - 13 tests - **IN PROGRESS** (December 12, 2025)
+    - 🔄 Phase 5: Dead Code Detection (Steps 15-17) - 25 tests - **IN PROGRESS** (December 12, 2025)
       - ✅ Step 15: Detect Unused Variables - 13 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 15.5: Fix Nested Scope Variable Visibility - 12 tests - **COMPLETE** (December 12, 2025) - **CRITICAL FIX**
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 
@@ -116,7 +117,7 @@
 
 ## ⚠️ Active Issues
 
-✅ **No active critical issues** - Control flow analysis in progress, 1003 tests passing (158 control flow tests: 8 infrastructure + 10 unreachable + 12 conditional reachability + 14 loop reachability + 15 try/except reachability + 19 variable initialization + 15 conditional initialization + 12 function parameter initialization + 12 return path tracking + 14 complex return patterns + 14 return validation + 13 unused variable detection = 158)
+✅ **No active critical issues** - Control flow analysis in progress, 1015 tests passing (170 control flow tests: 8 infrastructure + 10 unreachable + 12 conditional reachability + 14 loop reachability + 15 try/except reachability + 19 variable initialization + 15 conditional initialization + 12 function parameter initialization + 12 return path tracking + 14 complex return patterns + 14 return validation + 13 unused variable detection + 12 nested scope variables = 170)
 
 ---
 

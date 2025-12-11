@@ -231,13 +231,19 @@ def foo():
     y = 2
     z = x + y
 "#;
-    // Functions create new scopes - x from outer scope is not visible
-    // This is correct behavior for Step 9
+    // With Step 15.5 fix: inner functions CAN see outer scope variables (closure semantics)
+    // This is correct Python behavior
     let result = analyze_control_flow(source);
-    assert!(result.is_err(), "Should have error for x not visible in function scope");
     
-    let errors = result.unwrap_err();
-    assert!(errors.len() >= 1, "Should have error for x");
+    // Filter out UnusedVariable warnings - we're testing initialization, not usage
+    let result = result.map_err(|errors| {
+        errors.into_iter()
+            .filter(|e| !matches!(e, SemanticError::UnusedVariable { .. }))
+            .collect::<Vec<_>>()
+    });
+    
+    assert!(result.is_ok() || result.as_ref().unwrap_err().is_empty(), 
+            "Inner function should see outer variable x: {:?}", result.err());
 }
 
 #[test]

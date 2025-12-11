@@ -26,8 +26,9 @@ pub struct ControlFlowAnalyzer {
     unreachable_reported: bool,
     /// Whether the current loop contains a break statement
     loop_has_break: bool,
-    /// Set of variables that have been initialized in the current scope
-    initialized_variables: HashSet<String>,
+    /// Stack of scopes, each containing initialized variables
+    /// Inner functions can see variables from outer scopes (closures)
+    scope_stack: Vec<HashSet<String>>,
     /// Map of variable names to their assignment locations (for unused detection)
     assigned_variables: HashMap<String, Span>,
     /// Set of variables that have been used (read)
@@ -44,7 +45,7 @@ impl ControlFlowAnalyzer {
             is_reachable: true,
             unreachable_reported: false,
             loop_has_break: false,
-            initialized_variables: HashSet::new(),
+            scope_stack: vec![HashSet::new()], // Start with global scope
             assigned_variables: HashMap::new(),
             used_variables: HashSet::new(),
         }
@@ -92,11 +93,51 @@ impl ControlFlowAnalyzer {
         &self.errors
     }
 
+    // ========== SCOPE MANAGEMENT ==========
+
+    /// Push a new scope onto the stack (for nested functions)
+    fn push_scope(&mut self) {
+        self.scope_stack.push(HashSet::new());
+    }
+
+    /// Pop the current scope from the stack
+    fn pop_scope(&mut self) {
+        if self.scope_stack.len() > 1 {
+            self.scope_stack.pop();
+        }
+    }
+
+    /// Get a reference to the current (innermost) scope
+    fn current_scope(&self) -> &HashSet<String> {
+        self.scope_stack.last().expect("Scope stack should never be empty")
+    }
+
+    /// Get a mutable reference to the current (innermost) scope
+    fn current_scope_mut(&mut self) -> &mut HashSet<String> {
+        self.scope_stack.last_mut().expect("Scope stack should never be empty")
+    }
+
+    /// Check if a variable is initialized in any scope (current or outer)
+    fn is_initialized(&self, name: &str) -> bool {
+        // Search from innermost to outermost scope
+        self.scope_stack.iter().rev().any(|scope| scope.contains(name))
+    }
+
+    /// Clone the entire scope stack
+    fn clone_scope_stack(&self) -> Vec<HashSet<String>> {
+        self.scope_stack.clone()
+    }
+
+    /// Restore the scope stack
+    fn restore_scope_stack(&mut self, stack: Vec<HashSet<String>>) {
+        self.scope_stack = stack;
+    }
+
     // ========== HELPER METHODS ==========
 
-    /// Mark a variable as initialized
+    /// Mark a variable as initialized in the current scope
     fn mark_initialized(&mut self, name: &str) {
-        self.initialized_variables.insert(name.to_string());
+        self.current_scope_mut().insert(name.to_string());
     }
 
     /// Track that a variable was assigned (for unused variable detection)
@@ -114,7 +155,7 @@ impl ControlFlowAnalyzer {
 
     /// Check if a variable is initialized, report error if not
     fn check_initialized(&mut self, name: &str, span: &Span) {
-        if !self.initialized_variables.contains(name) {
+        if !self.is_initialized(name) {
             self.errors.push(SemanticError::UninitializedVariable {
                 name: name.to_string(),
                 line: span.line,
@@ -229,8 +270,8 @@ impl ControlFlowAnalyzer {
             }
             ExpressionKind::Lambda { params, body } => {
                 // Lambda parameters are initialized within the lambda body scope
-                // Save current initialized variables
-                let previous_initialized = self.initialized_variables.clone();
+                // Push new scope for lambda
+                self.push_scope();
                 
                 // Mark lambda parameters as initialized
                 for param in params {
@@ -240,8 +281,8 @@ impl ControlFlowAnalyzer {
                 // Check lambda body with parameters marked as initialized
                 self.check_expression(body);
                 
-                // Restore previous initialization state (lambda is an expression)
-                self.initialized_variables = previous_initialized;
+                // Pop lambda scope
+                self.pop_scope();
             }
             ExpressionKind::LogicalOp { left, right, .. } => {
                 self.check_expression(left);
@@ -404,7 +445,6 @@ impl ControlFlowAnalyzer {
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
-                let previous_initialized = self.initialized_variables.clone();
                 
                 // Check default parameter expressions BEFORE entering function scope
                 // Default expressions are evaluated in the outer scope, not the function scope
@@ -423,7 +463,9 @@ impl ControlFlowAnalyzer {
                 self.in_loop = false;
                 self.is_reachable = true; // Function body starts reachable
                 self.unreachable_reported = false; // Reset for new scope
-                self.initialized_variables.clear(); // New scope - start fresh
+                
+                // Push new scope for function (inherits outer scope visibility)
+                self.push_scope();
                 
                 // Mark all function parameters as initialized and track as assigned
                 for param in &params.args {
@@ -473,7 +515,9 @@ impl ControlFlowAnalyzer {
                 self.in_loop = previous_in_loop;
                 self.is_reachable = previous_reachable; // Restore reachability
                 self.unreachable_reported = previous_unreachable_reported;
-                self.initialized_variables = previous_initialized;
+                
+                // Pop function scope
+                self.pop_scope();
             }
 
             // Class definition
@@ -495,7 +539,7 @@ impl ControlFlowAnalyzer {
                 
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
-                let previous_initialized = self.initialized_variables.clone();
+                let previous_scope_stack = self.clone_scope_stack();
                 
                 // Analyze if body
                 self.is_reachable = previous_reachable;
@@ -504,21 +548,21 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
                 let if_reachable = self.is_reachable;
-                let if_initialized = self.initialized_variables.clone();
+                let if_scope_stack = self.clone_scope_stack();
 
                 // Analyze else body (orelse is Vec, not Option)
                 // If orelse is empty, it's implicitly reachable (no code to execute)
-                let (else_reachable, else_initialized) = if orelse.is_empty() {
+                let (else_reachable, else_scope_stack) = if orelse.is_empty() {
                     // No else clause - restore previous state
-                    (previous_reachable, previous_initialized.clone())
+                    (previous_reachable, previous_scope_stack.clone())
                 } else {
                     self.is_reachable = previous_reachable;
-                    self.initialized_variables = previous_initialized.clone();
+                    self.restore_scope_stack(previous_scope_stack.clone());
                     self.unreachable_reported = false; // Reset for else block
                     for stmt in orelse {
                         self.analyze_statement(stmt);
                     }
-                    (self.is_reachable, self.initialized_variables.clone())
+                    (self.is_reachable, self.clone_scope_stack())
                 };
                 
                 // Code after if is reachable if either branch is reachable
@@ -526,20 +570,22 @@ impl ControlFlowAnalyzer {
                 self.unreachable_reported = previous_unreachable_reported; // Restore
                 
                 // Variable is initialized after if/else based on which branches are reachable:
-                // - If both branches reachable: must be in both (intersection)
+                // - If both branches reachable: must be in both (intersection of current scope only)
                 // - If only if branch reachable: use if branch state
                 // - If only else branch reachable: use else branch state
                 // - If neither reachable: doesn't matter (code is unreachable)
-                self.initialized_variables = if if_reachable && else_reachable {
-                    // Both reachable: intersection (must be in both)
-                    if_initialized.intersection(&else_initialized).cloned().collect()
+                if if_reachable && else_reachable {
+                    // Both reachable - merge scopes (intersection of current scope only)
+                    let if_current = if_scope_stack.last().unwrap();
+                    let else_current = else_scope_stack.last().unwrap();
+                    let merged: HashSet<String> = if_current.intersection(else_current).cloned().collect();
+                    self.restore_scope_stack(previous_scope_stack);
+                    *self.current_scope_mut() = merged;
                 } else if if_reachable {
-                    // Only if reachable
-                    if_initialized
+                    self.restore_scope_stack(if_scope_stack);
                 } else {
-                    // Only else reachable (or neither, but we use else state)
-                    else_initialized
-                };
+                    self.restore_scope_stack(else_scope_stack);
+                }
             }
 
             StatementKind::While {
@@ -634,7 +680,7 @@ impl ControlFlowAnalyzer {
             } => {
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
-                let previous_initialized = self.initialized_variables.clone();
+                let previous_scope_stack = self.clone_scope_stack();
                 
                 // Analyze try body
                 self.is_reachable = previous_reachable;
@@ -643,16 +689,16 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
                 let try_reachable = self.is_reachable;
-                let try_initialized = self.initialized_variables.clone();
+                let try_scope_stack = self.clone_scope_stack();
 
                 // Analyze exception handlers
                 // Track initialization state from all handlers
                 let mut handlers_reachable = false;
-                let mut handlers_initialized_sets: Vec<HashSet<String>> = Vec::new();
+                let mut handlers_scope_stacks: Vec<Vec<HashSet<String>>> = Vec::new();
                 
                 for handler in handlers {
                     self.is_reachable = previous_reachable; // Each handler starts fresh
-                    self.initialized_variables = previous_initialized.clone();
+                    self.restore_scope_stack(previous_scope_stack.clone());
                     self.unreachable_reported = false;
                     
                     // Mark exception variable as initialized and track assignment
@@ -666,7 +712,7 @@ impl ControlFlowAnalyzer {
                         self.analyze_statement(stmt);
                     }
                     handlers_reachable = handlers_reachable || self.is_reachable;
-                    handlers_initialized_sets.push(self.initialized_variables.clone());
+                    handlers_scope_stacks.push(self.clone_scope_stack());
                 }
 
                 // After try/except, code is reachable if:
@@ -685,26 +731,31 @@ impl ControlFlowAnalyzer {
                 // - If only some paths are reachable: only use those paths
                 if handlers.is_empty() {
                     // No handlers: just use try state
-                    self.initialized_variables = try_initialized;
+                    self.restore_scope_stack(try_scope_stack);
                 } else if try_reachable && handlers_reachable {
-                    // Both try and at least one handler are reachable: intersection
-                    let mut merged_initialized = try_initialized;
-                    for handler_initialized in handlers_initialized_sets {
-                        merged_initialized = merged_initialized.intersection(&handler_initialized).cloned().collect();
+                    // Both try and at least one handler are reachable: intersection of current scope only
+                    let try_current = try_scope_stack.last().unwrap();
+                    let mut merged_current = try_current.clone();
+                    for handler_scope_stack in &handlers_scope_stacks {
+                        let handler_current = handler_scope_stack.last().unwrap();
+                        merged_current = merged_current.intersection(handler_current).cloned().collect();
                     }
-                    self.initialized_variables = merged_initialized;
+                    self.restore_scope_stack(previous_scope_stack);
+                    *self.current_scope_mut() = merged_current;
                 } else if try_reachable {
                     // Only try block is reachable (all handlers return/raise)
-                    self.initialized_variables = try_initialized;
+                    self.restore_scope_stack(try_scope_stack);
                 } else {
                     // Only handlers are reachable (try returns/raises)
-                    // Use intersection of all handlers
-                    if let Some(first) = handlers_initialized_sets.first() {
-                        let mut merged_initialized = first.clone();
-                        for handler_initialized in handlers_initialized_sets.iter().skip(1) {
-                            merged_initialized = merged_initialized.intersection(handler_initialized).cloned().collect();
+                    // Use intersection of all handlers' current scopes
+                    if let Some(first) = handlers_scope_stacks.first() {
+                        let mut merged_current = first.last().unwrap().clone();
+                        for handler_scope_stack in handlers_scope_stacks.iter().skip(1) {
+                            let handler_current = handler_scope_stack.last().unwrap();
+                            merged_current = merged_current.intersection(handler_current).cloned().collect();
                         }
-                        self.initialized_variables = merged_initialized;
+                        self.restore_scope_stack(previous_scope_stack);
+                        *self.current_scope_mut() = merged_current;
                     }
                 }
 

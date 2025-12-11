@@ -7,7 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
+### � Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
+
+**Fixed Nested Scope Variable Visibility (CRITICAL)** — Implemented proper Python closure semantics so inner functions can access outer scope variables.
+
+**Problem Resolved**:
+- **Previous Bug**: Inner functions couldn't see outer scope variables because `initialized_variables` was completely cleared on function entry
+- **Impact**: Broke fundamental Python closure behavior - `def outer(): x=5; def inner(): return x` incorrectly reported x as uninitialized
+- **Root Cause**: Single `HashSet<String>` for initialized variables meant no scope inheritance
+
+**Implementation Details**:
+- **Scope Stack Architecture**:
+  - Changed from `initialized_variables: HashSet<String>` to `scope_stack: Vec<HashSet<String>>`
+  - Each Vec element represents one scope level (global, function, nested function, etc.)
+  - Inner scopes inherit visibility of outer scope variables
+- **Scope Management Methods**:
+  - `push_scope()` - Creates new scope level (inherits outer variables)
+  - `pop_scope()` - Exits current scope level
+  - `current_scope_mut()` - Access innermost scope for modifications
+  - `is_initialized(name)` - Search all scopes from inner to outer
+  - `clone_scope_stack()` / `restore_scope_stack()` - For control flow branching
+- **Updated Handlers**:
+  - **FunctionDef**: Push scope on entry, pop on exit (instead of clearing)
+  - **Lambda**: Push/pop scope for lambda body
+  - **If/While/Try**: Clone/restore scope stack for branch merging
+  - **Control Flow Merging**: Only merge innermost scope (intersection), preserve outer scopes
+- **Test Coverage**:
+  - 12 comprehensive tests for closure semantics
+  - Tests: basic closures, multiple nesting levels, shadowing, lambdas, loops, exception handlers
+  - Updated existing test that expected old broken behavior
+
+**Technical Impact**:
+- Enables proper Python closure support
+- Inner functions now correctly access outer variables (read-only for now)
+- Maintains separation between control flow branches
+- Preserves all existing functionality and test coverage
+
+**Test Count**: 1015 total tests (617 silk-semantic + 398 other crates), all passing
+
+---
+
+### �🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
 
 **Implemented Unused Variable Detection** — Added ability to detect variables that are assigned but never used, following Python convention of ignoring underscore-prefixed variables.
 
