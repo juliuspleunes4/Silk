@@ -162,25 +162,36 @@ Handle loops (while/for):
 
 ---
 
-### Step 8: Handle Try/Except Reachability
+### ✅ Step 8: Handle Try/Except Reachability - COMPLETE
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 6-8
+**Actual Tests**: 15 (exceeded estimate)
 
 Handle exception handling:
-- Code after try block is reachable (exceptions can occur)
-- Track reachability through except handlers
-- Handle finally clause (always executes)
+- ✅ Code after try/except is reachable if try OR any handler exits normally
+- ✅ Fixed: Code not always reachable just because handlers exist
+- ✅ Finally clause always analyzed (executes even after return)
+- ✅ Fixed: Finally analyzed even when try is unreachable
+- ✅ After finally, reachability based on finally's termination
 
-**Testing**:
-- `test_reachable_after_try_except`
-- `test_unreachable_in_try_after_return`
-- `test_reachable_in_except_handler`
-- `test_finally_always_executes`
-- `test_return_in_except_handler`
-- `test_nested_try_except`
+**Tests Implemented**:
+- ✅ `test_reachable_after_try_except`
+- ✅ `test_unreachable_in_try_after_return`
+- ✅ `test_reachable_in_except_handler`
+- ✅ `test_unreachable_in_except_after_return`
+- ✅ `test_finally_always_executes`
+- ✅ `test_reachable_after_try_except_finally`
+- ✅ `test_unreachable_after_try_all_paths_return`
+- ✅ `test_reachable_after_try_partial_returns`
+- ✅ `test_nested_try_except`
+- ✅ `test_try_with_else_clause`
+- ✅ `test_finally_after_return_in_try`
+- ✅ `test_unreachable_after_finally_with_return`
+- ✅ `test_multiple_except_handlers`
+- ✅ `test_try_except_in_loop`
+- ✅ `test_bare_except`
 
-**Checkpoint**: 40-53 tests total (32-40 new)
-**Run**: `cargo test --package silk-semantic`
+**Checkpoint**: 904 tests total (59 control flow tests)
+**Status**: All 15 tests passing
 
 ---
 

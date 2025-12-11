@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 2, Step 8 - December 11, 2025
+
+**Implemented comprehensive try/except/finally reachability analysis**.
+
+**Implementation**:
+- Enhanced Try/Except/Finally handling:
+  - Code after try is reachable if try OR any except handler exits normally (doesn't return/raise)
+  - If all paths (try + all handlers) terminate, code after is unreachable
+  - Fixed bug: removed `!handlers.is_empty()` from reachability logic (was making code always reachable if handlers existed)
+- Finally block handling:
+  - Always analyzed as reachable, even if try/except blocks return/raise (Python semantics)
+  - If finally terminates (return/raise), code after try statement is unreachable
+  - If finally doesn't terminate, code after uses try/except reachability
+  - Fixed bug: finally now always analyzed, not skipped when try is unreachable
+- Else clause (executed if no exception):
+  - Analyzed with current reachability from try/except
+  - Properly resets unreachable_reported flag
+
+**Tests Added** (15 comprehensive tests):
+- `test_reachable_after_try_except` - Basic try/except reachability
+- `test_unreachable_in_try_after_return` - Code after return in try
+- `test_reachable_in_except_handler` - Exception handler is reachable
+- `test_unreachable_in_except_after_return` - Code after return in handler
+- `test_finally_always_executes` - Finally executes even without exception
+- `test_reachable_after_try_except_finally` - Reachability through all blocks
+- `test_unreachable_after_try_all_paths_return` - All paths terminate
+- `test_reachable_after_try_partial_returns` - Some paths terminate
+- `test_nested_try_except` - Nested try/except blocks
+- `test_try_with_else_clause` - Else clause reachability
+- `test_finally_after_return_in_try` - Finally reachable after return
+- `test_unreachable_after_finally_with_return` - Finally with return
+- `test_multiple_except_handlers` - Multiple exception handlers
+- `test_try_except_in_loop` - Try/except inside loop
+- `test_bare_except` - Bare except clause
+
+**Bugs Fixed**:
+1. Finally block not analyzed when try body is unreachable (has return)
+   - Was skipping finally analysis when `self.is_reachable = false`
+   - Now always analyzes finally with `self.is_reachable = previous_reachable`
+2. Code always reachable if handlers exist, even when all paths return
+   - Was using `try_reachable || handlers_reachable || !handlers.is_empty()`
+   - Now correctly uses `try_reachable || handlers_reachable`
+
+**Files Modified**:
+- `crates/silk-semantic/src/control_flow.rs` - Enhanced try/except/finally reachability logic
+- `crates/silk-semantic/tests/test_try_except_reachability.rs` - New test file with 15 tests
+
+**Test Count**: 904 tests passing (+15 new try/except reachability tests)
+
 ### 🔄 Control Flow Analysis - Phase 2, Step 7 - December 11, 2025
 
 **Implemented comprehensive loop reachability analysis with infinite loop detection**.

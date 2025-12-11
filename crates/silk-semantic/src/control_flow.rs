@@ -291,36 +291,62 @@ impl ControlFlowAnalyzer {
                 finalbody,
             } => {
                 let previous_reachable = self.is_reachable;
+                let previous_unreachable_reported = self.unreachable_reported;
                 
                 // Analyze try body
                 self.is_reachable = previous_reachable;
+                self.unreachable_reported = false;
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
                 let try_reachable = self.is_reachable;
 
                 // Analyze exception handlers
+                // If handlers exist, at least one is potentially reachable (exceptions can occur)
                 let mut handlers_reachable = false;
                 for handler in handlers {
                     self.is_reachable = previous_reachable; // Each handler starts fresh
+                    self.unreachable_reported = false;
                     for stmt in &handler.body {
                         self.analyze_statement(stmt);
                     }
                     handlers_reachable = handlers_reachable || self.is_reachable;
                 }
 
-                // After try/except, code is reachable if try exits normally OR any handler is reachable
-                // (Exceptions can always occur, so handlers are always potentially executed)
-                self.is_reachable = try_reachable || handlers_reachable || !handlers.is_empty();
+                // After try/except, code is reachable if:
+                // - Try block exits normally (no return/raise), OR
+                // - At least one handler exists and is reachable
+                // Exception handlers are always potentially executed if they exist
+                let after_except_reachable = if handlers.is_empty() {
+                    try_reachable
+                } else {
+                    // If no handlers are reachable (all return/raise), check if try is reachable
+                    // If try is unreachable too, then code after is unreachable
+                    try_reachable || handlers_reachable
+                };
+                
+                self.is_reachable = after_except_reachable;
 
-                // Analyze else clause (orelse is Vec, not Option)
-                for stmt in orelse {
-                    self.analyze_statement(stmt);
+                // Analyze else clause (executes if no exception occurred)
+                if !orelse.is_empty() {
+                    self.unreachable_reported = false;
+                    for stmt in orelse {
+                        self.analyze_statement(stmt);
+                    }
+                    // After else, we keep the reachability from else
                 }
 
-                // Analyze finally clause (finalbody is Vec, not Option)
-                for stmt in finalbody {
-                    self.analyze_statement(stmt);
+                // Analyze finally clause - ALWAYS reachable, even if try/except return
+                if !finalbody.is_empty() {
+                    self.is_reachable = previous_reachable; // Finally always executes
+                    self.unreachable_reported = false;
+                    for stmt in finalbody {
+                        self.analyze_statement(stmt);
+                    }
+                    // After finally, use finally's reachability (it may return/raise)
+                } else {
+                    // No finally clause, restore from try/except analysis
+                    self.unreachable_reported = previous_unreachable_reported;
                 }
             }
 
