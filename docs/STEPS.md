@@ -368,9 +368,9 @@ Handle edge cases:
 
 ---
 
-### Step 14: Validate Return Types Match
+### ✅ Step 14: Validate Return Types Match
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 6-8
+**Tests**: 14
 
 Ensure return consistency:
 - Functions with return type must return
@@ -378,15 +378,24 @@ Ensure return consistency:
 - Detect inconsistent return patterns
 
 **Testing**:
-- `test_typed_function_must_return`
-- `test_untyped_function_optional_return`
-- `test_void_function_explicit_return_none`
-- `test_return_type_annotation_enforced`
-- `test_missing_return_with_type_hint`
-- `test_all_paths_return_with_type_hint`
+- ✅ test_typed_function_must_return - Function with type needs return
+- ✅ test_untyped_function_optional_return - No type means optional
+- ✅ test_void_function_explicit_return_none - Explicit return None OK
+- ✅ test_return_type_annotation_enforced - Missing branch return detected
+- ✅ test_missing_return_with_type_hint - No return with type errors
+- ✅ test_all_paths_return_with_type_hint - All branches OK
+- ✅ test_typed_function_with_early_returns - Multiple early returns OK
+- ✅ test_typed_function_missing_final_return - Missing final return detected
+- ✅ test_untyped_function_with_return_value - Untyped with return OK
+- ✅ test_untyped_function_partial_returns - Partial returns OK for untyped
+- ✅ test_typed_function_with_pass - Stub with type needs return
+- ✅ test_typed_function_with_ellipsis - Ellipsis still needs return
+- ✅ test_explicit_none_return_type_no_return_needed - None type OK
+- ✅ test_optional_return_type_allows_none - Missing else detected
 
-**Checkpoint**: 88-113 tests total (24-30 new)
-**Run**: `cargo test --package silk-semantic`
+**Checkpoint**: 990 tests total (976 + 14 new)
+**Status**: ✅ All tests passing
+**Phase 4**: ✅ COMPLETE (Steps 12-14, 40 tests total)
 
 ---
 
