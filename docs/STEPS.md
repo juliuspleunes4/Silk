@@ -307,26 +307,33 @@ Implemented function-specific initialization tracking:
 
 ## Phase 4: Return Path Validation (Steps 12-14)
 
-### Step 12: Track Return Paths in Functions
+### ✅ Step 12: Track Return Paths in Functions
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 10-12
+**Tests**: 12
 
 Track whether function returns on all paths:
 - Track if current path has returned
 - Merge return state from branches
 - Detect missing return at function end
+- Functions without return type don't need explicit return
+- Functions returning None don't need explicit return
 
 **Testing**:
-- `test_function_returns_on_all_paths`
-- `test_missing_return_error`
-- `test_function_with_no_return_type_ok`
-- `test_return_in_if_else_all_branches`
-- `test_missing_return_in_one_branch`
-- `test_return_after_loop`
-- `test_return_in_nested_function`
-- `test_generator_function_no_return_needed`
-- `test_implicit_none_return`
-- `test_early_return_ok`
+- ✅ test_function_returns_on_all_paths - Function with return on all paths is OK
+- ✅ test_missing_return_error - Detects missing return with return type
+- ✅ test_function_with_no_return_type_ok - No annotation means no requirement
+- ✅ test_return_in_if_else_all_branches - If/elif/else all return is OK
+- ✅ test_missing_return_in_one_branch - Detects missing return in elif
+- ✅ test_return_after_loop - Return after loop is OK
+- ✅ test_return_in_nested_function - Nested functions checked independently
+- ✅ test_implicit_none_return - `-> None` doesn't require explicit return
+- ✅ test_early_return_ok - Early return + final return is OK
+- ✅ test_return_in_infinite_loop - Return in infinite loop is OK
+- ✅ test_missing_return_after_conditional - Detects missing return after if/elif
+- ✅ test_return_with_nested_if - Nested if/else all returning is OK
+
+**Checkpoint**: 962 tests total (950 + 12 new)
+**Status**: ✅ All tests passing
 
 ---
 

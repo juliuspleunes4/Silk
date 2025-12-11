@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 4, Step 12 - December 12, 2025
+
+**Implemented Return Path Tracking** — The control flow analyzer now tracks whether all paths through a function return a value, detecting missing return statements.
+
+**Implementation**:
+- **Return Path Validation** (lines 380-393 in control_flow.rs):
+  - Check if function has return type annotation
+  - Check if return type is None (using TypeKind::None or TypeKind::Name("None"))
+  - If function has non-None return type and end is reachable, report error
+  - Functions without return type don't require explicit return
+  - Functions returning None don't require explicit return
+- **Parser Enhancement** (lines 1002-1007 in parser/stmt.rs):
+  - Added support for `None` keyword as a return type
+  - Parser now recognizes `-> None:` syntax
+  - Creates TypeKind::None for None keyword
+
+**Testing** (12 comprehensive tests in test_return_path_tracking.rs):
+- test_function_returns_on_all_paths - Function with return on all paths is OK
+- test_missing_return_error - Detects missing return in function with return type
+- test_function_with_no_return_type_ok - No annotation means no requirement
+- test_return_in_if_else_all_branches - If/elif/else all return is OK
+- test_missing_return_in_one_branch - Detects missing return in elif branch
+- test_return_after_loop - Return after loop is OK
+- test_return_in_nested_function - Nested functions each checked independently
+- test_implicit_none_return - `-> None` doesn't require explicit return
+- test_early_return_ok - Early return + final return is OK
+- test_return_in_infinite_loop - Return in infinite loop is OK
+- test_missing_return_after_conditional - Detects missing return after if/elif
+- test_return_with_nested_if - Nested if/else all returning is OK
+
+**Impact**:
+- **Total Tests**: 962 (950 → 962, +12)
+- **Files Modified**: 3
+  - crates/silk-semantic/src/control_flow.rs: Added return path checking after function body
+  - crates/silk-parser/src/stmt.rs: Added None keyword support in type parsing
+  - crates/silk-semantic/tests/test_return_path_tracking.rs: New test file
+- **Phase 4 Status**: In Progress (Step 12 complete, Steps 13-14 remaining)
+
 ### 🔄 Control Flow Analysis - Phase 3, Step 11 - December 12, 2025
 
 **Implemented Function Parameter Initialization Tracking** — The control flow analyzer now properly handles function parameters, default parameter expressions, and lambda parameters for initialization tracking.

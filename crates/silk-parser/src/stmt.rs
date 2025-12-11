@@ -1001,6 +1001,12 @@ impl Parser {
 
         let start = self.current_token().span.clone();
 
+        // Handle None keyword as a type
+        if self.check(TokenKind::None) {
+            self.advance();
+            return Ok(Type::new(TypeKind::None, start));
+        }
+
         // For now, just parse simple type names
         if let TokenKind::Identifier = self.current_token().kind {
             let name = self.current_token().lexeme.clone();

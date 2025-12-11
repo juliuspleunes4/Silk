@@ -327,7 +327,7 @@ impl ControlFlowAnalyzer {
             }
 
             // Function definition
-            StatementKind::FunctionDef { body, params, .. } => {
+            StatementKind::FunctionDef { name, body, params, returns, .. } => {
                 let previous_in_function = self.current_function_returns;
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
@@ -372,7 +372,26 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
 
-                // TODO: Check if function returns on all paths
+                // Check if function returns on all paths
+                // A function must return if:
+                // 1. It has a return type annotation
+                // 2. The return type is not None
+                // 3. The end of function is reachable (no return on current path)
+                if let Some(return_type) = returns {
+                    // Check if return type is None (functions returning None don't need explicit return)
+                    let is_none_return = matches!(&return_type.kind, silk_ast::TypeKind::None) 
+                        || matches!(&return_type.kind, silk_ast::TypeKind::Name(n) if n == "None");
+                    
+                    // If function has non-None return type and end is reachable, report error
+                    if !is_none_return && self.is_reachable {
+                        self.errors.push(SemanticError::MissingReturn {
+                            function_name: name.clone(),
+                            line: stmt.span.line,
+                            column: stmt.span.column,
+                            span: stmt.span,
+                        });
+                    }
+                }
 
                 self.current_function_returns = previous_in_function;
                 self.in_loop = previous_in_loop;
