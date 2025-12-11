@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Code Review Fixes - December 11, 2025
+
+**Critical bug fix, documentation correction, and performance improvements**.
+
+**Fixes**:
+- **Fixed critical dict subscript compatibility bug** that prevented valid numeric widening
+  - Bug: Compatibility check was backwards (`key_type.is_compatible_with(index_type)`)
+  - Fix: Reversed to `index_type.is_compatible_with(key_type)`
+  - Impact: Now correctly allows `dict[float, str][42]` (int widens to float)
+  - Added regression test `test_dict_subscript_int_to_float_widening`
+- **Corrected misleading docstring** for `Type::is_compatible_with()` method
+  - Now accurately states: "Returns true if a value of type `self` can be assigned to a variable of type `other`"
+- **Removed 22 unnecessary `.clone()` calls** on `Span` (implements `Copy` trait)
+  - Affects error construction in parser (`expr.rs`) and semantic analyzer (`analyzer.rs`)
+  - Minor performance improvement
+
+**Test Count**: 830 tests passing (+1 regression test)
+
 ### 🐛 Parser Bug Fix - `is` and `in` Operators - December 11, 2025
 
 **Fixed missing comparison operators in parser causing infinite loops**.

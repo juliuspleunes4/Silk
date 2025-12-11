@@ -91,7 +91,7 @@ impl SemanticAnalyzer {
                     let func_symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Function,
-                        statement.span.clone(),
+                        statement.span,
                         func_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(func_symbol) {
@@ -100,7 +100,7 @@ impl SemanticAnalyzer {
                 }
                 StatementKind::ClassDef { name, .. } => {
                     let class_symbol =
-                        Symbol::new(name.clone(), SymbolKind::Class, statement.span.clone());
+                        Symbol::new(name.clone(), SymbolKind::Class, statement.span);
                     if let Err(err) = self.symbol_table.define_symbol(class_symbol) {
                         self.errors.push(err);
                     }
@@ -134,7 +134,7 @@ impl SemanticAnalyzer {
                         let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
-                            target.span.clone(),
+                            target.span,
                             inferred_type.clone(),
                         );
                         if let Err(err) = self.symbol_table.define_symbol(symbol) {
@@ -1432,7 +1432,7 @@ impl SemanticAnalyzer {
                 value_type: value_type.to_string(),
                 line: value.span.line,
                 column: value.span.column,
-                span: value.span.clone(),
+                span: value.span,
             });
         }
 
@@ -1461,7 +1461,7 @@ impl SemanticAnalyzer {
                 actual: args.len(),
                 line: func_expr.span.line,
                 column: func_expr.span.column,
-                span: func_expr.span.clone(),
+                span: func_expr.span,
             });
         }
 
@@ -1477,7 +1477,7 @@ impl SemanticAnalyzer {
                     actual_type: arg_type.to_string(),
                     line: arg.span.line,
                     column: arg.span.column,
-                    span: arg.span.clone(),
+                    span: arg.span,
                 });
             }
         }
@@ -1517,7 +1517,7 @@ impl SemanticAnalyzer {
                 actual_type: actual_type.to_string(),
                 line: return_stmt.span.line,
                 column: return_stmt.span.column,
-                span: return_stmt.span.clone(),
+                span: return_stmt.span,
             });
         }
 
@@ -1699,7 +1699,7 @@ impl SemanticAnalyzer {
                         index_type: index_type.to_string(),
                         line: index_expr.span.line,
                         column: index_expr.span.column,
-                        span: index_expr.span.clone(),
+                        span: index_expr.span,
                     });
                 }
             }
@@ -1707,13 +1707,13 @@ impl SemanticAnalyzer {
             // Dict requires index type to match key type
             Type::Dict { key_type, .. } => {
                 // Check if index type is compatible with key type
-                if !key_type.is_compatible_with(index_type) {
+                if !index_type.is_compatible_with(key_type) {
                     return Err(SemanticError::InvalidSubscript {
                         collection_type: value_type.to_string(),
                         index_type: index_type.to_string(),
                         line: index_expr.span.line,
                         column: index_expr.span.column,
-                        span: index_expr.span.clone(),
+                        span: index_expr.span,
                     });
                 }
             }
@@ -1725,7 +1725,7 @@ impl SemanticAnalyzer {
                     index_type: index_type.to_string(),
                     line: value_expr.span.line,
                     column: value_expr.span.column,
-                    span: value_expr.span.clone(),
+                    span: value_expr.span,
                 });
             }
 
@@ -1741,7 +1741,7 @@ impl SemanticAnalyzer {
                     index_type: index_type.to_string(),
                     line: value_expr.span.line,
                     column: value_expr.span.column,
-                    span: value_expr.span.clone(),
+                    span: value_expr.span,
                 });
             }
         }

@@ -51,7 +51,7 @@ impl Parser {
 
     /// Parse a primary expression (literals, identifiers, prefix operators, grouping)
     fn parse_primary(&mut self) -> ParseResult<Expression> {
-        let start = self.current_token().span.clone();
+        let start = self.current_token().span;
 
         let kind = match &self.current_token().kind {
             // Literals
@@ -326,7 +326,7 @@ impl Parser {
                 // Parse parameters (if any) - simple form without type annotations or defaults
                 if !self.check(TokenKind::Colon) {
                     loop {
-                        let param_start = self.current_token().span.clone();
+                        let param_start = self.current_token().span;
                         let name = self
                             .expect(TokenKind::Identifier, "Expected parameter name in lambda")?
                             .lexeme;

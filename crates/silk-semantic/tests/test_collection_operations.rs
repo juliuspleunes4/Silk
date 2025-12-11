@@ -356,3 +356,24 @@ b: int = y[999]
         errors
     );
 }
+
+// Regression test for dict subscript type compatibility bug
+// Previously the check was backwards: key_type.is_compatible_with(index_type)
+// This prevented valid numeric widening like using int to index dict[float, str]
+#[test]
+fn test_dict_subscript_int_to_float_widening() {
+    let source = r#"
+d: dict[float, str] = {1.5: "hello", 2.5: "world"}
+result: str = d[42]
+"#;
+    let program = Parser::parse(source).expect("Failed to parse");
+
+    let mut analyzer = SemanticAnalyzer::new();
+    let result = analyzer.analyze(&program);
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors (int should widen to float for dict key), got: {:?}",
+        result.err()
+    );
+}
