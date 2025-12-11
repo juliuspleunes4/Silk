@@ -13,6 +13,8 @@ pub struct SemanticAnalyzer {
     symbol_table: SymbolTable,
     /// Errors collected during analysis
     errors: Vec<SemanticError>,
+    /// Current function's return type (for return statement validation)
+    current_function_return_type: Option<crate::types::Type>,
 }
 
 impl SemanticAnalyzer {
@@ -21,6 +23,7 @@ impl SemanticAnalyzer {
         Self {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
+            current_function_return_type: None,
         }
     }
 
@@ -190,7 +193,7 @@ impl SemanticAnalyzer {
             }
 
             // Function definition: already declared in pre-pass, now analyze body
-            StatementKind::FunctionDef { name: _, params, body, decorator_list, .. } => {
+            StatementKind::FunctionDef { name: _, params, body, decorator_list, returns, .. } => {
                 // Analyze decorators BEFORE entering scope (evaluated in outer scope)
                 for decorator in decorator_list {
                     self.analyze_expression(decorator);
@@ -210,6 +213,14 @@ impl SemanticAnalyzer {
                 
                 // Parameter types were already collected in pre-pass
                 // No need to update symbol again
+                
+                // Set current function return type for return statement validation
+                let return_type = if let Some(return_ann) = returns {
+                    self.resolve_type_annotation(return_ann)
+                } else {
+                    crate::types::Type::Unknown
+                };
+                let previous_return_type = self.current_function_return_type.replace(return_type);
                 
                 // Enter function scope
                 self.symbol_table.enter_scope(ScopeKind::Function);
@@ -237,6 +248,9 @@ impl SemanticAnalyzer {
                 if let Err(err) = self.symbol_table.exit_scope() {
                     self.errors.push(err);
                 }
+                
+                // Restore previous function return type (for nested functions)
+                self.current_function_return_type = previous_return_type;
             }
 
             // Class definition: already declared in pre-pass, now analyze body
@@ -426,6 +440,23 @@ impl SemanticAnalyzer {
                 }
                 if let Some(expr) = value {
                     self.analyze_expression(expr);
+                    // Type check return value against declared return type
+                    if let Err(err) = self.check_return_type(expr, stmt) {
+                        self.errors.push(err);
+                    }
+                } else {
+                    // Empty return statement - check if function expects a return value
+                    if let Some(expected_type) = &self.current_function_return_type {
+                        if *expected_type != crate::types::Type::Unknown && *expected_type != crate::types::Type::None {
+                            self.errors.push(SemanticError::ReturnTypeMismatch {
+                                expected_type: expected_type.to_string(),
+                                actual_type: "None".to_string(),
+                                line: stmt.span.line,
+                                column: stmt.span.column,
+                                span: stmt.span.clone(),
+                            });
+                        }
+                    }
                 }
             }
 
@@ -1266,6 +1297,45 @@ impl SemanticAnalyzer {
                     span: arg.span.clone(),
                 });
             }
+        }
+
+        Ok(())
+    }
+
+    /// Check return statement type against declared function return type
+    /// 
+    /// Validates that the return value type is compatible with the declared
+    /// return type of the current function.
+    /// 
+    /// Returns Ok(()) if valid, Err(SemanticError) if not.
+    fn check_return_type(
+        &mut self,
+        return_expr: &Expression,
+        return_stmt: &Statement,
+    ) -> Result<(), SemanticError> {
+        // Get the expected return type from current function
+        let expected_type = match &self.current_function_return_type {
+            Some(ty) => ty.clone(),
+            None => return Ok(()), // No function context (shouldn't happen if ReturnOutsideFunction check passes)
+        };
+
+        // Unknown return type means no type annotation - allow anything
+        if expected_type == crate::types::Type::Unknown {
+            return Ok(());
+        }
+
+        // Infer the actual type of the return expression
+        let actual_type = self.infer_type(return_expr);
+
+        // Check if actual type is compatible with expected type
+        if !actual_type.is_compatible_with(&expected_type) {
+            return Err(SemanticError::ReturnTypeMismatch {
+                expected_type: expected_type.to_string(),
+                actual_type: actual_type.to_string(),
+                line: return_stmt.span.line,
+                column: return_stmt.span.column,
+                span: return_stmt.span.clone(),
+            });
         }
 
         Ok(())
