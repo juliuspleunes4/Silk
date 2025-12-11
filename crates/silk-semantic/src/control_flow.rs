@@ -22,6 +22,8 @@ pub struct ControlFlowAnalyzer {
     is_reachable: bool,
     /// Whether we've already reported unreachable code in this block
     unreachable_reported: bool,
+    /// Whether the current loop contains a break statement
+    loop_has_break: bool,
 }
 
 impl ControlFlowAnalyzer {
@@ -33,6 +35,7 @@ impl ControlFlowAnalyzer {
             in_loop: false,
             is_reachable: true,
             unreachable_reported: false,
+            loop_has_break: false,
         }
     }
 
@@ -56,6 +59,22 @@ impl ControlFlowAnalyzer {
     }
 
     // ========== HELPER METHODS ==========
+
+    /// Check if a while loop condition is always true (infinite loop)
+    /// Detects patterns like `while True:` or `while 1:`
+    fn is_infinite_loop_condition(test: &silk_ast::Expression) -> bool {
+        use silk_ast::ExpressionKind;
+        
+        match &test.kind {
+            // while True:
+            ExpressionKind::Boolean(true) => true,
+            // while 1: (or any non-zero integer)
+            ExpressionKind::Integer(n) if *n != 0 => true,
+            // while 1.0: (or any non-zero float)
+            ExpressionKind::Float(f) if *f != 0.0 => true,
+            _ => false,
+        }
+    }
 
     /// Analyze a block of statements
     /// Returns true if the block always terminates (return/break/continue/raise on all paths)
@@ -192,14 +211,16 @@ impl ControlFlowAnalyzer {
             }
 
             StatementKind::While {
-                test: _,
+                test,
                 body,
                 orelse,
             } => {
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
+                let previous_loop_has_break = self.loop_has_break;
                 
                 self.in_loop = true;
+                self.loop_has_break = false; // Reset for this loop
                 self.is_reachable = true; // Loop body starts reachable
 
                 // Analyze while body
@@ -207,12 +228,25 @@ impl ControlFlowAnalyzer {
                     self.analyze_statement(stmt);
                 }
 
+                // Check if this is an infinite loop (while True) without break
+                let is_infinite_loop = Self::is_infinite_loop_condition(test);
+                let loop_exits = !is_infinite_loop || self.loop_has_break;
+
                 self.in_loop = previous_in_loop;
-                self.is_reachable = previous_reachable; // Code after loop is reachable
+                self.loop_has_break = previous_loop_has_break;
+                
+                // Code after loop is reachable if loop can exit
+                self.is_reachable = previous_reachable && loop_exits;
 
                 // Analyze else clause (orelse is Vec, not Option)
-                for stmt in orelse {
-                    self.analyze_statement(stmt);
+                // Else clause is reachable if we're still reachable
+                if !orelse.is_empty() {
+                    let else_reachable = self.is_reachable;
+                    for stmt in orelse {
+                        self.analyze_statement(stmt);
+                    }
+                    // After else, we're reachable if either the loop exits or else completes
+                    self.is_reachable = else_reachable;
                 }
             }
 
@@ -225,8 +259,10 @@ impl ControlFlowAnalyzer {
             } => {
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
+                let previous_loop_has_break = self.loop_has_break;
                 
                 self.in_loop = true;
+                self.loop_has_break = false; // Reset for this loop
                 self.is_reachable = true; // Loop body starts reachable
 
                 // TODO: Track loop variable initialization
@@ -237,7 +273,9 @@ impl ControlFlowAnalyzer {
                 }
 
                 self.in_loop = previous_in_loop;
-                self.is_reachable = previous_reachable; // Code after loop is reachable
+                self.loop_has_break = previous_loop_has_break;
+                // For loops are finite, so code after is always reachable
+                self.is_reachable = previous_reachable;
 
                 // Analyze else clause (orelse is Vec, not Option)
                 for stmt in orelse {
@@ -315,9 +353,15 @@ impl ControlFlowAnalyzer {
             }
 
             StatementKind::Break { .. } => {
-                // Mark code after break as unreachable
-                self.is_reachable = false;
-                // TODO: Detect break outside loop
+                if !self.in_loop {
+                    self.errors.push(SemanticError::BreakOutsideLoop {
+                        line: stmt.span.line,
+                        column: stmt.span.column,
+                        span: stmt.span,
+                    });
+                }
+                self.loop_has_break = true; // Mark that this loop has a break
+                self.is_reachable = false; // Code after break is unreachable
             }
 
             StatementKind::Continue { .. } => {

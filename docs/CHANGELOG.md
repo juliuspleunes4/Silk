@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 2, Step 7 - December 11, 2025
+
+**Implemented comprehensive loop reachability analysis with infinite loop detection**.
+
+**Implementation**:
+- Added `loop_has_break` field to track if current loop contains break statement
+- Implemented `is_infinite_loop_condition()` helper to detect `while True:`, `while 1:`, etc.
+- Enhanced While loop handling:
+  - Detects infinite loops (while True/1) without break → code after is unreachable
+  - Loops with break inside → code after is reachable
+  - Properly saves/restores loop_has_break for nested loops
+- Enhanced For loop handling:
+  - For loops are finite → code after is always reachable
+  - Properly saves/restores loop_has_break for nested loops
+- Enhanced Break statement handling:
+  - Sets loop_has_break flag when encountered
+  - Existing break-outside-loop error detection already implemented
+
+**Tests Added** (14 comprehensive tests):
+- `test_reachable_after_while_loop` - Normal while loop
+- `test_reachable_after_for_loop` - For loop always exits
+- `test_unreachable_after_infinite_loop_no_break` - while True without break
+- `test_reachable_after_infinite_loop_with_break` - while True with break
+- `test_reachable_after_infinite_loop_conditional_break` - while True with conditional break
+- `test_loop_else_reachability` - Loop else clause
+- `test_nested_loops_reachability` - Nested for loops
+- `test_break_in_outer_loop` - while True with direct break
+- `test_continue_doesnt_affect_outer_reachability` - Continue doesn't prevent loop exit
+- `test_while_with_break_in_nested_if` - Break in nested conditional
+- `test_infinite_loop_all_paths_continue` - All paths continue, no break
+- `test_for_loop_with_break_still_reachable` - For loop with break still finite
+- `test_while_true_with_return_not_break` - Return doesn't exit loop
+- `test_loop_else_with_break` - Else clause with break in loop
+
+**Files Modified**:
+- `crates/silk-semantic/src/control_flow.rs` - Added loop_has_break tracking, infinite loop detection
+- `crates/silk-semantic/tests/test_loop_reachability.rs` - New test file with 14 tests
+
+**Test Count**: 889 tests passing (+14 new loop reachability tests)
+
 ### 🔄 Control Flow Analysis - Phase 2, Step 6 - December 11, 2025
 
 **Implemented comprehensive conditional reachability testing and fixed critical parser bug**.
