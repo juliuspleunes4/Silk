@@ -174,12 +174,17 @@ impl ControlFlowAnalyzer {
                 let if_reachable = self.is_reachable;
 
                 // Analyze else body (orelse is Vec, not Option)
-                self.is_reachable = previous_reachable;
-                self.unreachable_reported = false; // Reset for else block
-                for stmt in orelse {
-                    self.analyze_statement(stmt);
-                }
-                let else_reachable = self.is_reachable;
+                // If orelse is empty, it's implicitly reachable (no code to execute)
+                let else_reachable = if orelse.is_empty() {
+                    previous_reachable
+                } else {
+                    self.is_reachable = previous_reachable;
+                    self.unreachable_reported = false; // Reset for else block
+                    for stmt in orelse {
+                        self.analyze_statement(stmt);
+                    }
+                    self.is_reachable
+                };
                 
                 // Code after if is reachable if either branch is reachable
                 self.is_reachable = if_reachable || else_reachable;

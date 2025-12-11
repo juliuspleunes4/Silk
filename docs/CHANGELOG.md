@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 2, Step 6 - December 11, 2025
+
+**Implemented comprehensive conditional reachability testing and fixed critical parser bug**.
+
+**Parser Fix**:
+- Fixed critical bug in elif chain parsing where elif clauses were being overwritten
+- Previously: each elif replaced the entire orelse, causing all but the last to be lost
+- Now: properly build elif chain from right to left (inside-out) as nested If statements
+- This was a blocker for conditional reachability analysis
+
+**Implementation**:
+- Modified `parse_if_statement` in `silk-parser` to collect all elif clauses first
+- Build nested If structure from innermost (else) to outermost
+- Each elif becomes a nested If in the previous elif's orelse field
+- Empty orelse in If statement now correctly treated as implicitly reachable
+
+**Tests Added** (12 comprehensive tests):
+- `test_reachable_after_if_no_else` - If without else keeps code reachable
+- `test_reachable_after_if_only_one_branch_returns` - One branch doesn't terminate
+- `test_unreachable_after_if_all_branches_return` - All branches terminate
+- `test_reachable_after_elif_chains` - Elif without else is reachable
+- `test_unreachable_after_exhaustive_if_elif_else` - All elif branches terminate
+- `test_nested_conditionals_reachability` - Nested if statements
+- `test_conditional_in_loop` - Conditionals inside loops
+- `test_early_return_in_nested_if` - Early returns in nested structures
+- `test_if_with_break_in_loop` - Break in all conditional branches
+- `test_if_with_raise_all_branches` - Raise in all branches
+- `test_complex_elif_chain_partial_returns` - Complex elif with some non-terminating branches
+- `test_if_with_mixed_terminators` - Mix of return and raise
+
+**Files Modified**:
+- `crates/silk-parser/src/stmt.rs` - Fixed elif chain parsing
+- `crates/silk-semantic/src/control_flow.rs` - Handle empty orelse correctly
+- `crates/silk-semantic/tests/test_conditional_reachability.rs` - New test file with 12 tests
+
+**Test Count**: 875 tests passing (+12 new conditional reachability tests)
+
 ### 🔄 Control Flow Analysis - Phase 2, Step 5 - December 11, 2025
 
 **Implemented unreachable code detection**.

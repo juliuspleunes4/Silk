@@ -59,29 +59,38 @@ impl Parser {
         let body = self.parse_block()?;
 
         // Parse elif and else branches
-        let mut orelse = Vec::new();
-
+        // We need to build the elif chain from right to left (inside-out)
+        // First collect all elif clauses, then build the nested structure
+        let mut elif_clauses = Vec::new();
+        
         while self.check(TokenKind::Elif) {
+            let elif_span_start = self.current_token().span.clone();
             self.advance(); // consume 'elif'
             let elif_test = self.parse_expression()?;
             self.expect(TokenKind::Colon, "Expected ':' after elif condition")?;
             let elif_body = self.parse_block()?;
+            elif_clauses.push((elif_span_start, elif_test, elif_body));
+        }
 
-            // Create nested if for elif
+        // Parse else clause (innermost)
+        let mut orelse = if self.check(TokenKind::Else) {
+            self.advance(); // consume 'else'
+            self.expect(TokenKind::Colon, "Expected ':' after else")?;
+            self.parse_block()?
+        } else {
+            Vec::new()
+        };
+
+        // Build elif chain from right to left
+        for (elif_span, elif_test, elif_body) in elif_clauses.into_iter().rev() {
             orelse = vec![Statement::new(
                 StatementKind::If {
                     test: elif_test,
                     body: elif_body,
-                    orelse: Vec::new(),
+                    orelse,
                 },
-                self.current_token().span.clone(),
+                elif_span,
             )];
-        }
-
-        if self.check(TokenKind::Else) {
-            self.advance(); // consume 'else'
-            self.expect(TokenKind::Colon, "Expected ':' after else")?;
-            orelse = self.parse_block()?;
         }
 
         Ok(StatementKind::If { test, body, orelse })

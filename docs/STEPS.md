@@ -484,7 +484,7 @@ Update documentation:
   - **Parser Bug Fixed**: During testing, discovered and fixed critical bug in for loop parsing (+8 tests)
 - [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8) - IN PROGRESS
   - [x] **Step 5**: Track Statement Reachability ✅ (10 tests)
-  - [ ] **Step 6**: Handle Conditional Reachability
+  - [x] **Step 6**: Handle Conditional Reachability ✅ (12 tests) - **PARSER BUG FIXED**: elif chains
   - [ ] **Step 7**: Handle Loop Reachability
   - [ ] **Step 8**: Handle Try/Except Reachability
 - [ ] **Phase 3**: Variable Initialization Tracking (Steps 9-11)
@@ -492,5 +492,5 @@ Update documentation:
 - [ ] **Phase 5**: Dead Code Detection (Steps 15-17)
 - [ ] **Phase 6**: Integration & Documentation (Steps 18-20)
 
-**Current Test Count**: 863 passing (830 baseline + 8 parser + 15 infrastructure + 10 unreachable code)
-**Next Step**: Step 6 - Handle Conditional Reachability
+**Current Test Count**: 875 passing (830 baseline + 8 parser + 15 infrastructure + 10 unreachable code + 12 conditional reachability)
+**Next Step**: Step 7 - Handle Loop Reachability
