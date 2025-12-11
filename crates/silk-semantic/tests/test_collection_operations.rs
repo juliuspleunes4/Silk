@@ -10,11 +10,15 @@ x: list[int] = [1, 2, 3]
 y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -24,11 +28,15 @@ x = (1, 2, 3)
 y = x[1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -38,11 +46,15 @@ x: dict[str, int] = {"a": 1, "b": 2}
 y: int = x["a"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -52,11 +64,15 @@ x: str = "hello"
 y: str = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -67,15 +83,17 @@ x = some_function()
 y = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     // Should have error for undefined function, but NOT for subscript
     assert!(result.is_err());
     let errors = result.err().unwrap();
     assert!(
-        errors.iter().all(|e| !matches!(e, SemanticError::InvalidSubscript { .. })),
+        errors
+            .iter()
+            .all(|e| !matches!(e, SemanticError::InvalidSubscript { .. })),
         "Should not have InvalidSubscript error for Unknown type"
     );
 }
@@ -89,18 +107,21 @@ x: list[int] = [1, 2, 3]
 y: int = x["a"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected InvalidSubscript error");
     let errors = result.err().unwrap();
     // Might have multiple errors if assignment type checking also fails
     assert!(errors.len() >= 1, "Expected at least one error");
     assert!(
-        errors.iter().any(|e| matches!(e, SemanticError::InvalidSubscript { collection_type, index_type, .. }
-            if collection_type.contains("list") && index_type == "str")),
-        "Expected InvalidSubscript error for list[str], got: {:?}", errors
+        errors.iter().any(
+            |e| matches!(e, SemanticError::InvalidSubscript { collection_type, index_type, .. }
+            if collection_type.contains("list") && index_type == "str")
+        ),
+        "Expected InvalidSubscript error for list[str], got: {:?}",
+        errors
     );
 }
 
@@ -111,17 +132,18 @@ x = (1, 2, 3)
 y = x["test"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected InvalidSubscript error");
     let errors = result.err().unwrap();
     assert_eq!(errors.len(), 1);
     assert!(
         matches!(&errors[0], SemanticError::InvalidSubscript { collection_type, index_type, .. }
             if collection_type.contains("tuple") && index_type == "str"),
-        "Expected InvalidSubscript error for tuple[str], got: {:?}", errors[0]
+        "Expected InvalidSubscript error for tuple[str], got: {:?}",
+        errors[0]
     );
 }
 
@@ -132,17 +154,24 @@ x: dict[str, int] = {"a": 1}
 y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected InvalidSubscript error, got: {:?}", result);
+
+    assert!(
+        result.is_err(),
+        "Expected InvalidSubscript error, got: {:?}",
+        result
+    );
     let errors = result.err().unwrap();
     assert!(errors.len() >= 1, "Expected at least one error");
     assert!(
-        errors.iter().any(|e| matches!(e, SemanticError::InvalidSubscript { collection_type, index_type, .. }
-            if collection_type.contains("dict") && index_type == "int")),
-        "Expected InvalidSubscript error for dict[str,int] with int index, got: {:?}", errors
+        errors.iter().any(
+            |e| matches!(e, SemanticError::InvalidSubscript { collection_type, index_type, .. }
+            if collection_type.contains("dict") && index_type == "int")
+        ),
+        "Expected InvalidSubscript error for dict[str,int] with int index, got: {:?}",
+        errors
     );
 }
 
@@ -153,17 +182,18 @@ x: str = "hello"
 y = x["test"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected InvalidSubscript error");
     let errors = result.err().unwrap();
     assert_eq!(errors.len(), 1);
     assert!(
         matches!(&errors[0], SemanticError::InvalidSubscript { collection_type, index_type, .. }
             if collection_type == "str" && index_type == "str"),
-        "Expected InvalidSubscript error for str[str], got: {:?}", errors[0]
+        "Expected InvalidSubscript error for str[str], got: {:?}",
+        errors[0]
     );
 }
 
@@ -175,17 +205,24 @@ x: set[int] = {1, 2, 3}
 y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected InvalidSubscript error, got: {:?}", result);
+
+    assert!(
+        result.is_err(),
+        "Expected InvalidSubscript error, got: {:?}",
+        result
+    );
     let errors = result.err().unwrap();
     assert!(errors.len() >= 1, "Expected at least one error");
     assert!(
-        errors.iter().any(|e| matches!(e, SemanticError::InvalidSubscript { collection_type, .. }
-            if collection_type.contains("set"))),
-        "Expected InvalidSubscript error for set subscript, got: {:?}", errors
+        errors.iter().any(
+            |e| matches!(e, SemanticError::InvalidSubscript { collection_type, .. }
+            if collection_type.contains("set"))
+        ),
+        "Expected InvalidSubscript error for set subscript, got: {:?}",
+        errors
     );
 }
 
@@ -197,17 +234,18 @@ x: int = 42
 y = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected InvalidSubscript error");
     let errors = result.err().unwrap();
     assert_eq!(errors.len(), 1);
     assert!(
         matches!(&errors[0], SemanticError::InvalidSubscript { collection_type, .. }
             if collection_type == "int"),
-        "Expected InvalidSubscript error for int subscript, got: {:?}", errors[0]
+        "Expected InvalidSubscript error for int subscript, got: {:?}",
+        errors[0]
     );
 }
 
@@ -220,11 +258,15 @@ x: list[list[int]] = [[1, 2], [3, 4]]
 y: int = x[0][1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -234,16 +276,19 @@ x: list[list[int]] = [[1, 2], [3, 4]]
 y: int = x["a"][0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected InvalidSubscript error");
     let errors = result.err().unwrap();
     assert!(errors.len() >= 1);
     assert!(
-        errors.iter().any(|e| matches!(e, SemanticError::InvalidSubscript { .. })),
-        "Expected at least one InvalidSubscript error, got: {:?}", errors
+        errors
+            .iter()
+            .any(|e| matches!(e, SemanticError::InvalidSubscript { .. })),
+        "Expected at least one InvalidSubscript error, got: {:?}",
+        errors
     );
 }
 
@@ -254,11 +299,15 @@ x: list[int] = [1, 2, 3]
 y: int = x[0] + x[1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -271,11 +320,15 @@ x: list[int] = [1, 2, 3]
 y: int = f(x[0])
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -287,14 +340,19 @@ a: int = x["bad"]
 b: int = y[999]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected errors, got: {:?}", result);
     let errors = result.err().unwrap();
-    let subscript_errors: Vec<_> = errors.iter()
+    let subscript_errors: Vec<_> = errors
+        .iter()
         .filter(|e| matches!(e, SemanticError::InvalidSubscript { .. }))
         .collect();
-    assert!(subscript_errors.len() >= 2, "Expected at least 2 InvalidSubscript errors, got: {:?}", errors);
+    assert!(
+        subscript_errors.len() >= 2,
+        "Expected at least 2 InvalidSubscript errors, got: {:?}",
+        errors
+    );
 }

@@ -1,8 +1,10 @@
-/// Comprehensive tests for the Silk parser
-
-use silk_parser::{Parser, ParseError};
-use silk_ast::{Expression, ExpressionKind, Statement, StatementKind, BinaryOperator, UnaryOperator, CompareOperator, LogicalOperator, AugAssignOperator};
 use pretty_assertions::assert_eq;
+use silk_ast::{
+    AugAssignOperator, BinaryOperator, CompareOperator, Expression, ExpressionKind,
+    LogicalOperator, Statement, StatementKind, UnaryOperator,
+};
+/// Comprehensive tests for the Silk parser
+use silk_parser::{ParseError, Parser};
 
 // ============================================================================
 // Helper Functions
@@ -10,17 +12,28 @@ use pretty_assertions::assert_eq;
 
 fn parse_expr(source: &str) -> Result<Expression, ParseError> {
     let program = Parser::parse(source)?;
-    assert_eq!(program.statements.len(), 1, "Expected exactly one statement");
-    
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "Expected exactly one statement"
+    );
+
     match &program.statements[0].kind {
         StatementKind::Expr(expr) => Ok(expr.clone()),
-        _ => panic!("Expected expression statement, got {:?}", program.statements[0].kind),
+        _ => panic!(
+            "Expected expression statement, got {:?}",
+            program.statements[0].kind
+        ),
     }
 }
 
 fn parse_stmt(source: &str) -> Result<Statement, ParseError> {
     let program = Parser::parse(source)?;
-    assert_eq!(program.statements.len(), 1, "Expected exactly one statement");
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "Expected exactly one statement"
+    );
     Ok(program.statements[0].clone())
 }
 
@@ -134,7 +147,10 @@ fn test_number_with_underscores() {
     let expr = parse_expr("1_000_000").unwrap();
     match expr.kind {
         ExpressionKind::Integer(value) => assert_eq!(value, 1_000_000),
-        _ => panic!("Expected integer literal with underscores, got {:?}", expr.kind),
+        _ => panic!(
+            "Expected integer literal with underscores, got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -143,7 +159,10 @@ fn test_binary_with_underscores() {
     let expr = parse_expr("0b1111_0000").unwrap();
     match expr.kind {
         ExpressionKind::Integer(value) => assert_eq!(value, 240), // 0b1111_0000 = 240
-        _ => panic!("Expected integer literal from binary with underscores, got {:?}", expr.kind),
+        _ => panic!(
+            "Expected integer literal from binary with underscores, got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -152,7 +171,10 @@ fn test_hex_with_underscores() {
     let expr = parse_expr("0xDEAD_BEEF").unwrap();
     match expr.kind {
         ExpressionKind::Integer(value) => assert_eq!(value, 3735928559), // 0xDEAD_BEEF
-        _ => panic!("Expected integer literal from hex with underscores, got {:?}", expr.kind),
+        _ => panic!(
+            "Expected integer literal from hex with underscores, got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -161,7 +183,10 @@ fn test_float_with_underscores() {
     let expr = parse_expr("3.14_15_92").unwrap();
     match expr.kind {
         ExpressionKind::Float(value) => assert!((value - 3.141592).abs() < 0.0001),
-        _ => panic!("Expected float literal with underscores, got {:?}", expr.kind),
+        _ => panic!(
+            "Expected float literal with underscores, got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -314,9 +339,13 @@ fn test_precedence_addition_multiplication() {
         ExpressionKind::BinaryOp { left, op, right } => {
             assert_eq!(op, BinaryOperator::Add);
             assert!(matches!(left.kind, ExpressionKind::Integer(1)));
-            
+
             match right.kind {
-                ExpressionKind::BinaryOp { left: mult_left, op: mult_op, right: mult_right } => {
+                ExpressionKind::BinaryOp {
+                    left: mult_left,
+                    op: mult_op,
+                    right: mult_right,
+                } => {
                     assert_eq!(mult_op, BinaryOperator::Mult);
                     assert!(matches!(mult_left.kind, ExpressionKind::Integer(2)));
                     assert!(matches!(mult_right.kind, ExpressionKind::Integer(3)));
@@ -336,9 +365,13 @@ fn test_precedence_parentheses() {
         ExpressionKind::BinaryOp { left, op, right } => {
             assert_eq!(op, BinaryOperator::Mult);
             assert!(matches!(right.kind, ExpressionKind::Integer(3)));
-            
+
             match left.kind {
-                ExpressionKind::BinaryOp { left: add_left, op: add_op, right: add_right } => {
+                ExpressionKind::BinaryOp {
+                    left: add_left,
+                    op: add_op,
+                    right: add_right,
+                } => {
                     assert_eq!(add_op, BinaryOperator::Add);
                     assert!(matches!(add_left.kind, ExpressionKind::Integer(1)));
                     assert!(matches!(add_right.kind, ExpressionKind::Integer(2)));
@@ -358,9 +391,13 @@ fn test_power_right_associative() {
         ExpressionKind::BinaryOp { left, op, right } => {
             assert_eq!(op, BinaryOperator::Pow);
             assert!(matches!(left.kind, ExpressionKind::Integer(2)));
-            
+
             match right.kind {
-                ExpressionKind::BinaryOp { left: pow_left, op: pow_op, right: pow_right } => {
+                ExpressionKind::BinaryOp {
+                    left: pow_left,
+                    op: pow_op,
+                    right: pow_right,
+                } => {
                     assert_eq!(pow_op, BinaryOperator::Pow);
                     assert!(matches!(pow_left.kind, ExpressionKind::Integer(3)));
                     assert!(matches!(pow_right.kind, ExpressionKind::Integer(2)));
@@ -432,7 +469,11 @@ fn test_unary_invert() {
 fn test_equal_comparison() {
     let expr = parse_expr("5 == 5").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(5)));
             assert_eq!(ops.len(), 1);
             assert_eq!(ops[0], CompareOperator::Eq);
@@ -447,7 +488,11 @@ fn test_equal_comparison() {
 fn test_not_equal_comparison() {
     let expr = parse_expr("5 != 3").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(5)));
             assert_eq!(ops[0], CompareOperator::NotEq);
             assert!(matches!(comparators[0].kind, ExpressionKind::Integer(3)));
@@ -460,7 +505,11 @@ fn test_not_equal_comparison() {
 fn test_less_than() {
     let expr = parse_expr("3 < 5").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(3)));
             assert_eq!(ops[0], CompareOperator::Lt);
             assert!(matches!(comparators[0].kind, ExpressionKind::Integer(5)));
@@ -473,7 +522,11 @@ fn test_less_than() {
 fn test_greater_than() {
     let expr = parse_expr("10 > 2").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(10)));
             assert_eq!(ops[0], CompareOperator::Gt);
             assert!(matches!(comparators[0].kind, ExpressionKind::Integer(2)));
@@ -486,7 +539,11 @@ fn test_greater_than() {
 fn test_less_equal() {
     let expr = parse_expr("5 <= 5").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(5)));
             assert_eq!(ops[0], CompareOperator::LtE);
             assert!(matches!(comparators[0].kind, ExpressionKind::Integer(5)));
@@ -499,7 +556,11 @@ fn test_less_equal() {
 fn test_greater_equal() {
     let expr = parse_expr("10 >= 5").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, ops, comparators } => {
+        ExpressionKind::Compare {
+            left,
+            ops,
+            comparators,
+        } => {
             assert!(matches!(left.kind, ExpressionKind::Integer(10)));
             assert_eq!(ops[0], CompareOperator::GtE);
             assert!(matches!(comparators[0].kind, ExpressionKind::Integer(5)));
@@ -546,9 +607,13 @@ fn test_logical_precedence() {
         ExpressionKind::LogicalOp { left, op, right } => {
             assert_eq!(op, LogicalOperator::Or);
             assert!(matches!(left.kind, ExpressionKind::Boolean(true)));
-            
+
             match right.kind {
-                ExpressionKind::LogicalOp { left: and_left, op: and_op, right: and_right } => {
+                ExpressionKind::LogicalOp {
+                    left: and_left,
+                    op: and_op,
+                    right: and_right,
+                } => {
                     assert_eq!(and_op, LogicalOperator::And);
                     assert!(matches!(and_left.kind, ExpressionKind::Boolean(false)));
                     assert!(matches!(and_right.kind, ExpressionKind::Boolean(false)));
@@ -568,7 +633,11 @@ fn test_logical_precedence() {
 fn test_function_call_no_args() {
     let expr = parse_expr("func()").unwrap();
     match expr.kind {
-        ExpressionKind::Call { func, args, keywords } => {
+        ExpressionKind::Call {
+            func,
+            args,
+            keywords,
+        } => {
             assert!(matches!(func.kind, ExpressionKind::Identifier(_)));
             assert_eq!(args.len(), 0);
             assert_eq!(keywords.len(), 0);
@@ -581,7 +650,11 @@ fn test_function_call_no_args() {
 fn test_function_call_single_arg() {
     let expr = parse_expr("func(42)").unwrap();
     match expr.kind {
-        ExpressionKind::Call { func, args, keywords } => {
+        ExpressionKind::Call {
+            func,
+            args,
+            keywords,
+        } => {
             assert!(matches!(func.kind, ExpressionKind::Identifier(_)));
             assert_eq!(args.len(), 1);
             assert!(matches!(args[0].kind, ExpressionKind::Integer(42)));
@@ -595,7 +668,11 @@ fn test_function_call_single_arg() {
 fn test_function_call_multiple_args() {
     let expr = parse_expr("func(1, 2, 3)").unwrap();
     match expr.kind {
-        ExpressionKind::Call { func, args, keywords: _ } => {
+        ExpressionKind::Call {
+            func,
+            args,
+            keywords: _,
+        } => {
             assert!(matches!(func.kind, ExpressionKind::Identifier(_)));
             assert_eq!(args.len(), 3);
             assert!(matches!(args[0].kind, ExpressionKind::Integer(1)));
@@ -613,9 +690,11 @@ fn test_nested_function_calls() {
         ExpressionKind::Call { func, args, .. } => {
             assert!(matches!(func.kind, ExpressionKind::Identifier(_)));
             assert_eq!(args.len(), 1);
-            
+
             match &args[0].kind {
-                ExpressionKind::Call { args: inner_args, .. } => {
+                ExpressionKind::Call {
+                    args: inner_args, ..
+                } => {
                     assert_eq!(inner_args.len(), 1);
                     assert!(matches!(inner_args[0].kind, ExpressionKind::Integer(5)));
                 }
@@ -660,9 +739,12 @@ fn test_chained_subscript() {
     match expr.kind {
         ExpressionKind::Subscript { value, index } => {
             assert!(matches!(index.kind, ExpressionKind::Integer(1)));
-            
+
             match value.kind {
-                ExpressionKind::Subscript { value: inner_value, index: inner_index } => {
+                ExpressionKind::Subscript {
+                    value: inner_value,
+                    index: inner_index,
+                } => {
                     assert!(matches!(inner_value.kind, ExpressionKind::Identifier(_)));
                     assert!(matches!(inner_index.kind, ExpressionKind::Integer(0)));
                 }
@@ -695,9 +777,12 @@ fn test_chained_attribute_access() {
     match expr.kind {
         ExpressionKind::Attribute { value, attr } => {
             assert_eq!(attr, "attr2");
-            
+
             match value.kind {
-                ExpressionKind::Attribute { value: inner_value, attr: inner_attr } => {
+                ExpressionKind::Attribute {
+                    value: inner_value,
+                    attr: inner_attr,
+                } => {
                     assert!(matches!(inner_value.kind, ExpressionKind::Identifier(_)));
                     assert_eq!(inner_attr, "attr1");
                 }
@@ -712,15 +797,13 @@ fn test_chained_attribute_access() {
 fn test_attribute_method_call() {
     let expr = parse_expr("obj.method()").unwrap();
     match expr.kind {
-        ExpressionKind::Call { func, .. } => {
-            match func.kind {
-                ExpressionKind::Attribute { value, attr } => {
-                    assert!(matches!(value.kind, ExpressionKind::Identifier(_)));
-                    assert_eq!(attr, "method");
-                }
-                _ => panic!("Expected attribute in function call"),
+        ExpressionKind::Call { func, .. } => match func.kind {
+            ExpressionKind::Attribute { value, attr } => {
+                assert!(matches!(value.kind, ExpressionKind::Identifier(_)));
+                assert_eq!(attr, "method");
             }
-        }
+            _ => panic!("Expected attribute in function call"),
+        },
         _ => panic!("Expected function call, got {:?}", expr.kind),
     }
 }
@@ -799,7 +882,11 @@ fn test_expression_statement() {
 fn test_simple_assignment() {
     let stmt = parse_stmt("x = 5").unwrap();
     match stmt.kind {
-        StatementKind::Assign { targets, value, type_annotation } => {
+        StatementKind::Assign {
+            targets,
+            value,
+            type_annotation,
+        } => {
             assert_eq!(targets.len(), 1);
             assert!(matches!(targets[0].kind, ExpressionKind::Identifier(_)));
             assert!(matches!(value.kind, ExpressionKind::Integer(5)));
@@ -979,7 +1066,7 @@ fn test_whitespace_handling() {
     let expr1 = parse_expr("1+2").unwrap();
     let expr2 = parse_expr("1 + 2").unwrap();
     let expr3 = parse_expr("1  +  2").unwrap();
-    
+
     // All should parse the same
     assert!(matches!(expr1.kind, ExpressionKind::BinaryOp { .. }));
     assert!(matches!(expr2.kind, ExpressionKind::BinaryOp { .. }));
@@ -1032,12 +1119,12 @@ fn test_dict_with_one_pair() {
         ExpressionKind::Dict { keys, values } => {
             assert_eq!(keys.len(), 1);
             assert_eq!(values.len(), 1);
-            
+
             match &keys[0].kind {
                 ExpressionKind::String(s) => assert_eq!(s, "key"),
                 _ => panic!("Expected string key"),
             }
-            
+
             match &values[0].kind {
                 ExpressionKind::String(s) => assert_eq!(s, "value"),
                 _ => panic!("Expected string value"),
@@ -1054,7 +1141,7 @@ fn test_dict_with_multiple_pairs() {
         ExpressionKind::Dict { keys, values } => {
             assert_eq!(keys.len(), 3);
             assert_eq!(values.len(), 3);
-            
+
             match &keys[0].kind {
                 ExpressionKind::String(s) => assert_eq!(s, "a"),
                 _ => panic!("Expected string key"),
@@ -1087,10 +1174,10 @@ fn test_dict_with_expression_keys() {
         ExpressionKind::Dict { keys, values } => {
             assert_eq!(keys.len(), 2);
             assert_eq!(values.len(), 2);
-            
+
             // First key is 1 + 1 (a binary op)
             match &keys[0].kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary op as key"),
             }
         }
@@ -1105,10 +1192,13 @@ fn test_nested_dict() {
         ExpressionKind::Dict { keys, values } => {
             assert_eq!(keys.len(), 1);
             assert_eq!(values.len(), 1);
-            
+
             // Value should be another dict
             match &values[0].kind {
-                ExpressionKind::Dict { keys: inner_keys, values: inner_values } => {
+                ExpressionKind::Dict {
+                    keys: inner_keys,
+                    values: inner_values,
+                } => {
                     assert_eq!(inner_keys.len(), 1);
                     assert_eq!(inner_values.len(), 1);
                 }
@@ -1184,7 +1274,7 @@ fn test_set_with_expressions() {
             // All elements should be binary operations
             for elem in &elements {
                 match &elem.kind {
-                    ExpressionKind::BinaryOp { .. } => {},
+                    ExpressionKind::BinaryOp { .. } => {}
                     _ => panic!("Expected binary op in set"),
                 }
             }
@@ -1202,7 +1292,7 @@ fn test_empty_braces_is_dict() {
     // In Python, {} is an empty dict, not an empty set
     let expr = parse_expr("{}").unwrap();
     match expr.kind {
-        ExpressionKind::Dict { .. } => {},
+        ExpressionKind::Dict { .. } => {}
         _ => panic!("Expected empty dict, got {:?}", expr.kind),
     }
 }
@@ -1211,7 +1301,7 @@ fn test_empty_braces_is_dict() {
 fn test_colon_makes_it_dict() {
     let expr = parse_expr("{1: 2}").unwrap();
     match expr.kind {
-        ExpressionKind::Dict { .. } => {},
+        ExpressionKind::Dict { .. } => {}
         _ => panic!("Expected dict (has colon), got {:?}", expr.kind),
     }
 }
@@ -1220,7 +1310,7 @@ fn test_colon_makes_it_dict() {
 fn test_no_colon_makes_it_set() {
     let expr = parse_expr("{1, 2}").unwrap();
     match expr.kind {
-        ExpressionKind::Set { .. } => {},
+        ExpressionKind::Set { .. } => {}
         _ => panic!("Expected set (no colon), got {:?}", expr.kind),
     }
 }
@@ -1245,9 +1335,13 @@ fn test_single_element_tuple() {
     let expr = parse_expr("(42,)").unwrap();
     match expr.kind {
         ExpressionKind::Tuple { elements } => {
-            assert_eq!(elements.len(), 1, "Single element tuple should have 1 element");
+            assert_eq!(
+                elements.len(),
+                1,
+                "Single element tuple should have 1 element"
+            );
             match &elements[0].kind {
-                ExpressionKind::Integer(42) => {},
+                ExpressionKind::Integer(42) => {}
                 _ => panic!("Expected integer 42"),
             }
         }
@@ -1260,7 +1354,11 @@ fn test_two_element_tuple() {
     let expr = parse_expr("(1, 2)").unwrap();
     match expr.kind {
         ExpressionKind::Tuple { elements } => {
-            assert_eq!(elements.len(), 2, "Two element tuple should have 2 elements");
+            assert_eq!(
+                elements.len(),
+                2,
+                "Two element tuple should have 2 elements"
+            );
         }
         _ => panic!("Expected tuple, got {:?}", expr.kind),
     }
@@ -1282,7 +1380,11 @@ fn test_tuple_with_trailing_comma() {
     let expr = parse_expr("(1, 2, 3,)").unwrap();
     match expr.kind {
         ExpressionKind::Tuple { elements } => {
-            assert_eq!(elements.len(), 3, "Expected 3 elements (trailing comma ignored)");
+            assert_eq!(
+                elements.len(),
+                3,
+                "Expected 3 elements (trailing comma ignored)"
+            );
         }
         _ => panic!("Expected tuple, got {:?}", expr.kind),
     }
@@ -1310,7 +1412,7 @@ fn test_tuple_with_expressions() {
         ExpressionKind::Tuple { elements } => {
             assert_eq!(elements.len(), 2);
             match &elements[0].kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary operation"),
             }
         }
@@ -1350,8 +1452,11 @@ fn test_tuple_with_mixed_types() {
 fn test_parenthesized_expression_not_tuple() {
     let expr = parse_expr("(42)").unwrap();
     match expr.kind {
-        ExpressionKind::Integer(42) => {}, // Should be just an integer, not a tuple
-        _ => panic!("Expected integer (parenthesized expression), got {:?}", expr.kind),
+        ExpressionKind::Integer(42) => {} // Should be just an integer, not a tuple
+        _ => panic!(
+            "Expected integer (parenthesized expression), got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -1359,8 +1464,11 @@ fn test_parenthesized_expression_not_tuple() {
 fn test_parenthesized_expression_complex() {
     let expr = parse_expr("(1 + 2)").unwrap();
     match expr.kind {
-        ExpressionKind::BinaryOp { .. } => {}, // Should be binary op, not tuple
-        _ => panic!("Expected binary operation (parenthesized), got {:?}", expr.kind),
+        ExpressionKind::BinaryOp { .. } => {} // Should be binary op, not tuple
+        _ => panic!(
+            "Expected binary operation (parenthesized), got {:?}",
+            expr.kind
+        ),
     }
 }
 
@@ -1368,7 +1476,7 @@ fn test_parenthesized_expression_complex() {
 fn test_nested_parentheses_not_tuple() {
     let expr = parse_expr("((42))").unwrap();
     match expr.kind {
-        ExpressionKind::Integer(42) => {}, // Multiple parentheses don't make a tuple
+        ExpressionKind::Integer(42) => {} // Multiple parentheses don't make a tuple
         _ => panic!("Expected integer, got {:?}", expr.kind),
     }
 }
@@ -1380,7 +1488,7 @@ fn test_tuple_in_list() {
         ExpressionKind::List { elements } => {
             assert_eq!(elements.len(), 2);
             match &elements[0].kind {
-                ExpressionKind::Tuple { .. } => {},
+                ExpressionKind::Tuple { .. } => {}
                 _ => panic!("Expected tuple in list"),
             }
         }
@@ -1410,7 +1518,7 @@ fn test_tuple_with_function_call() {
         ExpressionKind::Tuple { elements } => {
             assert_eq!(elements.len(), 2);
             match &elements[0].kind {
-                ExpressionKind::Call { .. } => {},
+                ExpressionKind::Call { .. } => {}
                 _ => panic!("Expected function call"),
             }
         }
@@ -1448,16 +1556,14 @@ fn test_slice_start_stop() {
 fn test_slice_start_stop_step() {
     let expr = parse_expr("list[0:10:2]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_some(), "Start should be present");
-                    assert!(upper.is_some(), "Stop should be present");
-                    assert!(step.is_some(), "Step should be present");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_some(), "Start should be present");
+                assert!(upper.is_some(), "Stop should be present");
+                assert!(step.is_some(), "Step should be present");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1466,16 +1572,14 @@ fn test_slice_start_stop_step() {
 fn test_slice_only_stop() {
     let expr = parse_expr("list[:5]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_none(), "Start should be None");
-                    assert!(upper.is_some(), "Stop should be present");
-                    assert!(step.is_none(), "Step should be None");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_none(), "Start should be None");
+                assert!(upper.is_some(), "Stop should be present");
+                assert!(step.is_none(), "Step should be None");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1484,16 +1588,14 @@ fn test_slice_only_stop() {
 fn test_slice_only_start() {
     let expr = parse_expr("list[5:]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_some(), "Start should be present");
-                    assert!(upper.is_none(), "Stop should be None");
-                    assert!(step.is_none(), "Step should be None");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_some(), "Start should be present");
+                assert!(upper.is_none(), "Stop should be None");
+                assert!(step.is_none(), "Step should be None");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1502,16 +1604,14 @@ fn test_slice_only_start() {
 fn test_slice_all_empty() {
     let expr = parse_expr("list[:]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_none(), "Start should be None");
-                    assert!(upper.is_none(), "Stop should be None");
-                    assert!(step.is_none(), "Step should be None");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_none(), "Start should be None");
+                assert!(upper.is_none(), "Stop should be None");
+                assert!(step.is_none(), "Step should be None");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1520,16 +1620,14 @@ fn test_slice_all_empty() {
 fn test_slice_with_step_only() {
     let expr = parse_expr("list[::2]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_none(), "Start should be None");
-                    assert!(upper.is_none(), "Stop should be None");
-                    assert!(step.is_some(), "Step should be present");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_none(), "Start should be None");
+                assert!(upper.is_none(), "Stop should be None");
+                assert!(step.is_some(), "Step should be present");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1538,16 +1636,14 @@ fn test_slice_with_step_only() {
 fn test_slice_stop_and_step() {
     let expr = parse_expr("list[:10:2]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_none(), "Start should be None");
-                    assert!(upper.is_some(), "Stop should be present");
-                    assert!(step.is_some(), "Step should be present");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_none(), "Start should be None");
+                assert!(upper.is_some(), "Stop should be present");
+                assert!(step.is_some(), "Step should be present");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1556,16 +1652,14 @@ fn test_slice_stop_and_step() {
 fn test_slice_start_and_step() {
     let expr = parse_expr("list[5::2]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_some(), "Start should be present");
-                    assert!(upper.is_none(), "Stop should be None");
-                    assert!(step.is_some(), "Step should be present");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_some(), "Start should be present");
+                assert!(upper.is_none(), "Stop should be None");
+                assert!(step.is_some(), "Step should be present");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1598,20 +1692,18 @@ fn test_slice_with_negative_indices() {
 fn test_slice_with_expressions() {
     let expr = parse_expr("list[x:y:z]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_some());
-                    assert!(upper.is_some());
-                    assert!(step.is_some());
-                    match &lower.as_ref().unwrap().kind {
-                        ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
-                        _ => panic!("Expected identifier x"),
-                    }
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_some());
+                assert!(upper.is_some());
+                assert!(step.is_some());
+                match &lower.as_ref().unwrap().kind {
+                    ExpressionKind::Identifier(name) => assert_eq!(name, "x"),
+                    _ => panic!("Expected identifier x"),
                 }
-                _ => panic!("Expected slice"),
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1620,20 +1712,18 @@ fn test_slice_with_expressions() {
 fn test_slice_with_computed_values() {
     let expr = parse_expr("list[i+1:i+10:2]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_some());
-                    assert!(upper.is_some());
-                    assert!(step.is_some());
-                    match &lower.as_ref().unwrap().kind {
-                        ExpressionKind::BinaryOp { .. } => {},
-                        _ => panic!("Expected binary operation"),
-                    }
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_some());
+                assert!(upper.is_some());
+                assert!(step.is_some());
+                match &lower.as_ref().unwrap().kind {
+                    ExpressionKind::BinaryOp { .. } => {}
+                    _ => panic!("Expected binary operation"),
                 }
-                _ => panic!("Expected slice"),
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1642,16 +1732,14 @@ fn test_slice_with_computed_values() {
 fn test_slice_reverse() {
     let expr = parse_expr("list[::-1]").unwrap();
     match expr.kind {
-        ExpressionKind::Subscript { index, .. } => {
-            match &index.kind {
-                ExpressionKind::Slice { lower, upper, step } => {
-                    assert!(lower.is_none());
-                    assert!(upper.is_none());
-                    assert!(step.is_some(), "Step should be present for reverse");
-                }
-                _ => panic!("Expected slice"),
+        ExpressionKind::Subscript { index, .. } => match &index.kind {
+            ExpressionKind::Slice { lower, upper, step } => {
+                assert!(lower.is_none());
+                assert!(upper.is_none());
+                assert!(step.is_some(), "Step should be present for reverse");
             }
-        }
+            _ => panic!("Expected slice"),
+        },
         _ => panic!("Expected subscript"),
     }
 }
@@ -1666,7 +1754,7 @@ fn test_regular_subscript_still_works() {
                 _ => panic!("Expected identifier"),
             }
             match &index.kind {
-                ExpressionKind::Integer(5) => {},
+                ExpressionKind::Integer(5) => {}
                 _ => panic!("Expected integer index, not slice"),
             }
         }
@@ -1681,12 +1769,12 @@ fn test_chained_subscript_with_slice() {
         ExpressionKind::Subscript { value, index } => {
             // Outer subscript should have a slice
             match &index.kind {
-                ExpressionKind::Slice { .. } => {},
+                ExpressionKind::Slice { .. } => {}
                 _ => panic!("Expected slice in second subscript"),
             }
             // Inner should be another subscript
             match &value.kind {
-                ExpressionKind::Subscript { .. } => {},
+                ExpressionKind::Subscript { .. } => {}
                 _ => panic!("Expected nested subscript"),
             }
         }
@@ -1705,7 +1793,7 @@ fn test_lambda_no_params() {
         ExpressionKind::Lambda { params, body } => {
             assert_eq!(params.len(), 0, "Lambda should have no parameters");
             match &body.kind {
-                ExpressionKind::Integer(42) => {},
+                ExpressionKind::Integer(42) => {}
                 _ => panic!("Expected integer 42 in lambda body"),
             }
         }
@@ -1721,7 +1809,7 @@ fn test_lambda_single_param() {
             assert_eq!(params.len(), 1, "Lambda should have 1 parameter");
             assert_eq!(params[0].name, "x");
             match &body.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary operation in lambda body"),
             }
         }
@@ -1738,7 +1826,7 @@ fn test_lambda_multiple_params() {
             assert_eq!(params[0].name, "x");
             assert_eq!(params[1].name, "y");
             match &body.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary operation in lambda body"),
             }
         }
@@ -1768,7 +1856,7 @@ fn test_lambda_with_string_body() {
             assert_eq!(params.len(), 1);
             assert_eq!(params[0].name, "name");
             match &body.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary operation"),
             }
         }
@@ -1783,7 +1871,7 @@ fn test_lambda_with_comparison() {
         ExpressionKind::Lambda { params, body } => {
             assert_eq!(params.len(), 1);
             match &body.kind {
-                ExpressionKind::Compare { .. } => {},
+                ExpressionKind::Compare { .. } => {}
                 _ => panic!("Expected comparison in lambda body"),
             }
         }
@@ -1798,7 +1886,7 @@ fn test_lambda_with_function_call() {
         ExpressionKind::Lambda { params, body } => {
             assert_eq!(params.len(), 1);
             match &body.kind {
-                ExpressionKind::Call { .. } => {},
+                ExpressionKind::Call { .. } => {}
                 _ => panic!("Expected function call in lambda body"),
             }
         }
@@ -1817,7 +1905,7 @@ fn test_lambda_in_function_call() {
             }
             assert_eq!(args.len(), 2, "Expected 2 arguments");
             match &args[0].kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda as first argument"),
             }
         }
@@ -1832,11 +1920,11 @@ fn test_lambda_in_list() {
         ExpressionKind::List { elements } => {
             assert_eq!(elements.len(), 2);
             match &elements[0].kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda in list"),
             }
             match &elements[1].kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda in list"),
             }
         }
@@ -1865,7 +1953,10 @@ fn test_nested_lambda() {
             assert_eq!(params[0].name, "x");
             // Body should be another lambda
             match &body.kind {
-                ExpressionKind::Lambda { params: inner_params, .. } => {
+                ExpressionKind::Lambda {
+                    params: inner_params,
+                    ..
+                } => {
                     assert_eq!(inner_params.len(), 1);
                     assert_eq!(inner_params[0].name, "y");
                 }
@@ -1900,7 +1991,7 @@ fn test_lambda_with_logical_ops() {
         ExpressionKind::Lambda { params, body } => {
             assert_eq!(params.len(), 2);
             match &body.kind {
-                ExpressionKind::LogicalOp { .. } => {},
+                ExpressionKind::LogicalOp { .. } => {}
                 _ => panic!("Expected logical operation in lambda body"),
             }
         }
@@ -1915,7 +2006,7 @@ fn test_lambda_with_subscript() {
         ExpressionKind::Lambda { params, body } => {
             assert_eq!(params.len(), 2);
             match &body.kind {
-                ExpressionKind::Subscript { .. } => {},
+                ExpressionKind::Subscript { .. } => {}
                 _ => panic!("Expected subscript in lambda body"),
             }
         }
@@ -1955,15 +2046,15 @@ fn test_ternary_with_literals() {
     match expr.kind {
         ExpressionKind::IfExp { test, body, orelse } => {
             match &body.kind {
-                ExpressionKind::Integer(1) => {},
+                ExpressionKind::Integer(1) => {}
                 _ => panic!("Expected integer 1 in body"),
             }
             match &test.kind {
-                ExpressionKind::Boolean(true) => {},
+                ExpressionKind::Boolean(true) => {}
                 _ => panic!("Expected True in test"),
             }
             match &orelse.kind {
-                ExpressionKind::Integer(0) => {},
+                ExpressionKind::Integer(0) => {}
                 _ => panic!("Expected integer 0 in orelse"),
             }
         }
@@ -1975,12 +2066,10 @@ fn test_ternary_with_literals() {
 fn test_ternary_with_comparison() {
     let expr = parse_expr("positive if x > 0 else negative").unwrap();
     match expr.kind {
-        ExpressionKind::IfExp { test, .. } => {
-            match &test.kind {
-                ExpressionKind::Compare { .. } => {},
-                _ => panic!("Expected comparison in test"),
-            }
-        }
+        ExpressionKind::IfExp { test, .. } => match &test.kind {
+            ExpressionKind::Compare { .. } => {}
+            _ => panic!("Expected comparison in test"),
+        },
         _ => panic!("Expected ternary expression"),
     }
 }
@@ -1991,15 +2080,15 @@ fn test_ternary_with_expressions() {
     match expr.kind {
         ExpressionKind::IfExp { test, body, orelse } => {
             match &body.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary op in body"),
             }
             match &test.kind {
-                ExpressionKind::Compare { .. } => {},
+                ExpressionKind::Compare { .. } => {}
                 _ => panic!("Expected comparison in test"),
             }
             match &orelse.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary op in orelse"),
             }
         }
@@ -2014,7 +2103,7 @@ fn test_nested_ternary() {
         ExpressionKind::IfExp { orelse, .. } => {
             // The orelse should be another ternary
             match &orelse.kind {
-                ExpressionKind::IfExp { .. } => {},
+                ExpressionKind::IfExp { .. } => {}
                 _ => panic!("Expected nested ternary in orelse"),
             }
         }
@@ -2029,7 +2118,7 @@ fn test_ternary_in_function_call() {
         ExpressionKind::Call { args, .. } => {
             assert_eq!(args.len(), 1);
             match &args[0].kind {
-                ExpressionKind::IfExp { .. } => {},
+                ExpressionKind::IfExp { .. } => {}
                 _ => panic!("Expected ternary in function argument"),
             }
         }
@@ -2044,7 +2133,7 @@ fn test_ternary_in_list() {
         ExpressionKind::List { elements } => {
             assert_eq!(elements.len(), 1);
             match &elements[0].kind {
-                ExpressionKind::IfExp { .. } => {},
+                ExpressionKind::IfExp { .. } => {}
                 _ => panic!("Expected ternary in list"),
             }
         }
@@ -2076,11 +2165,11 @@ fn test_ternary_with_function_calls() {
     match expr.kind {
         ExpressionKind::IfExp { body, orelse, .. } => {
             match &body.kind {
-                ExpressionKind::Call { .. } => {},
+                ExpressionKind::Call { .. } => {}
                 _ => panic!("Expected function call in body"),
             }
             match &orelse.kind {
-                ExpressionKind::Call { .. } => {},
+                ExpressionKind::Call { .. } => {}
                 _ => panic!("Expected function call in orelse"),
             }
         }
@@ -2092,12 +2181,10 @@ fn test_ternary_with_function_calls() {
 fn test_ternary_with_logical_ops() {
     let expr = parse_expr("result if x > 0 and y > 0 else default").unwrap();
     match expr.kind {
-        ExpressionKind::IfExp { test, .. } => {
-            match &test.kind {
-                ExpressionKind::LogicalOp { .. } => {},
-                _ => panic!("Expected logical operation in test"),
-            }
-        }
+        ExpressionKind::IfExp { test, .. } => match &test.kind {
+            ExpressionKind::LogicalOp { .. } => {}
+            _ => panic!("Expected logical operation in test"),
+        },
         _ => panic!("Expected ternary expression"),
     }
 }
@@ -2106,12 +2193,10 @@ fn test_ternary_with_logical_ops() {
 fn test_ternary_in_assignment() {
     let stmt = parse_stmt("result = positive if x > 0 else negative").unwrap();
     match stmt.kind {
-        StatementKind::Assign { value, .. } => {
-            match &value.kind {
-                ExpressionKind::IfExp { .. } => {},
-                _ => panic!("Expected ternary in assignment"),
-            }
-        }
+        StatementKind::Assign { value, .. } => match &value.kind {
+            ExpressionKind::IfExp { .. } => {}
+            _ => panic!("Expected ternary in assignment"),
+        },
         _ => panic!("Expected assignment statement"),
     }
 }
@@ -2120,12 +2205,10 @@ fn test_ternary_in_assignment() {
 fn test_ternary_with_subscript() {
     let expr = parse_expr("lst[0] if lst else None").unwrap();
     match expr.kind {
-        ExpressionKind::IfExp { body, .. } => {
-            match &body.kind {
-                ExpressionKind::Subscript { .. } => {},
-                _ => panic!("Expected subscript in body"),
-            }
-        }
+        ExpressionKind::IfExp { body, .. } => match &body.kind {
+            ExpressionKind::Subscript { .. } => {}
+            _ => panic!("Expected subscript in body"),
+        },
         _ => panic!("Expected ternary expression"),
     }
 }
@@ -2136,11 +2219,11 @@ fn test_ternary_with_lambda() {
     match expr.kind {
         ExpressionKind::IfExp { body, orelse, .. } => {
             match &body.kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda in body"),
             }
             match &orelse.kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda in orelse"),
             }
         }
@@ -2155,7 +2238,7 @@ fn test_ternary_max_pattern() {
         ExpressionKind::IfExp { test, body, orelse } => {
             // Common pattern: max(a, b) as ternary
             match &test.kind {
-                ExpressionKind::Compare { .. } => {},
+                ExpressionKind::Compare { .. } => {}
                 _ => panic!("Expected comparison"),
             }
             match &body.kind {
@@ -2236,7 +2319,7 @@ fn test_keyword_with_expression() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 2);
             match &keywords[0].value.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary op in keyword value"),
             }
         }
@@ -2251,7 +2334,7 @@ fn test_keyword_with_function_call() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 1);
             match &keywords[0].value.kind {
-                ExpressionKind::Call { .. } => {},
+                ExpressionKind::Call { .. } => {}
                 _ => panic!("Expected function call in keyword value"),
             }
         }
@@ -2298,7 +2381,7 @@ fn test_keyword_with_dict() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 1);
             match &keywords[0].value.kind {
-                ExpressionKind::Dict { .. } => {},
+                ExpressionKind::Dict { .. } => {}
                 _ => panic!("Expected dict in keyword value"),
             }
         }
@@ -2313,7 +2396,7 @@ fn test_keyword_with_lambda() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 1);
             match &keywords[0].value.kind {
-                ExpressionKind::Lambda { .. } => {},
+                ExpressionKind::Lambda { .. } => {}
                 _ => panic!("Expected lambda in keyword value"),
             }
         }
@@ -2328,7 +2411,7 @@ fn test_keyword_with_ternary() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 1);
             match &keywords[0].value.kind {
-                ExpressionKind::IfExp { .. } => {},
+                ExpressionKind::IfExp { .. } => {}
                 _ => panic!("Expected ternary in keyword value"),
             }
         }
@@ -2343,7 +2426,7 @@ fn test_keyword_with_comprehension() {
         ExpressionKind::Call { keywords, .. } => {
             assert_eq!(keywords.len(), 1);
             match &keywords[0].value.kind {
-                ExpressionKind::ListComp { .. } => {},
+                ExpressionKind::ListComp { .. } => {}
                 _ => panic!("Expected list comprehension in keyword value"),
             }
         }
@@ -2373,7 +2456,9 @@ fn test_nested_call_with_keywords() {
             assert_eq!(keywords.len(), 1);
             // Check inner call
             match &args[0].kind {
-                ExpressionKind::Call { keywords: inner_kw, .. } => {
+                ExpressionKind::Call {
+                    keywords: inner_kw, ..
+                } => {
                     assert_eq!(inner_kw.len(), 1);
                     assert_eq!(inner_kw[0].arg, Some("x".to_string()));
                 }
@@ -2391,7 +2476,7 @@ fn test_keyword_in_method_call() {
         ExpressionKind::Call { func, keywords, .. } => {
             assert_eq!(keywords.len(), 2);
             match &func.kind {
-                ExpressionKind::Attribute { .. } => {},
+                ExpressionKind::Attribute { .. } => {}
                 _ => panic!("Expected attribute access"),
             }
         }
@@ -2530,7 +2615,11 @@ fn test_function_with_defaults_and_vararg() {
 fn test_simple_decorator() {
     let stmt = parse_stmt("@decorator\ndef func():\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::FunctionDef { name, decorator_list, .. } => {
+        StatementKind::FunctionDef {
+            name,
+            decorator_list,
+            ..
+        } => {
             assert_eq!(name, "func");
             assert_eq!(decorator_list.len(), 1);
             match &decorator_list[0].kind {
@@ -2546,7 +2635,11 @@ fn test_simple_decorator() {
 fn test_decorator_with_call() {
     let stmt = parse_stmt("@decorator(arg1, arg2)\ndef func():\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::FunctionDef { name, decorator_list, .. } => {
+        StatementKind::FunctionDef {
+            name,
+            decorator_list,
+            ..
+        } => {
             assert_eq!(name, "func");
             assert_eq!(decorator_list.len(), 1);
             match &decorator_list[0].kind {
@@ -2568,10 +2661,14 @@ fn test_decorator_with_call() {
 fn test_multiple_decorators() {
     let stmt = parse_stmt("@decorator1\n@decorator2\n@decorator3\ndef func():\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::FunctionDef { name, decorator_list, .. } => {
+        StatementKind::FunctionDef {
+            name,
+            decorator_list,
+            ..
+        } => {
             assert_eq!(name, "func");
             assert_eq!(decorator_list.len(), 3);
-            
+
             match &decorator_list[0].kind {
                 ExpressionKind::Identifier(name) => assert_eq!(name, "decorator1"),
                 _ => panic!("Expected identifier decorator"),
@@ -2632,7 +2729,11 @@ fn test_decorator_with_attribute() {
 fn test_class_decorator() {
     let stmt = parse_stmt("@dataclass\nclass MyClass:\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::ClassDef { name, decorator_list, .. } => {
+        StatementKind::ClassDef {
+            name,
+            decorator_list,
+            ..
+        } => {
             assert_eq!(name, "MyClass");
             assert_eq!(decorator_list.len(), 1);
             match &decorator_list[0].kind {
@@ -2648,7 +2749,11 @@ fn test_class_decorator() {
 fn test_class_multiple_decorators() {
     let stmt = parse_stmt("@decorator1\n@decorator2\nclass MyClass:\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::ClassDef { name, decorator_list, .. } => {
+        StatementKind::ClassDef {
+            name,
+            decorator_list,
+            ..
+        } => {
             assert_eq!(name, "MyClass");
             assert_eq!(decorator_list.len(), 2);
         }
@@ -2698,21 +2803,19 @@ fn test_walrus_basic() {
 fn test_walrus_in_if() {
     let stmt = parse_stmt("if x := get_value():\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::If { test, .. } => {
-            match test.kind {
-                ExpressionKind::NamedExpr { target, value } => {
-                    match target.kind {
-                        ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
-                        _ => panic!("Expected identifier"),
-                    }
-                    match value.kind {
-                        ExpressionKind::Call { .. } => {},
-                        _ => panic!("Expected call"),
-                    }
+        StatementKind::If { test, .. } => match test.kind {
+            ExpressionKind::NamedExpr { target, value } => {
+                match target.kind {
+                    ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
+                    _ => panic!("Expected identifier"),
                 }
-                _ => panic!("Expected named expression in if test"),
+                match value.kind {
+                    ExpressionKind::Call { .. } => {}
+                    _ => panic!("Expected call"),
+                }
             }
-        }
+            _ => panic!("Expected named expression in if test"),
+        },
         _ => panic!("Expected if statement"),
     }
 }
@@ -2721,12 +2824,10 @@ fn test_walrus_in_if() {
 fn test_walrus_in_while() {
     let stmt = parse_stmt("while line := file.readline():\n    pass").unwrap();
     match stmt.kind {
-        StatementKind::While { test, .. } => {
-            match test.kind {
-                ExpressionKind::NamedExpr { .. } => {},
-                _ => panic!("Expected named expression in while test"),
-            }
-        }
+        StatementKind::While { test, .. } => match test.kind {
+            ExpressionKind::NamedExpr { .. } => {}
+            _ => panic!("Expected named expression in while test"),
+        },
         _ => panic!("Expected while statement"),
     }
 }
@@ -2738,7 +2839,7 @@ fn test_walrus_in_list() {
         ExpressionKind::List { elements } => {
             assert_eq!(elements.len(), 3);
             match &elements[0].kind {
-                ExpressionKind::NamedExpr { .. } => {},
+                ExpressionKind::NamedExpr { .. } => {}
                 _ => panic!("Expected named expression as first element"),
             }
         }
@@ -2756,7 +2857,7 @@ fn test_walrus_with_expression() {
                 _ => panic!("Expected identifier"),
             }
             match value.kind {
-                ExpressionKind::BinaryOp { .. } => {},
+                ExpressionKind::BinaryOp { .. } => {}
                 _ => panic!("Expected binary operation"),
             }
         }
@@ -2774,7 +2875,7 @@ fn test_walrus_nested() {
                 _ => panic!("Expected identifier"),
             }
             match value.kind {
-                ExpressionKind::NamedExpr { .. } => {},
+                ExpressionKind::NamedExpr { .. } => {}
                 _ => panic!("Expected nested named expression"),
             }
         }
@@ -2786,12 +2887,10 @@ fn test_walrus_nested() {
 fn test_walrus_with_comparison() {
     let expr = parse_expr("(n := len(data)) > 10").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { left, .. } => {
-            match left.kind {
-                ExpressionKind::NamedExpr { .. } => {},
-                _ => panic!("Expected named expression in comparison"),
-            }
-        }
+        ExpressionKind::Compare { left, .. } => match left.kind {
+            ExpressionKind::NamedExpr { .. } => {}
+            _ => panic!("Expected named expression in comparison"),
+        },
         _ => panic!("Expected comparison"),
     }
 }
@@ -2803,7 +2902,7 @@ fn test_walrus_in_function_call() {
         ExpressionKind::Call { args, .. } => {
             assert_eq!(args.len(), 1);
             match &args[0].kind {
-                ExpressionKind::NamedExpr { .. } => {},
+                ExpressionKind::NamedExpr { .. } => {}
                 _ => panic!("Expected named expression in function call"),
             }
         }
@@ -2852,12 +2951,10 @@ fn test_fstring_with_format_spec() {
 fn test_fstring_in_assignment() {
     let stmt = parse_stmt(r#"message = f"Hello {name}""#).unwrap();
     match stmt.kind {
-        StatementKind::Assign { value, .. } => {
-            match value.kind {
-                ExpressionKind::FString { .. } => {},
-                _ => panic!("Expected f-string in assignment"),
-            }
-        }
+        StatementKind::Assign { value, .. } => match value.kind {
+            ExpressionKind::FString { .. } => {}
+            _ => panic!("Expected f-string in assignment"),
+        },
         _ => panic!("Expected assignment"),
     }
 }
@@ -2869,7 +2966,7 @@ fn test_fstring_in_function_call() {
         ExpressionKind::Call { args, .. } => {
             assert_eq!(args.len(), 1);
             match &args[0].kind {
-                ExpressionKind::FString { .. } => {},
+                ExpressionKind::FString { .. } => {}
                 _ => panic!("Expected f-string in function call"),
             }
         }
@@ -2906,11 +3003,11 @@ fn test_fstring_in_list() {
         ExpressionKind::List { elements } => {
             assert_eq!(elements.len(), 2);
             match &elements[0].kind {
-                ExpressionKind::FString { .. } => {},
+                ExpressionKind::FString { .. } => {}
                 _ => panic!("Expected f-string in list"),
             }
             match &elements[1].kind {
-                ExpressionKind::FString { .. } => {},
+                ExpressionKind::FString { .. } => {}
                 _ => panic!("Expected f-string in list"),
             }
         }
@@ -2959,12 +3056,10 @@ fn test_raw_string_regex() {
 fn test_raw_string_in_assignment() {
     let stmt = parse_stmt(r#"pattern = r"\w+""#).unwrap();
     match stmt.kind {
-        StatementKind::Assign { value, .. } => {
-            match value.kind {
-                ExpressionKind::RawString(ref s) => assert_eq!(s, r"\w+"),
-                _ => panic!("Expected raw string in assignment"),
-            }
-        }
+        StatementKind::Assign { value, .. } => match value.kind {
+            ExpressionKind::RawString(ref s) => assert_eq!(s, r"\w+"),
+            _ => panic!("Expected raw string in assignment"),
+        },
         _ => panic!("Expected assignment"),
     }
 }
@@ -2992,7 +3087,7 @@ fn test_raw_string_in_list() {
             assert_eq!(elements.len(), 3);
             for elem in &elements {
                 match &elem.kind {
-                    ExpressionKind::RawString(_) => {},
+                    ExpressionKind::RawString(_) => {}
                     _ => panic!("Expected raw string in list"),
                 }
             }
@@ -3003,30 +3098,29 @@ fn test_raw_string_in_list() {
 
 #[test]
 fn test_raw_vs_regular_string_parser() {
-    let stmts = parse_program(r#"r"\n"
-"\n""#).unwrap();
-    
+    let stmts = parse_program(
+        r#"r"\n"
+"\n""#,
+    )
+    .unwrap();
+
     assert_eq!(stmts.len(), 2);
-    
+
     // First should be raw string
     match &stmts[0].kind {
-        StatementKind::Expr(expr) => {
-            match &expr.kind {
-                ExpressionKind::RawString(s) => assert_eq!(s, r"\n"),
-                _ => panic!("Expected raw string"),
-            }
-        }
+        StatementKind::Expr(expr) => match &expr.kind {
+            ExpressionKind::RawString(s) => assert_eq!(s, r"\n"),
+            _ => panic!("Expected raw string"),
+        },
         _ => panic!("Expected expression statement"),
     }
-    
+
     // Second should be regular string
     match &stmts[1].kind {
-        StatementKind::Expr(expr) => {
-            match &expr.kind {
-                ExpressionKind::String(s) => assert_eq!(s, "\n"),
-                _ => panic!("Expected regular string"),
-            }
-        }
+        StatementKind::Expr(expr) => match &expr.kind {
+            ExpressionKind::String(s) => assert_eq!(s, "\n"),
+            _ => panic!("Expected regular string"),
+        },
         _ => panic!("Expected expression statement"),
     }
 }
@@ -3072,12 +3166,10 @@ fn test_byte_string_hex_escape() {
 fn test_byte_string_in_assignment() {
     let stmt = parse_stmt(r#"data = b"binary""#).unwrap();
     match stmt.kind {
-        StatementKind::Assign { value, .. } => {
-            match value.kind {
-                ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"binary"),
-                _ => panic!("Expected byte string in assignment"),
-            }
-        }
+        StatementKind::Assign { value, .. } => match value.kind {
+            ExpressionKind::ByteString(ref bytes) => assert_eq!(bytes, b"binary"),
+            _ => panic!("Expected byte string in assignment"),
+        },
         _ => panic!("Expected assignment"),
     }
 }
@@ -3105,7 +3197,7 @@ fn test_byte_string_in_list() {
             assert_eq!(elements.len(), 3);
             for elem in &elements {
                 match &elem.kind {
-                    ExpressionKind::ByteString(_) => {},
+                    ExpressionKind::ByteString(_) => {}
                     _ => panic!("Expected byte string in list"),
                 }
             }
@@ -3181,7 +3273,11 @@ fn test_byte_raw_string_regex_pattern() {
 fn test_byte_raw_string_in_assignment() {
     let stmt = parse_stmt(r#"pattern = br"\w+@\w+\.\w+""#).unwrap();
     match stmt.kind {
-        StatementKind::Assign { ref targets, ref value, .. } => {
+        StatementKind::Assign {
+            ref targets,
+            ref value,
+            ..
+        } => {
             assert_eq!(targets.len(), 1);
             match value.kind {
                 ExpressionKind::ByteRawString(ref bytes) => {
@@ -3217,7 +3313,7 @@ fn test_byte_raw_string_in_list() {
     match expr.kind {
         ExpressionKind::List { ref elements } => {
             assert_eq!(elements.len(), 3);
-            
+
             // First element: br"path1\n"
             match elements[0].kind {
                 ExpressionKind::ByteRawString(ref bytes) => {
@@ -3225,7 +3321,7 @@ fn test_byte_raw_string_in_list() {
                 }
                 _ => panic!("Expected byte raw string"),
             }
-            
+
             // Second element: rb"path2\t"
             match elements[1].kind {
                 ExpressionKind::ByteRawString(ref bytes) => {
@@ -3259,7 +3355,7 @@ fn test_byte_raw_string_uppercase_variants() {
         }
         _ => panic!("Expected byte raw string"),
     }
-    
+
     // Test RB
     let expr = parse_expr(r#"RB"Test\t""#).unwrap();
     match expr.kind {
@@ -3278,7 +3374,7 @@ fn test_byte_raw_string_uppercase_variants() {
 fn test_ellipsis_literal() {
     let expr = parse_expr("...").unwrap();
     match expr.kind {
-        ExpressionKind::Ellipsis => {},
+        ExpressionKind::Ellipsis => {}
         _ => panic!("Expected ellipsis literal"),
     }
 }
@@ -3287,12 +3383,10 @@ fn test_ellipsis_literal() {
 fn test_ellipsis_in_assignment() {
     let stmt = parse_stmt("x = ...").unwrap();
     match stmt.kind {
-        StatementKind::Assign { ref value, .. } => {
-            match value.kind {
-                ExpressionKind::Ellipsis => {},
-                _ => panic!("Expected ellipsis in assignment"),
-            }
-        }
+        StatementKind::Assign { ref value, .. } => match value.kind {
+            ExpressionKind::Ellipsis => {}
+            _ => panic!("Expected ellipsis in assignment"),
+        },
         _ => panic!("Expected assignment"),
     }
 }
@@ -3304,12 +3398,10 @@ fn test_ellipsis_in_function_body() {
         StatementKind::FunctionDef { ref body, .. } => {
             assert_eq!(body.len(), 1);
             match body[0].kind {
-                StatementKind::Expr(ref expr) => {
-                    match expr.kind {
-                        ExpressionKind::Ellipsis => {},
-                        _ => panic!("Expected ellipsis in function body"),
-                    }
-                }
+                StatementKind::Expr(ref expr) => match expr.kind {
+                    ExpressionKind::Ellipsis => {}
+                    _ => panic!("Expected ellipsis in function body"),
+                },
                 _ => panic!("Expected expression statement"),
             }
         }
@@ -3324,7 +3416,7 @@ fn test_ellipsis_in_list() {
         ExpressionKind::List { ref elements } => {
             assert_eq!(elements.len(), 4);
             match elements[2].kind {
-                ExpressionKind::Ellipsis => {},
+                ExpressionKind::Ellipsis => {}
                 _ => panic!("Expected ellipsis in list"),
             }
         }
@@ -3339,7 +3431,7 @@ fn test_ellipsis_in_tuple() {
         ExpressionKind::Tuple { ref elements } => {
             assert_eq!(elements.len(), 3);
             match elements[1].kind {
-                ExpressionKind::Ellipsis => {},
+                ExpressionKind::Ellipsis => {}
                 _ => panic!("Expected ellipsis in tuple"),
             }
         }
@@ -3354,7 +3446,7 @@ fn test_ellipsis_as_function_argument() {
         ExpressionKind::Call { ref args, .. } => {
             assert_eq!(args.len(), 1);
             match args[0].kind {
-                ExpressionKind::Ellipsis => {},
+                ExpressionKind::Ellipsis => {}
                 _ => panic!("Expected ellipsis as argument"),
             }
         }
@@ -3366,17 +3458,13 @@ fn test_ellipsis_as_function_argument() {
 fn test_ellipsis_in_return() {
     let stmt = parse_stmt("return ...").unwrap();
     match stmt.kind {
-        StatementKind::Return { ref value } => {
-            match value {
-                Some(expr) => {
-                    match expr.kind {
-                        ExpressionKind::Ellipsis => {},
-                        _ => panic!("Expected ellipsis in return"),
-                    }
-                }
-                None => panic!("Expected return value"),
-            }
-        }
+        StatementKind::Return { ref value } => match value {
+            Some(expr) => match expr.kind {
+                ExpressionKind::Ellipsis => {}
+                _ => panic!("Expected ellipsis in return"),
+            },
+            None => panic!("Expected return value"),
+        },
         _ => panic!("Expected return statement"),
     }
 }
@@ -3389,7 +3477,7 @@ fn test_ellipsis_in_return() {
 fn test_notimplemented_literal() {
     let expr = parse_expr("NotImplemented").unwrap();
     match expr.kind {
-        ExpressionKind::NotImplemented => {},
+        ExpressionKind::NotImplemented => {}
         _ => panic!("Expected NotImplemented literal"),
     }
 }
@@ -3398,12 +3486,10 @@ fn test_notimplemented_literal() {
 fn test_notimplemented_in_assignment() {
     let stmt = parse_stmt("result = NotImplemented").unwrap();
     match stmt.kind {
-        StatementKind::Assign { ref value, .. } => {
-            match value.kind {
-                ExpressionKind::NotImplemented => {},
-                _ => panic!("Expected NotImplemented in assignment"),
-            }
-        }
+        StatementKind::Assign { ref value, .. } => match value.kind {
+            ExpressionKind::NotImplemented => {}
+            _ => panic!("Expected NotImplemented in assignment"),
+        },
         _ => panic!("Expected assignment"),
     }
 }
@@ -3412,17 +3498,13 @@ fn test_notimplemented_in_assignment() {
 fn test_notimplemented_in_return() {
     let stmt = parse_stmt("return NotImplemented").unwrap();
     match stmt.kind {
-        StatementKind::Return { ref value } => {
-            match value {
-                Some(expr) => {
-                    match expr.kind {
-                        ExpressionKind::NotImplemented => {},
-                        _ => panic!("Expected NotImplemented in return"),
-                    }
-                }
-                None => panic!("Expected return value"),
-            }
-        }
+        StatementKind::Return { ref value } => match value {
+            Some(expr) => match expr.kind {
+                ExpressionKind::NotImplemented => {}
+                _ => panic!("Expected NotImplemented in return"),
+            },
+            None => panic!("Expected return value"),
+        },
         _ => panic!("Expected return statement"),
     }
 }
@@ -3431,10 +3513,12 @@ fn test_notimplemented_in_return() {
 fn test_notimplemented_in_comparison() {
     let expr = parse_expr("x == NotImplemented").unwrap();
     match expr.kind {
-        ExpressionKind::Compare { ref comparators, .. } => {
+        ExpressionKind::Compare {
+            ref comparators, ..
+        } => {
             assert_eq!(comparators.len(), 1);
             match comparators[0].kind {
-                ExpressionKind::NotImplemented => {},
+                ExpressionKind::NotImplemented => {}
                 _ => panic!("Expected NotImplemented in comparison"),
             }
         }
@@ -3449,7 +3533,7 @@ fn test_notimplemented_in_list() {
         ExpressionKind::List { ref elements } => {
             assert_eq!(elements.len(), 3);
             match elements[1].kind {
-                ExpressionKind::NotImplemented => {},
+                ExpressionKind::NotImplemented => {}
                 _ => panic!("Expected NotImplemented in list"),
             }
         }
@@ -3464,7 +3548,7 @@ fn test_notimplemented_in_function_call() {
         ExpressionKind::Call { ref args, .. } => {
             assert_eq!(args.len(), 1);
             match args[0].kind {
-                ExpressionKind::NotImplemented => {},
+                ExpressionKind::NotImplemented => {}
                 _ => panic!("Expected NotImplemented as argument"),
             }
         }
@@ -3479,7 +3563,7 @@ fn test_notimplemented_in_dict_value() {
         ExpressionKind::Dict { ref values, .. } => {
             assert_eq!(values.len(), 1);
             match values[0].kind {
-                ExpressionKind::NotImplemented => {},
+                ExpressionKind::NotImplemented => {}
                 _ => panic!("Expected NotImplemented as dict value"),
             }
         }
@@ -3494,7 +3578,7 @@ fn test_notimplemented_in_tuple() {
         ExpressionKind::Tuple { ref elements } => {
             assert_eq!(elements.len(), 3);
             match elements[0].kind {
-                ExpressionKind::NotImplemented => {},
+                ExpressionKind::NotImplemented => {}
                 _ => panic!("Expected NotImplemented in tuple"),
             }
         }
@@ -3506,12 +3590,10 @@ fn test_notimplemented_in_tuple() {
 fn test_notimplemented_in_conditional() {
     let expr = parse_expr("NotImplemented if condition else value").unwrap();
     match expr.kind {
-        ExpressionKind::IfExp { ref body, .. } => {
-            match body.kind {
-                ExpressionKind::NotImplemented => {},
-                _ => panic!("Expected NotImplemented in conditional body"),
-            }
-        }
+        ExpressionKind::IfExp { ref body, .. } => match body.kind {
+            ExpressionKind::NotImplemented => {}
+            _ => panic!("Expected NotImplemented in conditional body"),
+        },
         _ => panic!("Expected conditional expression"),
     }
 }
@@ -3530,7 +3612,7 @@ fn test_list_comp_detection() {
         }
         _ => panic!("Expected regular list for [x]"),
     }
-    
+
     // Test 2: List comprehension should now parse successfully!
     let result = parse_expr("[x for x in items]");
     match result {
@@ -3542,7 +3624,10 @@ fn test_list_comp_detection() {
                 _ => panic!("Expected list comprehension"),
             }
         }
-        Err(e) => panic!("Comprehension should parse successfully now, got error: {:?}", e),
+        Err(e) => panic!(
+            "Comprehension should parse successfully now, got error: {:?}",
+            e
+        ),
     }
 }
 
@@ -3554,30 +3639,33 @@ fn test_list_comp_simplest() {
     println!("Parsing: {}", source);
     let expr = parse_expr(source).unwrap();
     match expr.kind {
-        ExpressionKind::ListComp { ref element, ref generators } => {
+        ExpressionKind::ListComp {
+            ref element,
+            ref generators,
+        } => {
             // Check element is 'x'
             match element.kind {
                 ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
                 _ => panic!("Expected identifier 'x' as element"),
             }
-            
+
             // Check we have exactly one generator
             assert_eq!(generators.len(), 1);
-            
+
             let gen = &generators[0];
-            
+
             // Check target is 'x'
             match &gen.target.kind {
                 silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
                 _ => panic!("Expected name pattern for target"),
             }
-            
+
             // Check iterator is 'items'
             match gen.iter.kind {
                 ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
                 _ => panic!("Expected identifier 'items' as iterator"),
             }
-            
+
             // No filters
             assert_eq!(gen.ifs.len(), 0);
             assert_eq!(gen.is_async, false);
@@ -3590,36 +3678,43 @@ fn test_list_comp_simplest() {
 fn test_list_comp_single_filter() {
     let source = "[x for x in items if x > 0]";
     println!("Parsing: {}", source);
-    
+
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { ref element, ref generators } => {
+        ExpressionKind::ListComp {
+            ref element,
+            ref generators,
+        } => {
             // Check element is 'x'
             match element.kind {
                 ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
                 _ => panic!("Expected identifier 'x' as element"),
             }
-            
+
             assert_eq!(generators.len(), 1);
             let gen = &generators[0];
-            
+
             // Check target pattern
             match &gen.target.kind {
                 silk_ast::PatternKind::Name(name) => assert_eq!(name, "x"),
                 _ => panic!("Expected name pattern"),
             }
-            
+
             // Check iterator
             match gen.iter.kind {
                 ExpressionKind::Identifier(ref name) => assert_eq!(name, "items"),
                 _ => panic!("Expected identifier 'items'"),
             }
-            
+
             // Check single filter: x > 0
             assert_eq!(gen.ifs.len(), 1);
             match &gen.ifs[0].kind {
-                ExpressionKind::Compare { left, ops, comparators } => {
+                ExpressionKind::Compare {
+                    left,
+                    ops,
+                    comparators,
+                } => {
                     match left.kind {
                         ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
                         _ => panic!("Expected 'x' on left"),
@@ -3634,7 +3729,7 @@ fn test_list_comp_single_filter() {
                 }
                 _ => panic!("Expected compare op for filter"),
             }
-            
+
             assert_eq!(gen.is_async, false);
         }
         _ => panic!("Expected list comprehension, got: {:?}", expr.kind),
@@ -3645,41 +3740,52 @@ fn test_list_comp_single_filter() {
 fn test_list_comp_multiple_filters() {
     let source = "[x for x in items if x > 0 if x < 10]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { element: _, ref generators } => {
+        ExpressionKind::ListComp {
+            element: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 1);
             let gen = &generators[0];
-            
+
             // Check two filters
             assert_eq!(gen.ifs.len(), 2);
-            
+
             // First filter: x > 0
             match &gen.ifs[0].kind {
-                ExpressionKind::Compare { left, ops, comparators } => {
+                ExpressionKind::Compare {
+                    left,
+                    ops,
+                    comparators,
+                } => {
                     match left.kind {
                         ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
                         _ => panic!("Expected 'x'"),
                     }
                     assert_eq!(ops[0], silk_ast::CompareOperator::Gt);
                     match comparators[0].kind {
-                        ExpressionKind::Integer(0) => {},
+                        ExpressionKind::Integer(0) => {}
                         _ => panic!("Expected 0"),
                     }
                 }
                 _ => panic!("Expected compare"),
             }
-            
+
             // Second filter: x < 10
             match &gen.ifs[1].kind {
-                ExpressionKind::Compare { left, ops, comparators } => {
+                ExpressionKind::Compare {
+                    left,
+                    ops,
+                    comparators,
+                } => {
                     match left.kind {
                         ExpressionKind::Identifier(ref name) => assert_eq!(name, "x"),
                         _ => panic!("Expected 'x'"),
                     }
                     assert_eq!(ops[0], silk_ast::CompareOperator::Lt);
                     match comparators[0].kind {
-                        ExpressionKind::Integer(10) => {},
+                        ExpressionKind::Integer(10) => {}
                         _ => panic!("Expected 10"),
                     }
                 }
@@ -3694,31 +3800,42 @@ fn test_list_comp_multiple_filters() {
 fn test_list_comp_nested_simple() {
     let source = "[x + y for x in range(3) for y in range(3)]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { ref element, ref generators } => {
+        ExpressionKind::ListComp {
+            ref element,
+            ref generators,
+        } => {
             // Check element is 'x + y'
             match &element.kind {
                 ExpressionKind::BinaryOp { left, op, right } => {
-                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                    assert!(
+                        matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x")
+                    );
                     assert_eq!(*op, silk_ast::BinaryOperator::Add);
-                    assert!(matches!(right.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                    assert!(
+                        matches!(right.kind, ExpressionKind::Identifier(ref name) if name == "y")
+                    );
                 }
                 _ => panic!("Expected binary op for element"),
             }
-            
+
             // Check two generators
             assert_eq!(generators.len(), 2);
-            
+
             // First: for x in range(3)
             let gen1 = &generators[0];
-            assert!(matches!(gen1.target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(
+                matches!(gen1.target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+            );
             assert!(matches!(gen1.iter.kind, ExpressionKind::Call { .. }));
             assert_eq!(gen1.ifs.len(), 0);
-            
+
             // Second: for y in range(3)
             let gen2 = &generators[1];
-            assert!(matches!(gen2.target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+            assert!(
+                matches!(gen2.target.kind, silk_ast::PatternKind::Name(ref name) if name == "y")
+            );
             assert!(matches!(gen2.iter.kind, ExpressionKind::Call { .. }));
             assert_eq!(gen2.ifs.len(), 0);
         }
@@ -3730,23 +3847,34 @@ fn test_list_comp_nested_simple() {
 fn test_list_comp_nested_with_filter() {
     let source = "[x for x in range(10) for y in range(10) if x == y]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { element: _, ref generators } => {
+        ExpressionKind::ListComp {
+            element: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 2);
-            
+
             // First generator: for x in range(10) - no filter
             assert_eq!(generators[0].ifs.len(), 0);
-            
+
             // Second generator: for y in range(10) if x == y - one filter
             assert_eq!(generators[1].ifs.len(), 1);
-            
+
             // Check the filter is x == y
             match &generators[1].ifs[0].kind {
-                ExpressionKind::Compare { left, ops, comparators } => {
-                    assert!(matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x"));
+                ExpressionKind::Compare {
+                    left,
+                    ops,
+                    comparators,
+                } => {
+                    assert!(
+                        matches!(left.kind, ExpressionKind::Identifier(ref name) if name == "x")
+                    );
                     assert_eq!(ops[0], silk_ast::CompareOperator::Eq);
-                    assert!(matches!(comparators[0].kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                    assert!(
+                        matches!(comparators[0].kind, ExpressionKind::Identifier(ref name) if name == "y")
+                    );
                 }
                 _ => panic!("Expected compare for filter"),
             }
@@ -3759,18 +3887,24 @@ fn test_list_comp_nested_with_filter() {
 fn test_dict_comp_simple() {
     let source = "{x: x * 2 for x in items}";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::DictComp { ref key, ref value, ref generators } => {
+        ExpressionKind::DictComp {
+            ref key,
+            ref value,
+            ref generators,
+        } => {
             // Check key is 'x'
             assert!(matches!(key.kind, ExpressionKind::Identifier(ref name) if name == "x"));
-            
+
             // Check value is 'x * 2'
             assert!(matches!(value.kind, ExpressionKind::BinaryOp { .. }));
-            
+
             // Check one generator
             assert_eq!(generators.len(), 1);
-            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(
+                matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+            );
         }
         _ => panic!("Expected dict comprehension"),
     }
@@ -3780,15 +3914,20 @@ fn test_dict_comp_simple() {
 fn test_set_comp_simple() {
     let source = "{x * 2 for x in items}";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::SetComp { ref element, ref generators } => {
+        ExpressionKind::SetComp {
+            ref element,
+            ref generators,
+        } => {
             // Check element is 'x * 2'
             assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
-            
+
             // Check one generator
             assert_eq!(generators.len(), 1);
-            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(
+                matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+            );
         }
         _ => panic!("Expected set comprehension"),
     }
@@ -3798,14 +3937,20 @@ fn test_set_comp_simple() {
 fn test_dict_comp_with_filter() {
     let source = "{x: x * 2 for x in items if x > 0}";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::DictComp { key: _, value: _, ref generators } => {
+        ExpressionKind::DictComp {
+            key: _,
+            value: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 1);
-            
+
             // Check simple name target
-            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
-            
+            assert!(
+                matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+            );
+
             // Check one filter
             assert_eq!(generators[0].ifs.len(), 1);
         }
@@ -3817,15 +3962,20 @@ fn test_dict_comp_with_filter() {
 fn test_generator_exp_simple() {
     let source = "(x for x in items)";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::GeneratorExp { ref element, ref generators } => {
+        ExpressionKind::GeneratorExp {
+            ref element,
+            ref generators,
+        } => {
             // Check element is 'x'
             assert!(matches!(element.kind, ExpressionKind::Identifier(ref name) if name == "x"));
-            
+
             // Check one generator
             assert_eq!(generators.len(), 1);
-            assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+            assert!(
+                matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+            );
         }
         _ => panic!("Expected generator expression"),
     }
@@ -3835,9 +3985,12 @@ fn test_generator_exp_simple() {
 fn test_generator_exp_with_filter() {
     let source = "(x for x in items if x > 0)";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::GeneratorExp { element: _, ref generators } => {
+        ExpressionKind::GeneratorExp {
+            element: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 1);
             assert_eq!(generators[0].ifs.len(), 1);
         }
@@ -3849,24 +4002,33 @@ fn test_generator_exp_with_filter() {
 fn test_generator_exp_in_function_call() {
     let source = "sum(x * x for x in range(100))";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::Call { ref func, ref args, keywords: _ } => {
+        ExpressionKind::Call {
+            ref func,
+            ref args,
+            keywords: _,
+        } => {
             // Check function name is 'sum'
             assert!(matches!(func.kind, ExpressionKind::Identifier(ref name) if name == "sum"));
-            
+
             // Check one argument
             assert_eq!(args.len(), 1);
-            
+
             // Check argument is generator expression
             match &args[0].kind {
-                ExpressionKind::GeneratorExp { element, generators } => {
+                ExpressionKind::GeneratorExp {
+                    element,
+                    generators,
+                } => {
                     // Check element is x * x
                     assert!(matches!(element.kind, ExpressionKind::BinaryOp { .. }));
-                    
+
                     // Check one generator
                     assert_eq!(generators.len(), 1);
-                    assert!(matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x"));
+                    assert!(
+                        matches!(generators[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "x")
+                    );
                 }
                 _ => panic!("Expected generator expression as argument"),
             }
@@ -3881,12 +4043,18 @@ fn test_generator_exp_in_function_call() {
 fn test_comp_empty_sequence() {
     let source = "[x for x in []]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { element: _, generators } => {
+        ExpressionKind::ListComp {
+            element: _,
+            generators,
+        } => {
             assert_eq!(generators.len(), 1);
             // Iterator is empty list
-            assert!(matches!(generators[0].iter.kind, ExpressionKind::List { .. }));
+            assert!(matches!(
+                generators[0].iter.kind,
+                ExpressionKind::List { .. }
+            ));
         }
         _ => panic!("Expected list comprehension"),
     }
@@ -3896,19 +4064,29 @@ fn test_comp_empty_sequence() {
 fn test_comp_nested_comprehension() {
     let source = "[[y for y in row] for row in matrix]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { ref element, ref generators } => {
+        ExpressionKind::ListComp {
+            ref element,
+            ref generators,
+        } => {
             // Outer comprehension has one generator
             assert_eq!(generators.len(), 1);
-            
+
             // Element is itself a list comprehension
             match &element.kind {
-                ExpressionKind::ListComp { element: inner_elem, generators: inner_gens } => {
+                ExpressionKind::ListComp {
+                    element: inner_elem,
+                    generators: inner_gens,
+                } => {
                     // Inner comprehension: [y for y in row]
-                    assert!(matches!(inner_elem.kind, ExpressionKind::Identifier(ref name) if name == "y"));
+                    assert!(
+                        matches!(inner_elem.kind, ExpressionKind::Identifier(ref name) if name == "y")
+                    );
                     assert_eq!(inner_gens.len(), 1);
-                    assert!(matches!(inner_gens[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "y"));
+                    assert!(
+                        matches!(inner_gens[0].target.kind, silk_ast::PatternKind::Name(ref name) if name == "y")
+                    );
                 }
                 _ => panic!("Expected inner list comprehension"),
             }
@@ -3921,9 +4099,13 @@ fn test_comp_nested_comprehension() {
 fn test_comp_in_function_call() {
     let source = "func([x for x in items])";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::Call { func: _, ref args, keywords: _ } => {
+        ExpressionKind::Call {
+            func: _,
+            ref args,
+            keywords: _,
+        } => {
             assert_eq!(args.len(), 1);
             assert!(matches!(args[0].kind, ExpressionKind::ListComp { .. }));
         }
@@ -3935,9 +4117,12 @@ fn test_comp_in_function_call() {
 fn test_comp_complex_filter() {
     let source = "[x for x in items if x > 0 if x < 10]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { element: _, ref generators } => {
+        ExpressionKind::ListComp {
+            element: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 1);
             // Two filters
             assert_eq!(generators[0].ifs.len(), 2);
@@ -3950,12 +4135,18 @@ fn test_comp_complex_filter() {
 fn test_comp_with_call_in_iterator() {
     let source = "[x for x in range(10)]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { element: _, ref generators } => {
+        ExpressionKind::ListComp {
+            element: _,
+            ref generators,
+        } => {
             assert_eq!(generators.len(), 1);
             // Iterator is a function call
-            assert!(matches!(generators[0].iter.kind, ExpressionKind::Call { .. }));
+            assert!(matches!(
+                generators[0].iter.kind,
+                ExpressionKind::Call { .. }
+            ));
         }
         _ => panic!("Expected list comprehension"),
     }
@@ -3965,9 +4156,12 @@ fn test_comp_with_call_in_iterator() {
 fn test_comp_with_attribute_access() {
     let source = "[obj.name for obj in objects]";
     let expr = parse_expr(source).unwrap();
-    
+
     match expr.kind {
-        ExpressionKind::ListComp { ref element, ref generators } => {
+        ExpressionKind::ListComp {
+            ref element,
+            ref generators,
+        } => {
             // Element is attribute access
             assert!(matches!(element.kind, ExpressionKind::Attribute { .. }));
             assert_eq!(generators.len(), 1);
@@ -3975,5 +4169,3 @@ fn test_comp_with_attribute_access() {
         _ => panic!("Expected list comprehension"),
     }
 }
-
-

@@ -10,7 +10,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper function to analyze code and return errors
 fn analyze_code(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -26,7 +26,10 @@ def greet(name: str):
 greet("Alice")
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Valid function call with matching type should succeed");
+    assert!(
+        result.is_ok(),
+        "Valid function call with matching type should succeed"
+    );
 }
 
 #[test]
@@ -38,7 +41,10 @@ def add(x: int, y: int):
 add(10, 20)
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Valid function call with multiple matching types should succeed");
+    assert!(
+        result.is_ok(),
+        "Valid function call with multiple matching types should succeed"
+    );
 }
 
 #[test]
@@ -50,7 +56,10 @@ def process(name: str, age: int, score: float):
 process("Bob", 25, 95.5)
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Valid function call with mixed types should succeed");
+    assert!(
+        result.is_ok(),
+        "Valid function call with mixed types should succeed"
+    );
 }
 
 #[test]
@@ -86,7 +95,10 @@ def process(x, y):
 process(1, "hello")
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Function without type annotations should allow any arguments");
+    assert!(
+        result.is_ok(),
+        "Function without type annotations should allow any arguments"
+    );
 }
 
 // ========== ARGUMENT COUNT MISMATCH ==========
@@ -100,13 +112,21 @@ def add(x: int, y: int):
 add(10)
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Calling with too few arguments should fail");
-    
+    assert!(
+        result.is_err(),
+        "Calling with too few arguments should fail"
+    );
+
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    
+
     match &errors[0] {
-        SemanticError::ArgumentCountMismatch { function_name, expected, actual, .. } => {
+        SemanticError::ArgumentCountMismatch {
+            function_name,
+            expected,
+            actual,
+            ..
+        } => {
             assert_eq!(function_name, "add");
             assert_eq!(*expected, 2);
             assert_eq!(*actual, 1);
@@ -124,11 +144,19 @@ def greet(name: str):
 greet("Alice", "Bob")
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Calling with too many arguments should fail");
-    
+    assert!(
+        result.is_err(),
+        "Calling with too many arguments should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentCountMismatch { function_name, expected, actual, .. } => {
+        SemanticError::ArgumentCountMismatch {
+            function_name,
+            expected,
+            actual,
+            ..
+        } => {
             assert_eq!(function_name, "greet");
             assert_eq!(*expected, 1);
             assert_eq!(*actual, 2);
@@ -146,11 +174,16 @@ def process(x: int):
 process()
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Calling with no args when params required should fail");
-    
+    assert!(
+        result.is_err(),
+        "Calling with no args when params required should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentCountMismatch { expected, actual, .. } => {
+        SemanticError::ArgumentCountMismatch {
+            expected, actual, ..
+        } => {
             assert_eq!(*expected, 1);
             assert_eq!(*actual, 0);
         }
@@ -173,12 +206,18 @@ greet(42)
         eprintln!("Errors: {:?}", errors);
     }
     assert!(result.is_err(), "Calling with wrong type should fail");
-    
+
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    
+
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { param_name, arg_index, expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            param_name,
+            arg_index,
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(param_name, "name");
             assert_eq!(*arg_index, 1);
             assert_eq!(expected_type, "str");
@@ -197,11 +236,20 @@ def process(name: str, age: int):
 process("Alice", "twenty")
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Wrong type on second parameter should fail");
-    
+    assert!(
+        result.is_err(),
+        "Wrong type on second parameter should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { param_name, arg_index, expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            param_name,
+            arg_index,
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(param_name, "age");
             assert_eq!(*arg_index, 2);
             assert_eq!(expected_type, "int");
@@ -221,10 +269,14 @@ process(3.14)
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Float to int narrowing should fail");
-    
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(expected_type, "int");
             assert_eq!(actual_type, "float");
         }
@@ -242,10 +294,14 @@ greet(True)
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Bool to str should fail");
-    
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(expected_type, "str");
             assert_eq!(actual_type, "bool");
         }
@@ -264,7 +320,10 @@ def add(x: int, y: int):
 add(10 + 5, 20 * 2)
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Expression arguments with correct types should succeed");
+    assert!(
+        result.is_ok(),
+        "Expression arguments with correct types should succeed"
+    );
 }
 
 #[test]
@@ -276,11 +335,18 @@ def process(value: int):
 process("hello" + "world")
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Expression with wrong result type should fail");
-    
+    assert!(
+        result.is_err(),
+        "Expression with wrong result type should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(expected_type, "int");
             assert_eq!(actual_type, "str");
         }
@@ -302,7 +368,10 @@ def outer(y: int):
 outer(inner(42))
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Nested function calls with matching types should succeed");
+    assert!(
+        result.is_ok(),
+        "Nested function calls with matching types should succeed"
+    );
 }
 
 #[test]
@@ -317,11 +386,18 @@ def outer(y: int):
 outer(inner(42))
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Nested call with wrong return type should fail");
-    
+    assert!(
+        result.is_err(),
+        "Nested call with wrong return type should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(expected_type, "int");
             assert!(actual_type.contains("str") || actual_type.contains("function"));
         }
@@ -341,11 +417,11 @@ process(123, "twenty", True)
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Multiple wrong types should fail");
-    
+
     let errors = result.unwrap_err();
     // Should have at least one error (first mismatch)
     assert!(!errors.is_empty());
-    
+
     match &errors[0] {
         SemanticError::ArgumentTypeMismatch { .. } => {
             // First error should be ArgumentTypeMismatch
@@ -366,7 +442,10 @@ def callee(x: int):
     pass
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Forward reference with correct type should work");
+    assert!(
+        result.is_ok(),
+        "Forward reference with correct type should work"
+    );
 }
 
 #[test]
@@ -379,11 +458,18 @@ def callee(x: int):
     pass
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Forward reference with wrong type should fail");
-    
+    assert!(
+        result.is_err(),
+        "Forward reference with wrong type should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::ArgumentTypeMismatch { expected_type, actual_type, .. } => {
+        SemanticError::ArgumentTypeMismatch {
+            expected_type,
+            actual_type,
+            ..
+        } => {
             assert_eq!(expected_type, "int");
             assert_eq!(actual_type, "str");
         }

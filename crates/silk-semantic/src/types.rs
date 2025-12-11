@@ -43,7 +43,7 @@ pub enum Type {
 
 impl Type {
     /// Check if this type is compatible with another type for assignment
-    /// 
+    ///
     /// This is used for type checking in assignments, function calls, etc.
     /// Returns true if a value of type `other` can be assigned to a variable of type `self`.
     pub fn is_compatible_with(&self, other: &Type) -> bool {
@@ -68,7 +68,15 @@ impl Type {
         }
 
         // Functions are compatible if their return types are compatible
-        if let (Type::Function { return_type: rt1, .. }, Type::Function { return_type: rt2, .. }) = (self, other) {
+        if let (
+            Type::Function {
+                return_type: rt1, ..
+            },
+            Type::Function {
+                return_type: rt2, ..
+            },
+        ) = (self, other)
+        {
             return rt1.is_compatible_with(rt2);
         }
 
@@ -78,7 +86,17 @@ impl Type {
         }
 
         // Dicts are compatible if both key and value types are compatible
-        if let (Type::Dict { key_type: k1, value_type: v1 }, Type::Dict { key_type: k2, value_type: v2 }) = (self, other) {
+        if let (
+            Type::Dict {
+                key_type: k1,
+                value_type: v1,
+            },
+            Type::Dict {
+                key_type: k2,
+                value_type: v2,
+            },
+        ) = (self, other)
+        {
             return k1.is_compatible_with(k2) && v1.is_compatible_with(v2);
         }
 
@@ -92,7 +110,10 @@ impl Type {
             if elems1.len() != elems2.len() {
                 return false;
             }
-            return elems1.iter().zip(elems2.iter()).all(|(t1, t2)| t1.is_compatible_with(t2));
+            return elems1
+                .iter()
+                .zip(elems2.iter())
+                .all(|(t1, t2)| t1.is_compatible_with(t2));
         }
 
         // Otherwise, types must match exactly
@@ -147,35 +168,46 @@ impl Type {
     }
 
     /// Check if this type can be used in numeric operations (+ - * / etc)
-    /// 
+    ///
     /// Returns true for Int, Float, and Unknown (for gradual typing)
     pub fn is_numeric(&self) -> bool {
         matches!(self, Type::Int | Type::Float | Type::Unknown)
     }
 
     /// Check if this type can be used in comparison operations (< > <= >=)
-    /// 
+    ///
     /// Returns true for Int, Float, Str, and Unknown
     pub fn is_comparable(&self) -> bool {
         matches!(self, Type::Int | Type::Float | Type::Str | Type::Unknown)
     }
 
     /// Check if this type can be indexed/subscripted
-    /// 
+    ///
     /// Returns true for List, Dict, Tuple, Str, and Unknown
     pub fn is_indexable(&self) -> bool {
-        matches!(self, Type::List(_) | Type::Dict { .. } | Type::Tuple(_) | Type::Str | Type::Unknown)
+        matches!(
+            self,
+            Type::List(_) | Type::Dict { .. } | Type::Tuple(_) | Type::Str | Type::Unknown
+        )
     }
 
     /// Check if this type can be iterated over (for loops)
-    /// 
+    ///
     /// Returns true for List, Dict, Set, Tuple, Str, and Unknown
     pub fn is_iterable(&self) -> bool {
-        matches!(self, Type::List(_) | Type::Dict { .. } | Type::Set(_) | Type::Tuple(_) | Type::Str | Type::Unknown)
+        matches!(
+            self,
+            Type::List(_)
+                | Type::Dict { .. }
+                | Type::Set(_)
+                | Type::Tuple(_)
+                | Type::Str
+                | Type::Unknown
+        )
     }
 
     /// Get the index type for this container type
-    /// 
+    ///
     /// For lists/tuples/strings: returns int
     /// For dicts: returns the key type
     /// For others: returns Unknown
@@ -188,7 +220,7 @@ impl Type {
     }
 
     /// Get the element/value type when indexing this container
-    /// 
+    ///
     /// For lists: returns element type
     /// For dicts: returns value type
     /// For tuples: returns Unknown (varies by index)
@@ -204,7 +236,7 @@ impl Type {
     }
 
     /// Check if two types can be used together in a binary operation
-    /// 
+    ///
     /// This is a stricter check than is_compatible_with, used for operations
     /// Returns true if the operation makes sense (doesn't check result type)
     pub fn can_operate_with(&self, other: &Type, is_arithmetic: bool) -> bool {
@@ -224,7 +256,7 @@ impl Type {
     }
 
     /// Check if this type requires exact type matching (no coercion)
-    /// 
+    ///
     /// Returns true for collection types where element types matter
     pub fn requires_exact_match(&self) -> bool {
         matches!(
@@ -243,7 +275,10 @@ impl fmt::Display for Type {
             Type::List(element_type) => {
                 write!(f, "list[{}]", element_type)
             }
-            Type::Dict { key_type, value_type } => {
+            Type::Dict {
+                key_type,
+                value_type,
+            } => {
                 write!(f, "dict[{}, {}]", key_type, value_type)
             }
             Type::Set(element_type) => {
@@ -253,11 +288,15 @@ impl fmt::Display for Type {
                 if elements.is_empty() {
                     write!(f, "tuple[]")
                 } else {
-                    write!(f, "tuple[{}]", 
-                        elements.iter()
+                    write!(
+                        f,
+                        "tuple[{}]",
+                        elements
+                            .iter()
                             .map(|t| t.to_string())
                             .collect::<Vec<_>>()
-                            .join(", "))
+                            .join(", ")
+                    )
                 }
             }
             _ => write!(f, "{}", self.as_str()),

@@ -4,7 +4,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper function to analyze source code
 fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -21,7 +21,11 @@ def callee():
     return 42
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow calling function defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow calling function defined later: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -34,7 +38,11 @@ class ClassB:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow referencing class defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow referencing class defined later: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -51,7 +59,11 @@ def func_b(n):
     return 1
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow mutual recursion: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow mutual recursion: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -69,7 +81,10 @@ def outer():
     let result = analyze(source);
     // Note: This should FAIL because nested functions don't get pre-pass treatment
     // Python requires nested functions to be defined before use
-    assert!(result.is_err(), "Nested functions must be defined before use");
+    assert!(
+        result.is_err(),
+        "Nested functions must be defined before use"
+    );
 }
 
 #[test]
@@ -84,7 +99,11 @@ class MyClass:
     "#;
     let result = analyze(source);
     // This should work because methods are in class scope
-    assert!(result.is_ok(), "Should allow calling method defined later in class: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow calling method defined later in class: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -109,7 +128,11 @@ def func(x, y):
     return z
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Parameters should be visible in function body: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Parameters should be visible in function body: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -118,7 +141,11 @@ fn test_lambda_parameter_scope() {
 f = lambda x, y: x + y
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Lambda parameters should be in scope: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Lambda parameters should be in scope: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -134,10 +161,15 @@ def outer(a):
     let result = analyze(source);
     // The actual test: 'a' (outer parameter) should be visible inside 'inner'
     // If 'a' weren't visible, we'd get an UndefinedVariable error for 'a', not 'inner'
-    assert!(result.is_err(), "Nested function must be defined before use");
+    assert!(
+        result.is_err(),
+        "Nested function must be defined before use"
+    );
     let errors = result.unwrap_err();
     // Should error on 'inner' being undefined, not 'a'
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "inner"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "inner")
+    );
 }
 
 #[test]
@@ -148,7 +180,11 @@ items = [1, 2, 3]
 result = [x + i for i in items]
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Comprehension should see outer variables: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Comprehension should see outer variables: {:?}",
+        result
+    );
 }
 
 // ========== COMPLEX SCENARIOS ==========
@@ -165,7 +201,11 @@ class ClassB:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow instantiating classes defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow instantiating classes defined later: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -179,7 +219,11 @@ def decorator(func):
     return func
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow decorator defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow decorator defined later: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -192,7 +236,11 @@ class Parent:
     pass
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Should allow base class defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should allow base class defined later: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -204,5 +252,9 @@ def func():
     return 42
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Global assignment can use function defined later: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Global assignment can use function defined later: {:?}",
+        result
+    );
 }

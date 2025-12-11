@@ -1,7 +1,6 @@
+use crate::{Expression, Pattern, Type};
 /// Statement AST nodes
-
 use silk_lexer::Span;
-use crate::{Expression, Type, Pattern};
 
 /// Statement node with source location
 #[derive(Debug, Clone, PartialEq)]
@@ -21,95 +20,95 @@ impl Statement {
 pub enum StatementKind {
     // Expression statement
     Expr(Expression),
-    
+
     // Assignment
     Assign {
         targets: Vec<Expression>,
         value: Expression,
         type_annotation: Option<Type>,
     },
-    
+
     // Augmented assignment (+=, -=, etc.)
     AugAssign {
         target: Expression,
         op: AugAssignOperator,
         value: Expression,
     },
-    
+
     // Annotated assignment (x: int = 5)
     AnnAssign {
         target: Expression,
         annotation: Type,
         value: Option<Expression>,
     },
-    
+
     // Assert statement
     Assert {
         test: Expression,
         msg: Option<Expression>,
     },
-    
+
     // Pass statement
     Pass,
-    
+
     // Delete statement
     Delete {
         targets: Vec<Expression>,
     },
-    
+
     // Return statement
     Return {
         value: Option<Expression>,
     },
-    
+
     // Raise statement
     Raise {
         exc: Option<Expression>,
         cause: Option<Expression>,
     },
-    
+
     // Break statement
     Break,
-    
+
     // Continue statement
     Continue,
-    
+
     // Import statement
     Import {
         names: Vec<Alias>,
     },
-    
+
     // Import from statement
     ImportFrom {
         module: Option<String>,
         names: Vec<Alias>,
-        level: usize,  // Relative import level (number of dots)
+        level: usize, // Relative import level (number of dots)
     },
-    
+
     // Global statement
     Global {
         names: Vec<String>,
     },
-    
+
     // Nonlocal statement
     Nonlocal {
         names: Vec<String>,
     },
-    
+
     // If statement
     If {
         test: Expression,
         body: Vec<Statement>,
         orelse: Vec<Statement>,
     },
-    
+
     // While loop
     While {
         test: Expression,
         body: Vec<Statement>,
         orelse: Vec<Statement>,
     },
-    
+
     // For loop
     For {
         target: Pattern,
@@ -118,20 +117,20 @@ pub enum StatementKind {
         orelse: Vec<Statement>,
         is_async: bool,
     },
-    
+
     // With statement
     With {
         items: Vec<WithItem>,
         body: Vec<Statement>,
         is_async: bool,
     },
-    
+
     // Match statement
     Match {
         subject: Expression,
         cases: Vec<MatchCase>,
     },
-    
+
     // Try/except statement
     Try {
         body: Vec<Statement>,
@@ -139,7 +138,7 @@ pub enum StatementKind {
         orelse: Vec<Statement>,
         finalbody: Vec<Statement>,
     },
-    
+
     // Function definition
     FunctionDef {
         name: String,
@@ -149,7 +148,7 @@ pub enum StatementKind {
         returns: Option<Type>,
         is_async: bool,
     },
-    
+
     // Class definition
     ClassDef {
         name: String,
@@ -163,18 +162,18 @@ pub enum StatementKind {
 /// Augmented assignment operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AugAssignOperator {
-    Add,        // +=
-    Sub,        // -=
-    Mult,       // *=
-    Div,        // /=
-    FloorDiv,   // //=
-    Mod,        // %=
-    Pow,        // **=
-    BitOr,      // |=
-    BitXor,     // ^=
-    BitAnd,     // &=
-    LShift,     // <<=
-    RShift,     // >>=
+    Add,      // +=
+    Sub,      // -=
+    Mult,     // *=
+    Div,      // /=
+    FloorDiv, // //=
+    Mod,      // %=
+    Pow,      // **=
+    BitOr,    // |=
+    BitXor,   // ^=
+    BitAnd,   // &=
+    LShift,   // <<=
+    RShift,   // >>=
 }
 
 /// Import alias (name as asname)

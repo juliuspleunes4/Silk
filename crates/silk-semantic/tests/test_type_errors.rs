@@ -17,7 +17,7 @@ fn test_assignment_type_mismatch_error() {
         column: 5,
         span: test_span(10, 5),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("Type mismatch in assignment"));
     assert!(error_msg.contains("int"));
@@ -36,7 +36,7 @@ fn test_argument_type_mismatch_error() {
         column: 10,
         span: test_span(15, 10),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("function call"));
     assert!(error_msg.contains("argument 1"));
@@ -54,7 +54,7 @@ fn test_return_type_mismatch_error() {
         column: 8,
         span: test_span(20, 8),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("return statement"));
     assert!(error_msg.contains("returning 'str'"));
@@ -71,7 +71,7 @@ fn test_invalid_binary_operation_error() {
         column: 12,
         span: test_span(25, 12),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("Invalid operation"));
     assert!(error_msg.contains("operator '+'"));
@@ -88,7 +88,7 @@ fn test_invalid_unary_operation_error() {
         column: 5,
         span: test_span(30, 5),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("Invalid operation"));
     assert!(error_msg.contains("operator '-'"));
@@ -104,7 +104,7 @@ fn test_invalid_subscript_error() {
         column: 8,
         span: test_span(35, 8),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("Invalid subscript"));
     assert!(error_msg.contains("'list[int]'"));
@@ -121,7 +121,7 @@ fn test_argument_count_mismatch_error() {
         column: 10,
         span: test_span(40, 10),
     };
-    
+
     let error_msg = error.to_string();
     assert!(error_msg.contains("Argument count mismatch"));
     assert!(error_msg.contains("function 'add'"));
@@ -138,7 +138,7 @@ fn test_error_equality() {
         column: 5,
         span: test_span(10, 5),
     };
-    
+
     let error2 = SemanticError::AssignmentTypeMismatch {
         expected_type: "int".to_string(),
         value_type: "str".to_string(),
@@ -146,7 +146,7 @@ fn test_error_equality() {
         column: 5,
         span: test_span(10, 5),
     };
-    
+
     let error3 = SemanticError::ReturnTypeMismatch {
         expected_type: "int".to_string(),
         actual_type: "str".to_string(),
@@ -154,7 +154,7 @@ fn test_error_equality() {
         column: 5,
         span: test_span(10, 5),
     };
-    
+
     assert_eq!(error1, error2);
     assert_ne!(error1, error3);
 }
@@ -169,7 +169,7 @@ fn test_error_clone() {
         column: 15,
         span: test_span(45, 15),
     };
-    
+
     let cloned = error.clone();
     assert_eq!(error, cloned);
 }
@@ -185,7 +185,7 @@ fn test_error_debug_format() {
         column: 20,
         span: test_span(50, 20),
     };
-    
+
     let debug_str = format!("{:?}", error);
     assert!(debug_str.contains("ArgumentTypeMismatch"));
 }

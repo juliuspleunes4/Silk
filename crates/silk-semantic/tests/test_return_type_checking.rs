@@ -10,11 +10,15 @@ def f() -> int:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -24,11 +28,15 @@ def f() -> str:
     return "hello"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -38,11 +46,15 @@ def f() -> float:
     return 3.14
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -52,11 +64,15 @@ def f() -> bool:
     return True
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -67,11 +83,15 @@ def f() -> float:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -85,11 +105,15 @@ def g():
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 // ========== INVALID RETURN TYPES ==========
@@ -101,15 +125,28 @@ def f() -> int:
     return "hello"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning str from int function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning str from int function"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1, "Got errors: {:?}", errors);
-    assert!(errors[0].to_string().contains("Type mismatch in return statement"), "Error was: {}", errors[0]);
-    assert!(errors[0].to_string().contains("function expects"), "Error was: {}", errors[0]);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Type mismatch in return statement"),
+        "Error was: {}",
+        errors[0]
+    );
+    assert!(
+        errors[0].to_string().contains("function expects"),
+        "Error was: {}",
+        errors[0]
+    );
 }
 
 #[test]
@@ -119,14 +156,19 @@ def f() -> str:
     return 3.14
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning float from str function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning float from str function"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(errors[0].to_string().contains("Type mismatch in return statement"));
+    assert!(errors[0]
+        .to_string()
+        .contains("Type mismatch in return statement"));
 }
 
 #[test]
@@ -137,14 +179,19 @@ def f() -> int:
     return 3.14
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning float from int function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning float from int function"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(errors[0].to_string().contains("Type mismatch in return statement"));
+    assert!(errors[0]
+        .to_string()
+        .contains("Type mismatch in return statement"));
 }
 
 #[test]
@@ -154,14 +201,19 @@ def f() -> bool:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning int from bool function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning int from bool function"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(errors[0].to_string().contains("Type mismatch in return statement"));
+    assert!(errors[0]
+        .to_string()
+        .contains("Type mismatch in return statement"));
 }
 
 // ========== EMPTY RETURN STATEMENTS ==========
@@ -173,15 +225,28 @@ def f() -> int:
     return
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for empty return in int function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for empty return in int function"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1, "Got errors: {:?}", errors);
-    assert!(errors[0].to_string().contains("Type mismatch in return statement"), "Error was: {}", errors[0]);
-    assert!(errors[0].to_string().contains("function expects"), "Error was: {}", errors[0]);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Type mismatch in return statement"),
+        "Error was: {}",
+        errors[0]
+    );
+    assert!(
+        errors[0].to_string().contains("function expects"),
+        "Error was: {}",
+        errors[0]
+    );
 }
 
 #[test]
@@ -191,11 +256,14 @@ def f():
     return
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Empty return should be valid in function without return type");
+
+    assert!(
+        result.is_ok(),
+        "Empty return should be valid in function without return type"
+    );
 }
 
 // ========== EXPRESSION RETURNS ==========
@@ -208,11 +276,14 @@ def f() -> int:
     return x + 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors for valid expression return");
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors for valid expression return"
+    );
 }
 
 #[test]
@@ -224,13 +295,18 @@ def f() -> int:
     return x + y
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning str expression from int function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning str expression from int function"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Type mismatch in return statement")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Type mismatch in return statement")));
 }
 
 // ========== MULTIPLE RETURNS ==========
@@ -245,11 +321,14 @@ def f(x: int) -> int:
         return -x
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors for multiple valid returns");
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors for multiple valid returns"
+    );
 }
 
 #[test]
@@ -262,13 +341,18 @@ def f(x: int) -> int:
         return "negative"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for invalid return in one branch");
+
+    assert!(
+        result.is_err(),
+        "Expected error for invalid return in one branch"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Type mismatch in return statement")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Type mismatch in return statement")));
 }
 
 // ========== NESTED FUNCTIONS ==========
@@ -282,11 +366,14 @@ def outer() -> int:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors for nested functions with different return types");
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors for nested functions with different return types"
+    );
 }
 
 #[test]
@@ -298,13 +385,18 @@ def outer() -> int:
     return 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for invalid return in nested function");
+
+    assert!(
+        result.is_err(),
+        "Expected error for invalid return in nested function"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Type mismatch in return statement")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Type mismatch in return statement")));
 }
 
 // ========== FUNCTION CALL RETURNS ==========
@@ -319,11 +411,14 @@ def f() -> int:
     return get_int()
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors for returning function call result");
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors for returning function call result"
+    );
 }
 
 #[test]
@@ -336,11 +431,16 @@ def f() -> int:
     return get_str()
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for returning wrong type from function call");
+
+    assert!(
+        result.is_err(),
+        "Expected error for returning wrong type from function call"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Type mismatch in return statement")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Type mismatch in return statement")));
 }

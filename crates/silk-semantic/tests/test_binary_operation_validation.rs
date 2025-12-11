@@ -9,11 +9,15 @@ fn test_valid_int_addition() {
 x: int = 1 + 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -22,11 +26,15 @@ fn test_valid_float_addition() {
 x: float = 1.5 + 2.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -37,11 +45,15 @@ x: float = 1 + 2.5
 y: float = 3.5 + 4
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -50,11 +62,15 @@ fn test_valid_string_concatenation() {
 x: str = "hello" + "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -65,11 +81,15 @@ b: float = 5.5 - 2.2
 c: float = 7 - 1.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -80,11 +100,15 @@ b: float = 2.5 * 4.0
 c: float = 3 * 1.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -95,11 +119,15 @@ b: float = 7.5 / 1.5
 c: float = 8 / 2.0
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 // ========== VALID BITWISE OPERATIONS ==========
@@ -114,11 +142,15 @@ d: int = 4 << 2
 e: int = 16 >> 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 // ========== INVALID OPERATIONS - TYPE MISMATCHES ==========
@@ -129,14 +161,18 @@ fn test_invalid_int_plus_string() {
 x = 1 + "hello"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for int + str");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
-    assert!(errors.iter().any(|e| e.to_string().contains("cannot apply operator '+'")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("cannot apply operator '+'")));
 }
 
 #[test]
@@ -145,13 +181,15 @@ fn test_invalid_string_plus_int() {
 x = "hello" + 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for str + int");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }
 
 #[test]
@@ -160,13 +198,15 @@ fn test_invalid_string_subtraction() {
 x = "hello" - "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for str - str");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
     assert!(errors.iter().any(|e| e.to_string().contains("'-'")));
 }
 
@@ -176,13 +216,15 @@ fn test_invalid_string_multiplication_by_float() {
 x = "hello" * 3.14
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for str * float");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }
 
 #[test]
@@ -191,13 +233,15 @@ fn test_invalid_bool_arithmetic() {
 x = True + False
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for bool + bool");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }
 
 // ========== INVALID BITWISE OPERATIONS ==========
@@ -208,13 +252,15 @@ fn test_invalid_bitwise_on_float() {
 x = 3.14 | 2.71
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for float | float");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
     assert!(errors.iter().any(|e| e.to_string().contains("'|'")));
 }
 
@@ -224,13 +270,15 @@ fn test_invalid_bitwise_on_string() {
 x = "hello" & "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for str & str");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }
 
 #[test]
@@ -239,13 +287,15 @@ fn test_invalid_shift_on_float() {
 x = 1.5 << 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     assert!(result.is_err(), "Expected error for float << int");
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
     assert!(errors.iter().any(|e| e.to_string().contains("'<<'")));
 }
 
@@ -259,14 +309,16 @@ def f():
     x = y + 5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
+
     // Should only error on undefined 'y', not on the operation
     if let Err(errors) = result {
         assert!(errors.iter().any(|e| e.to_string().contains("Undefined")));
-        assert!(!errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+        assert!(!errors
+            .iter()
+            .any(|e| e.to_string().contains("Invalid operation")));
     }
 }
 
@@ -279,11 +331,15 @@ x: int = (1 + 2) * (3 - 1)
 y: float = (5.0 / 2.0) + (3.0 * 1.5)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors for nested operations, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors for nested operations, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -292,13 +348,18 @@ fn test_nested_invalid_operations() {
 x = (1 + 2) * ("hello" + 3)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for invalid nested operation");
+
+    assert!(
+        result.is_err(),
+        "Expected error for invalid nested operation"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }
 
 // ========== OPERATIONS IN EXPRESSIONS ==========
@@ -312,11 +373,15 @@ def add(a: int, b: int) -> int:
 x: int = add(1 + 2, 3 * 4)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_ok(), "Expected no errors, got: {:?}", result.err());
+
+    assert!(
+        result.is_ok(),
+        "Expected no errors, got: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -326,11 +391,16 @@ x: int = 5
 y: int = x + "text"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
-    
-    assert!(result.is_err(), "Expected error for invalid operation in assignment");
+
+    assert!(
+        result.is_err(),
+        "Expected error for invalid operation in assignment"
+    );
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.to_string().contains("Invalid operation")));
+    assert!(errors
+        .iter()
+        .any(|e| e.to_string().contains("Invalid operation")));
 }

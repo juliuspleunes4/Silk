@@ -1,9 +1,9 @@
 //! Symbol table for tracking declarations and their types
 
-use silk_lexer::Span;
-use crate::scope::{Scope, ScopeKind};
 use crate::error::{SemanticError, SemanticResult};
+use crate::scope::{Scope, ScopeKind};
 use crate::types::Type;
+use silk_lexer::Span;
 
 /// Kind of symbol
 #[derive(Debug, Clone, PartialEq, Eq)]

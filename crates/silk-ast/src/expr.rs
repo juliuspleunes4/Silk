@@ -1,7 +1,6 @@
+use crate::{Pattern, Type};
 /// Expression AST nodes
-
-use silk_lexer::{Span, FStringPart};
-use crate::{Type, Pattern};
+use silk_lexer::{FStringPart, Span};
 
 /// Expression node with source location
 #[derive(Debug, Clone, PartialEq)]
@@ -23,148 +22,148 @@ pub enum ExpressionKind {
     Integer(i64),
     Float(f64),
     String(String),
-    RawString(String),  // r"text\n" - escape sequences preserved
-    ByteString(Vec<u8>),  // b"bytes" - byte literal
-    ByteRawString(Vec<u8>),  // br"bytes\n" or rb"bytes\n" - raw byte literal
+    RawString(String),      // r"text\n" - escape sequences preserved
+    ByteString(Vec<u8>),    // b"bytes" - byte literal
+    ByteRawString(Vec<u8>), // br"bytes\n" or rb"bytes\n" - raw byte literal
     FString {
         parts: Vec<FStringPart>,
     },
     Boolean(bool),
     None,
-    NotImplemented,  // NotImplemented singleton
-    Ellipsis,  // ... literal
-    
+    NotImplemented, // NotImplemented singleton
+    Ellipsis,       // ... literal
+
     // Identifiers
     Identifier(String),
-    
+
     // Binary operations
     BinaryOp {
         left: Box<Expression>,
         op: BinaryOperator,
         right: Box<Expression>,
     },
-    
+
     // Unary operations
     UnaryOp {
         op: UnaryOperator,
         operand: Box<Expression>,
     },
-    
+
     // Comparison (can chain: a < b < c)
     Compare {
         left: Box<Expression>,
         ops: Vec<CompareOperator>,
         comparators: Vec<Expression>,
     },
-    
+
     // Logical operations
     LogicalOp {
         left: Box<Expression>,
         op: LogicalOperator,
         right: Box<Expression>,
     },
-    
+
     // Function call
     Call {
         func: Box<Expression>,
         args: Vec<Expression>,
         keywords: Vec<CallKeyword>,
     },
-    
+
     // Attribute access (obj.attr)
     Attribute {
         value: Box<Expression>,
         attr: String,
     },
-    
+
     // Subscript (obj[index])
     Subscript {
         value: Box<Expression>,
         index: Box<Expression>,
     },
-    
+
     // Slice (start:stop:step)
     Slice {
         lower: Option<Box<Expression>>,
         upper: Option<Box<Expression>>,
         step: Option<Box<Expression>>,
     },
-    
+
     // List literal
     List {
         elements: Vec<Expression>,
     },
-    
+
     // Tuple literal
     Tuple {
         elements: Vec<Expression>,
     },
-    
+
     // Dictionary literal
     Dict {
         keys: Vec<Expression>,
         values: Vec<Expression>,
     },
-    
+
     // Set literal
     Set {
         elements: Vec<Expression>,
     },
-    
+
     // List comprehension
     ListComp {
         element: Box<Expression>,
         generators: Vec<Comprehension>,
     },
-    
+
     // Dictionary comprehension
     DictComp {
         key: Box<Expression>,
         value: Box<Expression>,
         generators: Vec<Comprehension>,
     },
-    
+
     // Set comprehension
     SetComp {
         element: Box<Expression>,
         generators: Vec<Comprehension>,
     },
-    
+
     // Generator expression
     GeneratorExp {
         element: Box<Expression>,
         generators: Vec<Comprehension>,
     },
-    
+
     // Lambda expression
     Lambda {
         params: Vec<Parameter>,
         body: Box<Expression>,
     },
-    
+
     // Conditional expression (ternary)
     IfExp {
         test: Box<Expression>,
         body: Box<Expression>,
         orelse: Box<Expression>,
     },
-    
+
     // Named expression (walrus operator :=)
     NamedExpr {
         target: Box<Expression>,
         value: Box<Expression>,
     },
-    
+
     // Await expression
     Await {
         value: Box<Expression>,
     },
-    
+
     // Yield expression
     Yield {
         value: Option<Box<Expression>>,
     },
-    
+
     // Yield from expression
     YieldFrom {
         value: Box<Expression>,
@@ -174,55 +173,55 @@ pub enum ExpressionKind {
 /// Binary operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
-    Add,        // +
-    Sub,        // -
-    Mult,       // *
-    Div,        // /
-    FloorDiv,   // //
-    Mod,        // %
-    Pow,        // **
-    BitOr,      // |
-    BitXor,     // ^
-    BitAnd,     // &
-    LShift,     // <<
-    RShift,     // >>
+    Add,      // +
+    Sub,      // -
+    Mult,     // *
+    Div,      // /
+    FloorDiv, // //
+    Mod,      // %
+    Pow,      // **
+    BitOr,    // |
+    BitXor,   // ^
+    BitAnd,   // &
+    LShift,   // <<
+    RShift,   // >>
 }
 
 /// Unary operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
-    Not,        // not
-    UAdd,       // +
-    USub,       // -
-    Invert,     // ~
+    Not,    // not
+    UAdd,   // +
+    USub,   // -
+    Invert, // ~
 }
 
 /// Comparison operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompareOperator {
-    Eq,         // ==
-    NotEq,      // !=
-    Lt,         // <
-    LtE,        // <=
-    Gt,         // >
-    GtE,        // >=
-    Is,         // is
-    IsNot,      // is not
-    In,         // in
-    NotIn,      // not in
+    Eq,    // ==
+    NotEq, // !=
+    Lt,    // <
+    LtE,   // <=
+    Gt,    // >
+    GtE,   // >=
+    Is,    // is
+    IsNot, // is not
+    In,    // in
+    NotIn, // not in
 }
 
 /// Logical operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogicalOperator {
-    And,        // and
-    Or,         // or
+    And, // and
+    Or,  // or
 }
 
 /// Keyword argument in function call
 #[derive(Debug, Clone, PartialEq)]
 pub struct CallKeyword {
-    pub arg: Option<String>,  // None for **kwargs
+    pub arg: Option<String>, // None for **kwargs
     pub value: Expression,
     pub span: Span,
 }

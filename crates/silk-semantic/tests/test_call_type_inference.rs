@@ -1,8 +1,8 @@
 //! Tests for function call type inference
 
 use silk_parser::Parser;
-use silk_semantic::SemanticAnalyzer;
 use silk_semantic::types::Type;
+use silk_semantic::SemanticAnalyzer;
 
 #[test]
 fn test_call_to_function_with_int_return() {
@@ -13,10 +13,10 @@ def get_number() -> int:
 result = get_number()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type int
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Int);
@@ -31,10 +31,10 @@ def get_message() -> str:
 msg = get_message()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // msg should have type str
     let symbol = analyzer.symbol_table().resolve_symbol("msg").unwrap();
     assert_eq!(symbol.ty, Type::Str);
@@ -49,10 +49,10 @@ def some_func():
 x = some_func()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // x should have Unknown type (no return type annotation)
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
     assert_eq!(symbol.ty, Type::Unknown);
@@ -67,10 +67,10 @@ def calculate() -> float:
 pi = calculate()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // pi should have type float
     let symbol = analyzer.symbol_table().resolve_symbol("pi").unwrap();
     assert_eq!(symbol.ty, Type::Float);
@@ -82,10 +82,10 @@ fn test_builtin_len_returns_int() {
 length = len([1, 2, 3])
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // length should have type int
     let symbol = analyzer.symbol_table().resolve_symbol("length").unwrap();
     assert_eq!(symbol.ty, Type::Int);
@@ -97,10 +97,10 @@ fn test_builtin_str_returns_str() {
 text = str(123)
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // text should have type str
     let symbol = analyzer.symbol_table().resolve_symbol("text").unwrap();
     assert_eq!(symbol.ty, Type::Str);
@@ -112,10 +112,10 @@ fn test_builtin_print_returns_none() {
 result = print("hello")
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type None
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::None);
@@ -135,10 +135,10 @@ def process(x: int) -> str:
 result = process(get_int())
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type str (from process's return type)
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Str);
@@ -156,10 +156,10 @@ def get_y() -> int:
 result = get_x() + get_y()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type int (int + int = int)
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Int);
@@ -174,10 +174,10 @@ def get_message() -> str:
 result = print(get_message())
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type None (print returns None)
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::None);
@@ -194,10 +194,10 @@ y = create()
 z = create()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // All should have type int
     let x = analyzer.symbol_table().resolve_symbol("x").unwrap();
     let y = analyzer.symbol_table().resolve_symbol("y").unwrap();
@@ -218,10 +218,10 @@ def factorial(n: int) -> int:
 result = factorial(5)
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // result should have type int
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Int);
@@ -238,10 +238,10 @@ obj = MyClass()
 result = obj.method()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // Method calls not yet supported - returns Unknown
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Unknown);
@@ -254,10 +254,10 @@ x = 42
 result = x()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // Calling a non-function (int) returns Unknown
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Unknown);
@@ -269,12 +269,15 @@ fn test_undefined_function_call_returns_unknown() {
 result = undefined_function()
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     // Will have error about undefined function
     let analysis_result = analyzer.analyze(&program);
-    assert!(analysis_result.is_err(), "Should have undefined variable error");
-    
+    assert!(
+        analysis_result.is_err(),
+        "Should have undefined variable error"
+    );
+
     // But result still gets a type (Unknown)
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(symbol.ty, Type::Unknown);
@@ -286,12 +289,15 @@ fn test_builtin_input_returns_str() {
 user_input = input("Enter name: ")
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // input returns str
-    let symbol = analyzer.symbol_table().resolve_symbol("user_input").unwrap();
+    let symbol = analyzer
+        .symbol_table()
+        .resolve_symbol("user_input")
+        .unwrap();
     assert_eq!(symbol.ty, Type::Str);
 }
 
@@ -301,10 +307,10 @@ fn test_builtin_int_returns_int() {
 number = int("42")
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // int() returns int
     let symbol = analyzer.symbol_table().resolve_symbol("number").unwrap();
     assert_eq!(symbol.ty, Type::Int);
@@ -316,10 +322,10 @@ fn test_builtin_float_returns_float() {
 number = float("3.14")
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // float() returns float
     let symbol = analyzer.symbol_table().resolve_symbol("number").unwrap();
     assert_eq!(symbol.ty, Type::Float);
@@ -331,10 +337,10 @@ fn test_builtin_bool_returns_bool() {
 flag = bool(1)
 "#;
     let program = Parser::parse(source).unwrap();
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
-    
+
     // bool() returns bool
     let symbol = analyzer.symbol_table().resolve_symbol("flag").unwrap();
     assert_eq!(symbol.ty, Type::Bool);

@@ -6,7 +6,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper to parse and analyze source code
 fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -17,7 +17,10 @@ fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
 fn test_collect_simple_assignment() {
     let source = "x = 5";
     let result = analyze(source);
-    assert!(result.is_ok(), "Simple assignment should not produce errors");
+    assert!(
+        result.is_ok(),
+        "Simple assignment should not produce errors"
+    );
 }
 
 #[test]
@@ -28,7 +31,10 @@ y = 2
 z = 3
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Multiple assignments should not produce errors");
+    assert!(
+        result.is_ok(),
+        "Multiple assignments should not produce errors"
+    );
 }
 
 #[test]
@@ -49,7 +55,10 @@ x = 10
 x += 5
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Augmented assignment should work with defined variable");
+    assert!(
+        result.is_ok(),
+        "Augmented assignment should work with defined variable"
+    );
 }
 
 #[test]
@@ -57,7 +66,10 @@ fn test_collect_augmented_assignment_undefined() {
     let source = "x += 5";
     let result = analyze(source);
     // Augmented assignment requires variable to be defined (x += 5 is x = x + 5)
-    assert!(result.is_err(), "Augmented assignment should error if variable undefined");
+    assert!(
+        result.is_err(),
+        "Augmented assignment should error if variable undefined"
+    );
     let errors = result.unwrap_err();
     assert!(matches!(errors[0], SemanticError::UndefinedVariable { .. }));
 }
@@ -69,7 +81,10 @@ def add(a, b):
     return a + b
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Function definition should not produce errors");
+    assert!(
+        result.is_ok(),
+        "Function definition should not produce errors"
+    );
 }
 
 #[test]
@@ -79,7 +94,10 @@ def greet(name, greeting="Hello"):
     return greeting + " " + name
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Function with default parameters should work");
+    assert!(
+        result.is_ok(),
+        "Function with default parameters should work"
+    );
 }
 
 #[test]
@@ -91,7 +109,11 @@ def outer():
     return 0
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Nested function definition should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Nested function definition should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -104,7 +126,11 @@ def outer():
     return inner()
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Calling nested functions should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Calling nested functions should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -114,7 +140,11 @@ def func(a, b, c):
     return a
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Function parameters should be in scope: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Function parameters should be in scope: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -195,7 +225,9 @@ for item in items:
     let errors = result.unwrap_err();
     // Should only complain about 'print', not 'item'
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "print"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "print")
+    );
 }
 
 #[test]
@@ -208,7 +240,10 @@ for x in items:
 y = x
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "For loop variable should be available after loop");
+    assert!(
+        result.is_ok(),
+        "For loop variable should be available after loop"
+    );
 }
 
 #[test]
@@ -221,7 +256,10 @@ with file as f:
     let result = analyze(source);
     // open is now a built-in function, so no errors expected
     // Method calls like f.read() don't generate errors (they return Unknown)
-    assert!(result.is_ok(), "Should succeed - 'open' is built-in and 'f' is defined by with statement");
+    assert!(
+        result.is_ok(),
+        "Should succeed - 'open' is built-in and 'f' is defined by with statement"
+    );
 }
 
 #[test]
@@ -253,7 +291,10 @@ if x > 5:
 z = y
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Variables defined in if block should be available outside");
+    assert!(
+        result.is_ok(),
+        "Variables defined in if block should be available outside"
+    );
 }
 
 #[test]
@@ -266,7 +307,11 @@ while x:
 result = y
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Variables defined in while block should be available outside: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Variables defined in while block should be available outside: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -279,7 +324,10 @@ except:
 y = x
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Variables defined in try block should be available outside");
+    assert!(
+        result.is_ok(),
+        "Variables defined in try block should be available outside"
+    );
 }
 
 // ========== FUNCTION PARAMETER TESTS ==========
@@ -324,7 +372,11 @@ x = 10
     "#;
     let result = analyze(source);
     // Python allows variable reassignment - this should succeed
-    assert!(result.is_ok(), "Variable reassignment should be allowed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Variable reassignment should be allowed: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -338,7 +390,10 @@ def foo():
     "#;
     let result = analyze(source);
     // This should produce a redefinition error
-    assert!(result.is_err(), "Function redefinition should produce error");
+    assert!(
+        result.is_err(),
+        "Function redefinition should produce error"
+    );
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
     assert!(matches!(errors[0], SemanticError::RedefinedVariable { .. }));
@@ -369,5 +424,8 @@ def func(x):
     return x * 2
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Function parameter can shadow outer variable");
+    assert!(
+        result.is_ok(),
+        "Function parameter can shadow outer variable"
+    );
 }

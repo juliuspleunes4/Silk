@@ -9,7 +9,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper function to analyze code and return errors
 fn analyze_code(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -58,7 +58,10 @@ fn test_int_to_float_compatible() {
 x: float = 42
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Int should be compatible with float annotation");
+    assert!(
+        result.is_ok(),
+        "Int should be compatible with float annotation"
+    );
 }
 
 #[test]
@@ -79,12 +82,16 @@ x: int = "hello"
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Assigning str to int should fail");
-    
+
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    
+
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "int");
             assert_eq!(value_type.to_string(), "str");
         }
@@ -99,12 +106,16 @@ x: str = 42
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Assigning int to str should fail");
-    
+
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    
+
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "str");
             assert_eq!(value_type.to_string(), "int");
         }
@@ -119,10 +130,14 @@ x: float = "3.14"
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Assigning str to float should fail");
-    
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "float");
             assert_eq!(value_type.to_string(), "str");
         }
@@ -137,10 +152,14 @@ x: bool = 1
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Assigning int to bool should fail");
-    
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "bool");
             assert_eq!(value_type.to_string(), "int");
         }
@@ -154,11 +173,18 @@ fn test_float_to_int_incompatible() {
 x: int = 3.14
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Assigning float to int should fail (narrowing conversion)");
-    
+    assert!(
+        result.is_err(),
+        "Assigning float to int should fail (narrowing conversion)"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "int");
             assert_eq!(value_type.to_string(), "float");
         }
@@ -202,10 +228,14 @@ x: list = {"a": 1}
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Assigning dict to list should fail");
-    
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert!(expected_type.to_string().starts_with("list"));
             assert!(value_type.to_string().starts_with("dict"));
         }
@@ -222,7 +252,10 @@ x: int = 10 + 20
 y: float = 3.14 * 2.0
 "#;
     let result = analyze_code(source);
-    assert!(result.is_ok(), "Valid arithmetic expressions should succeed");
+    assert!(
+        result.is_ok(),
+        "Valid arithmetic expressions should succeed"
+    );
 }
 
 #[test]
@@ -231,11 +264,18 @@ fn test_invalid_expression_type() {
 x: int = "hello" + "world"
 "#;
     let result = analyze_code(source);
-    assert!(result.is_err(), "Assigning str expression to int should fail");
-    
+    assert!(
+        result.is_err(),
+        "Assigning str expression to int should fail"
+    );
+
     let errors = result.unwrap_err();
     match &errors[0] {
-        SemanticError::AssignmentTypeMismatch { expected_type, value_type, .. } => {
+        SemanticError::AssignmentTypeMismatch {
+            expected_type,
+            value_type,
+            ..
+        } => {
             assert_eq!(expected_type.to_string(), "int");
             assert_eq!(value_type.to_string(), "str");
         }
@@ -266,13 +306,16 @@ c: float = True
 "#;
     let result = analyze_code(source);
     assert!(result.is_err(), "Multiple invalid assignments should fail");
-    
+
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 3, "Should have 3 type mismatch errors");
-    
+
     // All should be AssignmentTypeMismatch errors
     for error in &errors {
-        assert!(matches!(error, SemanticError::AssignmentTypeMismatch { .. }));
+        assert!(matches!(
+            error,
+            SemanticError::AssignmentTypeMismatch { .. }
+        ));
     }
 }
 

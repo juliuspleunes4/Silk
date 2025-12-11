@@ -48,9 +48,7 @@ pub enum SemanticError {
 
     /// Invalid scope operation
     #[error("Invalid scope operation: {message}")]
-    InvalidScope {
-        message: String,
-    },
+    InvalidScope { message: String },
 
     /// Type mismatch error (basic, for future type checking)
     #[error("Type mismatch at line {line}, column {column}: {message}")]

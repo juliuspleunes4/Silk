@@ -1,7 +1,7 @@
 //! Scope management for semantic analysis
 
-use std::collections::HashMap;
 use crate::symbol_table::Symbol;
+use std::collections::HashMap;
 
 /// Types of scopes in Silk
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

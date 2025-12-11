@@ -6,7 +6,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 /// Helper to parse and analyze source code
 fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    
+
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program)
 }
@@ -17,11 +17,11 @@ fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
 fn test_undefined_variable_simple() {
     let source = "x = y + 5";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    
+
     match &errors[0] {
         SemanticError::UndefinedVariable { name, .. } => {
             assert_eq!(name, "y");
@@ -37,7 +37,7 @@ x = 10
 y = x + z
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
@@ -48,21 +48,27 @@ y = x + z
 fn test_multiple_undefined_variables() {
     let source = "result = a + b + c";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert_eq!(errors.len(), 3, "Should detect all three undefined variables");
+    assert_eq!(
+        errors.len(),
+        3,
+        "Should detect all three undefined variables"
+    );
 }
 
 #[test]
 fn test_undefined_in_function_call() {
     let source = "result = foo(42)";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "foo"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "foo")
+    );
 }
 
 #[test]
@@ -72,11 +78,13 @@ x = 5
 y = x * undefined_var
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_var"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_var")
+    );
 }
 
 #[test]
@@ -86,7 +94,7 @@ if x > 10:
     pass
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
@@ -169,7 +177,11 @@ def func(x):
     return x
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Parameters should be in function scope: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Parameters should be in function scope: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -181,11 +193,18 @@ def func():
 x = local_var
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert_eq!(errors.len(), 1, "Should only have error for local_var usage outside function: {:?}", errors);
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "local_var"));
+    assert_eq!(
+        errors.len(),
+        1,
+        "Should only have error for local_var usage outside function: {:?}",
+        errors
+    );
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "local_var")
+    );
 }
 
 #[test]
@@ -197,7 +216,11 @@ def func():
     return global_var
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Global variables should be visible in functions: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Global variables should be visible in functions: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -209,10 +232,12 @@ class MyClass:
 x = class_var
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "class_var"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "class_var")
+    );
 }
 
 // ========== SHADOWING BEHAVIOR ==========
@@ -254,7 +279,10 @@ def outer():
     let result = analyze(source);
     // This will fail because we don't support closure resolution yet
     // But it's documented as a known limitation
-    assert!(result.is_err() || result.is_ok(), "Closure resolution not yet implemented");
+    assert!(
+        result.is_err() || result.is_ok(),
+        "Closure resolution not yet implemented"
+    );
 }
 
 // ========== CONTROL FLOW CONTEXT VALIDATION ==========
@@ -267,7 +295,11 @@ while x:
     break
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Break inside while loop should be valid: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Break inside while loop should be valid: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -278,7 +310,11 @@ while x:
     continue
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Continue inside while loop should be valid: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Continue inside while loop should be valid: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -291,18 +327,25 @@ while x:
         break
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Break inside nested loop should be valid: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Break inside nested loop should be valid: {:?}",
+        result
+    );
 }
 
 #[test]
 fn test_return_outside_function_error() {
     let source = "return 42";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::ReturnOutsideFunction { .. }));
+    assert!(matches!(
+        errors[0],
+        SemanticError::ReturnOutsideFunction { .. }
+    ));
 }
 
 #[test]
@@ -331,7 +374,7 @@ def outer():
 fn test_break_outside_loop_error() {
     let source = "break";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
@@ -345,7 +388,7 @@ def func():
     break
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert!(matches!(errors[0], SemanticError::BreakOutsideLoop { .. }));
@@ -355,11 +398,14 @@ def func():
 fn test_continue_outside_loop_error() {
     let source = "continue";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::ContinueOutsideLoop { .. }));
+    assert!(matches!(
+        errors[0],
+        SemanticError::ContinueOutsideLoop { .. }
+    ));
 }
 
 #[test]
@@ -369,10 +415,13 @@ def func():
     continue
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(matches!(errors[0], SemanticError::ContinueOutsideLoop { .. }));
+    assert!(matches!(
+        errors[0],
+        SemanticError::ContinueOutsideLoop { .. }
+    ));
 }
 
 // ========== COMPREHENSION SCOPE ==========
@@ -384,7 +433,11 @@ items = [1, 2, 3]
 result = [x * 2 for x in items]
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "List comprehension should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "List comprehension should work: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -395,7 +448,7 @@ result = [i * 2 for i in items]
 y = i
     "#;
     let result = analyze(source);
-    
+
     // In Python 3, comprehension variables don't leak
     // Our implementation should detect this
     assert!(result.is_err());
@@ -440,7 +493,11 @@ matrix = [[1, 2], [3, 4]]
 flat = [item for row in matrix for item in row]
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Nested comprehension should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Nested comprehension should work: {:?}",
+        result
+    );
 }
 
 // ========== LAMBDA EXPRESSIONS ==========
@@ -461,7 +518,7 @@ f = lambda x: x * 2
 y = x
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "x"));
@@ -474,7 +531,11 @@ multiplier = 3
 f = lambda x: x * multiplier
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Lambda should see outer variables: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Lambda should see outer variables: {:?}",
+        result
+    );
 }
 
 // ========== WALRUS OPERATOR ==========
@@ -486,7 +547,11 @@ if (x := 10) > 5:
     y = x
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Walrus operator should define variable: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Walrus operator should define variable: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -496,7 +561,11 @@ items = [1, 2, 3, 4, 5]
 result = [y for x in items if (y := x * 2) > 5]
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Walrus in comprehension should work: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Walrus in comprehension should work: {:?}",
+        result
+    );
 }
 
 // ========== COMPLEX SCENARIOS ==========
@@ -505,7 +574,7 @@ result = [y for x in items if (y := x * 2) > 5]
 fn test_multiple_errors_in_statement() {
     let source = "result = undefined_a + undefined_b";
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 2, "Should detect both undefined variables");
@@ -519,11 +588,13 @@ y = x + undefined_var
 z = x + y
     "#;
     let result = analyze(source);
-    
+
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_var"));
+    assert!(
+        matches!(errors[0], SemanticError::UndefinedVariable { ref name, .. } if name == "undefined_var")
+    );
 }
 
 #[test]
@@ -537,7 +608,11 @@ else:
 z = y
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Variable defined in both branches should be accessible: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Variable defined in both branches should be accessible: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -553,7 +628,11 @@ finally:
     z = x
     "#;
     let result = analyze(source);
-    assert!(result.is_ok(), "Variables should flow through try/except blocks: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Variables should flow through try/except blocks: {:?}",
+        result
+    );
 }
 
 // TODO: Add match statement tests once parser fully supports match/case syntax
