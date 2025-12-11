@@ -711,8 +711,13 @@ impl SemanticAnalyzer {
                 self.infer_unary_op_type(*op, operand)
             }
             
+            // Function calls
+            ExpressionKind::Call { func, args, keywords } => {
+                self.infer_call_type(func, args, keywords)
+            }
+            
             // For now, other expressions return Unknown
-            // TODO: Infer types for calls, collections, etc.
+            // TODO: Infer types for collections, comprehensions, etc.
             _ => Type::Unknown,
         }
     }
@@ -800,6 +805,69 @@ impl SemanticAnalyzer {
                     _ => Type::Unknown,
                 }
             }
+        }
+    }
+
+    /// Infer the type of a function call expression
+    ///
+    /// Looks up the function symbol in the symbol table and returns its return type.
+    /// For built-in functions, returns their known return types.
+    /// For undefined functions or non-function calls, returns Unknown.
+    fn infer_call_type(&self, func: &Expression, _args: &[Expression], _keywords: &[silk_ast::CallKeyword]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Get the function expression type
+        match &func.kind {
+            ExpressionKind::Identifier(func_name) => {
+                // Look up function in symbol table
+                if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
+                    match &symbol.ty {
+                        Type::Function { return_type } => {
+                            // Return the function's return type
+                            return *return_type.clone();
+                        }
+                        _ => {
+                            // Not a function, return Unknown
+                            return Type::Unknown;
+                        }
+                    }
+                }
+                
+                // Check if it's a built-in function
+                match func_name.as_str() {
+                    "len" => return Type::Int,
+                    "str" => return Type::Str,
+                    "int" => return Type::Int,
+                    "float" => return Type::Float,
+                    "bool" => return Type::Bool,
+                    "print" => return Type::None,
+                    "input" => return Type::Str,
+                    "abs" => {
+                        // abs preserves numeric type - would need arg analysis for precision
+                        return Type::Unknown;
+                    }
+                    "min" | "max" | "sum" => {
+                        // These preserve argument types - would need arg analysis
+                        return Type::Unknown;
+                    }
+                    "list" | "dict" | "set" | "tuple" | "range" => {
+                        // Collection types - not yet supported
+                        return Type::Unknown;
+                    }
+                    "type" => {
+                        // Returns type objects - not yet supported
+                        return Type::Unknown;
+                    }
+                    _ => {
+                        // Undefined function
+                        return Type::Unknown;
+                    }
+                }
+            }
+            
+            // Method calls, attribute calls, etc. - not yet supported
+            // TODO: Implement method call type inference
+            _ => Type::Unknown,
         }
     }
 
