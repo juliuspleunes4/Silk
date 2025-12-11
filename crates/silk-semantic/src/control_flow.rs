@@ -18,6 +18,10 @@ pub struct ControlFlowAnalyzer {
     current_function_returns: bool,
     /// Whether we're currently inside a loop
     in_loop: bool,
+    /// Whether the current code is reachable
+    is_reachable: bool,
+    /// Whether we've already reported unreachable code in this block
+    unreachable_reported: bool,
 }
 
 impl ControlFlowAnalyzer {
@@ -27,6 +31,8 @@ impl ControlFlowAnalyzer {
             errors: Vec::new(),
             current_function_returns: false,
             in_loop: false,
+            is_reachable: true,
+            unreachable_reported: false,
         }
     }
 
@@ -49,10 +55,64 @@ impl ControlFlowAnalyzer {
         &self.errors
     }
 
+    // ========== HELPER METHODS ==========
+
+    /// Analyze a block of statements
+    /// Returns true if the block always terminates (return/break/continue/raise on all paths)
+    fn analyze_block(&mut self, statements: &[Statement]) -> bool {
+        for statement in statements {
+            self.analyze_statement(statement);
+        }
+        // Block terminates if we ended unreachable
+        !self.is_reachable
+    }
+
     // ========== STATEMENT ANALYSIS ==========
 
     /// Analyze a single statement
     fn analyze_statement(&mut self, stmt: &Statement) {
+        // Check if this statement is unreachable
+        if !self.is_reachable {
+            // Only report the first unreachable statement in a block
+            if !self.unreachable_reported {
+                let statement_type = match &stmt.kind {
+                    StatementKind::Return { .. } => "return",
+                    StatementKind::Break { .. } => "break",
+                    StatementKind::Continue { .. } => "continue",
+                    StatementKind::Raise { .. } => "raise",
+                    StatementKind::Pass => "pass",
+                    StatementKind::Expr { .. } => "expression",
+                    StatementKind::Assign { .. } => "assignment",
+                    StatementKind::AnnAssign { .. } => "annotated assignment",
+                    StatementKind::AugAssign { .. } => "augmented assignment",
+                    StatementKind::If { .. } => "if statement",
+                    StatementKind::While { .. } => "while loop",
+                    StatementKind::For { .. } => "for loop",
+                    StatementKind::FunctionDef { .. } => "function definition",
+                    StatementKind::ClassDef { .. } => "class definition",
+                    StatementKind::Try { .. } => "try statement",
+                    StatementKind::With { .. } => "with statement",
+                    StatementKind::Match { .. } => "match statement",
+                    StatementKind::Assert { .. } => "assert",
+                    StatementKind::Delete { .. } => "delete",
+                    StatementKind::Import { .. } | StatementKind::ImportFrom { .. } => "import",
+                    StatementKind::Global { .. } | StatementKind::Nonlocal { .. } => "declaration",
+                };
+
+                self.errors.push(SemanticError::UnreachableCode {
+                    statement_type: statement_type.to_string(),
+                    line: stmt.span.line,
+                    column: stmt.span.column,
+                    span: stmt.span,
+                });
+
+                self.unreachable_reported = true;
+            }
+
+            // Don't analyze unreachable code further - this prevents cascading errors
+            return;
+        }
+
         match &stmt.kind {
             // Assignment statements
             StatementKind::Assign { .. } | StatementKind::AugAssign { .. } => {
@@ -67,9 +127,13 @@ impl ControlFlowAnalyzer {
             StatementKind::FunctionDef { body, .. } => {
                 let previous_in_function = self.current_function_returns;
                 let previous_in_loop = self.in_loop;
+                let previous_reachable = self.is_reachable;
+                let previous_unreachable_reported = self.unreachable_reported;
                 
                 self.current_function_returns = false;
                 self.in_loop = false;
+                self.is_reachable = true; // Function body starts reachable
+                self.unreachable_reported = false; // Reset for new scope
 
                 // Analyze function body
                 for stmt in body {
@@ -80,6 +144,8 @@ impl ControlFlowAnalyzer {
 
                 self.current_function_returns = previous_in_function;
                 self.in_loop = previous_in_loop;
+                self.is_reachable = previous_reachable; // Restore reachability
+                self.unreachable_reported = previous_unreachable_reported;
             }
 
             // Class definition
@@ -96,15 +162,28 @@ impl ControlFlowAnalyzer {
                 body,
                 orelse,
             } => {
+                let previous_reachable = self.is_reachable;
+                let previous_unreachable_reported = self.unreachable_reported;
+                
                 // Analyze if body
+                self.is_reachable = previous_reachable;
+                self.unreachable_reported = false; // Reset for if block
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
+                let if_reachable = self.is_reachable;
 
                 // Analyze else body (orelse is Vec, not Option)
+                self.is_reachable = previous_reachable;
+                self.unreachable_reported = false; // Reset for else block
                 for stmt in orelse {
                     self.analyze_statement(stmt);
                 }
+                let else_reachable = self.is_reachable;
+                
+                // Code after if is reachable if either branch is reachable
+                self.is_reachable = if_reachable || else_reachable;
+                self.unreachable_reported = previous_unreachable_reported; // Restore
             }
 
             StatementKind::While {
@@ -113,7 +192,10 @@ impl ControlFlowAnalyzer {
                 orelse,
             } => {
                 let previous_in_loop = self.in_loop;
+                let previous_reachable = self.is_reachable;
+                
                 self.in_loop = true;
+                self.is_reachable = true; // Loop body starts reachable
 
                 // Analyze while body
                 for stmt in body {
@@ -121,6 +203,7 @@ impl ControlFlowAnalyzer {
                 }
 
                 self.in_loop = previous_in_loop;
+                self.is_reachable = previous_reachable; // Code after loop is reachable
 
                 // Analyze else clause (orelse is Vec, not Option)
                 for stmt in orelse {
@@ -136,7 +219,10 @@ impl ControlFlowAnalyzer {
                 is_async: _,
             } => {
                 let previous_in_loop = self.in_loop;
+                let previous_reachable = self.is_reachable;
+                
                 self.in_loop = true;
+                self.is_reachable = true; // Loop body starts reachable
 
                 // TODO: Track loop variable initialization
 
@@ -146,6 +232,7 @@ impl ControlFlowAnalyzer {
                 }
 
                 self.in_loop = previous_in_loop;
+                self.is_reachable = previous_reachable; // Code after loop is reachable
 
                 // Analyze else clause (orelse is Vec, not Option)
                 for stmt in orelse {
@@ -160,17 +247,28 @@ impl ControlFlowAnalyzer {
                 orelse,
                 finalbody,
             } => {
+                let previous_reachable = self.is_reachable;
+                
                 // Analyze try body
+                self.is_reachable = previous_reachable;
                 for stmt in body {
                     self.analyze_statement(stmt);
                 }
+                let try_reachable = self.is_reachable;
 
                 // Analyze exception handlers
+                let mut handlers_reachable = false;
                 for handler in handlers {
+                    self.is_reachable = previous_reachable; // Each handler starts fresh
                     for stmt in &handler.body {
                         self.analyze_statement(stmt);
                     }
+                    handlers_reachable = handlers_reachable || self.is_reachable;
                 }
+
+                // After try/except, code is reachable if try exits normally OR any handler is reachable
+                // (Exceptions can always occur, so handlers are always potentially executed)
+                self.is_reachable = try_reachable || handlers_reachable || !handlers.is_empty();
 
                 // Analyze else clause (orelse is Vec, not Option)
                 for stmt in orelse {
@@ -206,19 +304,26 @@ impl ControlFlowAnalyzer {
 
             // Simple statements - no nested structure
             StatementKind::Return { .. } => {
-                // TODO: Track return statements
+                // Mark code after return as unreachable
+                self.is_reachable = false;
+                self.current_function_returns = true;
             }
 
             StatementKind::Break { .. } => {
+                // Mark code after break as unreachable
+                self.is_reachable = false;
                 // TODO: Detect break outside loop
             }
 
             StatementKind::Continue { .. } => {
+                // Mark code after continue as unreachable
+                self.is_reachable = false;
                 // TODO: Detect continue outside loop
             }
 
             StatementKind::Raise { .. } => {
-                // TODO: Track raise statements
+                // Mark code after raise as unreachable
+                self.is_reachable = false;
             }
 
             StatementKind::Assert { .. } => {
@@ -332,7 +437,6 @@ while False:
     
 pass
 
-raise Exception("error")
 assert True
 del x
 
@@ -346,8 +450,7 @@ global g
         // Should not panic and should traverse all statements
         let result = analyzer.analyze(&program);
         
-        // At this stage, we're just testing traversal, so OK is expected
-        // (we haven't implemented error detection yet)
+        // Should succeed - no control flow errors in this code
         assert!(result.is_ok(), "Traversal should succeed: {:?}", result);
     }
 
