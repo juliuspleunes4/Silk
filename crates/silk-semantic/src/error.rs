@@ -156,4 +156,50 @@ pub enum SemanticError {
         column: usize,
         span: Span,
     },
+
+    // ========== CONTROL FLOW ANALYSIS ERRORS ==========
+
+    /// Unreachable code after return/break/continue/raise
+    #[error("Unreachable code at line {line}, column {column}: code after '{statement_type}' will never execute")]
+    UnreachableCode {
+        statement_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Variable used before being initialized
+    #[error("Variable '{name}' may be used before being initialized at line {line}, column {column}")]
+    UninitializedVariable {
+        name: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Function missing return statement on some paths
+    #[error("Function '{function_name}' is missing a return statement on some execution paths (line {line}, column {column})")]
+    MissingReturn {
+        function_name: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Infinite loop detected
+    #[error("Infinite loop detected at line {line}, column {column}: loop will never terminate")]
+    InfiniteLoop {
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Dead code that can never be executed
+    #[error("Dead code at line {line}, column {column}: {reason}")]
+    DeadCode {
+        reason: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
 }
