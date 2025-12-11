@@ -278,7 +278,7 @@ result = foo()
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // Function call results are Unknown for now (until we implement return type tracking)
+    // Function without return type annotation returns Unknown
     let result_symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
     assert_eq!(result_symbol.ty, Type::Unknown);
 }

@@ -219,15 +219,9 @@ with file as f:
     data = f.read()
     "#;
     let result = analyze(source);
-    // Will have errors for undefined 'open' and 'f.read()'
-    assert!(result.is_err());
-    let errors = result.unwrap_err();
-    // Check that 'f' is defined (no error about f being undefined)
-    for error in &errors {
-        if let SemanticError::UndefinedVariable { name, .. } = error {
-            assert_ne!(name, "f", "f should be defined by with statement");
-        }
-    }
+    // open is now a built-in function, so no errors expected
+    // Method calls like f.read() don't generate errors (they return Unknown)
+    assert!(result.is_ok(), "Should succeed - 'open' is built-in and 'f' is defined by with statement");
 }
 
 #[test]
