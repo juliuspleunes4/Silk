@@ -484,7 +484,7 @@ impl SemanticAnalyzer {
         match &expr.kind {
             // Identifier: check if defined
             ExpressionKind::Identifier(name) => {
-                if self.symbol_table.resolve_symbol(name).is_none() {
+                if self.symbol_table.resolve_symbol(name).is_none() && !Self::is_builtin_function(name) {
                     self.errors.push(SemanticError::UndefinedVariable {
                         name: name.clone(),
                         line: expr.span.line,
@@ -869,6 +869,27 @@ impl SemanticAnalyzer {
             // TODO: Implement method call type inference
             _ => Type::Unknown,
         }
+    }
+
+    /// Check if a name is a built-in function
+    ///
+    /// Returns true for Python built-in functions that don't need to be defined.
+    fn is_builtin_function(name: &str) -> bool {
+        matches!(
+            name,
+            "len" | "str" | "int" | "float" | "bool" | "print" | "input" |
+            "abs" | "min" | "max" | "sum" |
+            "list" | "dict" | "set" | "tuple" | "range" |
+            "type" | "isinstance" | "issubclass" |
+            "chr" | "ord" | "hex" | "oct" | "bin" |
+            "round" | "pow" | "divmod" |
+            "all" | "any" | "enumerate" | "filter" | "map" | "zip" |
+            "sorted" | "reversed" | "iter" | "next" |
+            "open" | "help" | "dir" | "vars" | "globals" | "locals" |
+            "eval" | "exec" | "compile" |
+            "getattr" | "setattr" | "hasattr" | "delattr" |
+            "id" | "hash" | "repr" | "ascii" | "format"
+        )
     }
 
     /// Resolve a type annotation from AST to semantic Type
