@@ -85,7 +85,7 @@
     - ✅ Literal type inference (int, float, str, bool, None)
     - ✅ Binary operation type inference (arithmetic, comparison, logical)
     - ✅ Unary operation type inference (not, +, -, ~)
-    - ✅ Function call type inference (11 tests covering user functions + built-ins)
+    - ✅ Function call type inference (23 tests: 19 call inference + 4 function types, covering user functions + 40+ built-ins)
     - ❌ Collection type inference (list, dict, set, tuple) - **NEXT**
   - Type Checking ❌ (0% - blocked on collection type inference)
   - Control Flow Analysis ❌ (0% - future)
