@@ -675,6 +675,30 @@ impl Parser {
     fn parse_expr_or_assign_statement(&mut self) -> ParseResult<StatementKind> {
         let expr = self.parse_expression()?;
         
+        // Check for annotated assignment (x: int = 10 or x: int)
+        if self.check(TokenKind::Colon) {
+            self.advance(); // consume ':'
+            let annotation = self.parse_type()?;
+            
+            // Check if there's an assignment
+            if self.check(TokenKind::Assign) {
+                self.advance(); // consume '='
+                let value = self.parse_expression()?;
+                return Ok(StatementKind::AnnAssign {
+                    target: expr,
+                    annotation,
+                    value: Some(value),
+                });
+            } else {
+                // Just annotation, no value
+                return Ok(StatementKind::AnnAssign {
+                    target: expr,
+                    annotation,
+                    value: None,
+                });
+            }
+        }
+        
         // Check for assignment
         if self.check(TokenKind::Assign) {
             self.advance(); // consume '='

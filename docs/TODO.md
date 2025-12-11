@@ -58,8 +58,6 @@
   - NotImplemented singleton for rich comparison methods ✅
   - **Known Limitations**:
     - Lambda parameter defaults not supported by parser (semantic analyzer ready)
-    - List/dict/set comprehensions not implemented
-    - Generator expressions not implemented
 - **CLI**: Basic command-line interface with 4 subcommands (build, run, check, lex)
 - **Error Handling**: Foundation with custom error types using thiserror
 - **Testing Infrastructure**: Cargo test setup with pretty_assertions
@@ -74,12 +72,12 @@
     - ✅ Complete: Function params with *args/**kwargs support
     - ✅ Complete: Decorators for functions and classes
     - ✅ Complete: List/dict/set/generator comprehensions with multiple generators and filters
-- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (80% complete)**
+- **Phase 2: Semantic Analysis** - 🚀 **IN PROGRESS (85% complete)**
   - Symbol Table ✅ (100% - scope stack, define/resolve, 17 tests)
   - AST Visitor ✅ (100% - single-pass analyzer with pre-pass, ~700 lines)
   - Symbol Collection ✅ (100% - assignments, functions, classes, imports, 28 tests)
   - Type System ✅ (100% - Type enum, literal inference, type compatibility, 36 tests)
-  - Type Annotation Infrastructure ✅ (100% - resolver ready, blocked on parser for AnnAssign)
+  - Type Annotation Support ✅ (100% - parser + semantic analyzer, 17 tests)
   - Name Resolution ✅ (100% - undefined detection, scope resolution, context validation, 44 tests)
   - Forward References ✅ (100% - function/class forward refs, mutual recursion, 14 tests)
   - Architecture ✅ (100% - single-pass refactor complete)

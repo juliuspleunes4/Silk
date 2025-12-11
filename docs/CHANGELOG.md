@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✏️ Annotated Assignment (AnnAssign) - December 11, 2025
+
+**Implemented parser and semantic analysis support for annotated assignments** (`x: int = 10`).
+
+**Parser Changes**:
+- Added colon detection in `parse_expr_or_assign_statement()`
+- Parses type annotations after identifier using existing `parse_type()` method
+- Supports both forms:
+  - With value: `x: int = 10`
+  - Without value (declaration only): `x: int`
+- Works with all type annotations: simple types (`int`, `str`, `float`, `bool`) and generic types (`list[int]`)
+- New tests: 9 comprehensive parser tests in `test_ann_assign.rs`
+
+**Semantic Analyzer Changes**:
+- Added `StatementKind::AnnAssign` handler in `visit_statement()`
+- Uses `resolve_type_annotation()` to convert AST type to semantic Type
+- Creates symbol table entries with annotated type (not inferred from value)
+- Validates value expression if present
+- New tests: 8 semantic analysis tests covering:
+  - Symbol creation with correct types
+  - Declarations without values
+  - Multiple annotated assignments
+  - Generic type fallback (currently returns Unknown)
+  - Function scope handling
+
+**Example Usage**:
+```python
+# Basic annotated assignment
+x: int = 10
+
+# Declaration without value
+y: str
+
+# With expression
+result: int = 1 + 2 + 3
+
+# Generic types
+items: list[int] = []
+
+# In function
+def my_func():
+    local_var: float = 3.14
+    return local_var
+```
+
+**Files Modified**:
+- `crates/silk-parser/src/stmt.rs`: Added AnnAssign parsing logic
+- `crates/silk-semantic/src/analyzer.rs`: Added AnnAssign visitor, removed `#[allow(dead_code)]` from `resolve_type_annotation()`
+
+**Tests Added**: 17 new tests (9 parser + 8 semantic)
+
+**Total Test Count**: **598 tests** (126 lexer + 264 parser + 8 types + 200 semantic)
+- 13 tests ignored (3 analyzer limitations + 10 binary ops pending investigation)
+- Parser breakdown: 255 existing + 9 AnnAssign = 264 parser tests
+- Semantic breakdown: 28 analyzer + 8 AnnAssign + 31 binary ops + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases + 28 type inference = 200
+
+**Unblocks**: Type annotation validation and full type checking implementation
+
+---
+
 ### ⚖️ Binary Operation Type Inference - December 9, 2025
 
 **Implemented type inference for binary, comparison, and unary operations**.
