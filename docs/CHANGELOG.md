@@ -72,21 +72,19 @@ nothing = print("hi")  # nothing has type None
 - `crates/silk-semantic/tests/test_analyzer.rs`: Updated `test_collect_with_statement_variable` (open is now built-in)
 - `crates/silk-semantic/tests/test_type_inference.rs`: Updated comment in `test_function_call_result_gets_unknown_type`
 
-**Tests Added**: 11 new tests
+**Tests Added**: 23 new tests
 - 4 function type storage tests in `test_function_types.rs`:
   - Function with return type creates symbol
   - Function without return type gets Unknown
   - Function symbol has Function type
   - Different return types resolved correctly (int, str, float, bool)
-- 7 call type inference tests in `test_call_type_inference.rs`:
-  - Call to function with int/str/float return
-  - Call to function without return type
-  - Assignment from function call
-  - Built-in functions: `len()`, `str()`, `print()`
+- 19 call type inference tests in `test_call_type_inference.rs`:
+  - **Basic tests (7)**: Call to function with int/str/float return, functions without return types, assignments, built-ins (`len()`, `str()`, `print()`)
+  - **Advanced tests (12)**: Nested function calls, function calls in expressions, function calls as arguments, multiple calls to same function, recursive calls, method calls (returns Unknown), calling non-function variables (returns Unknown), undefined function calls, additional built-ins (`input()`, `int()`, `float()`, `bool()`)
 
-**Total Test Count**: **609 tests** (126 lexer + 264 parser + 8 types + 211 semantic)
+**Total Test Count**: **621 tests** (126 lexer + 264 parser + 8 types + 223 semantic)
 - 13 tests ignored (3 analyzer limitations + 10 binary ops pending investigation)
-- Semantic breakdown: 28 analyzer + 8 AnnAssign + 7 call inference + 4 function types + 31 binary ops + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases + 28 type inference = 211
+- Semantic breakdown: 28 analyzer + 8 AnnAssign + 19 call inference + 4 function types + 31 binary ops + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases + 28 type inference = 223
 
 **Limitations**:
 - Method calls return Unknown (e.g., `obj.method()`)

@@ -813,6 +813,28 @@ impl SemanticAnalyzer {
     /// Looks up the function symbol in the symbol table and returns its return type.
     /// For built-in functions, returns their known return types.
     /// For undefined functions or non-function calls, returns Unknown.
+    ///
+    /// # Current Limitations
+    ///
+    /// - **No parameter type checking**: Does not validate argument types match parameters
+    /// - **No argument count validation**: Doesn't check if correct number of args provided
+    /// - **Method calls return Unknown**: `obj.method()` not yet supported
+    /// - **Lambda calls return Unknown**: `(lambda x: x + 1)(5)` not yet supported
+    /// - **Attribute access calls return Unknown**: `module.function()` returns Unknown
+    /// - **Type-preserving built-ins incomplete**: `abs()`, `min()`, `max()`, `sum()` need arg analysis
+    /// - **Collection constructors**: `list()`, `dict()`, etc. need collection type support
+    /// - **Callable objects**: Calling instances of classes with `__call__` not supported
+    ///
+    /// # TODO: Future Improvements
+    ///
+    /// 1. Implement parameter type validation (use function signature from symbol table)
+    /// 2. Add support for method call type inference (requires class/attribute type system)
+    /// 3. Implement lambda type inference (track lambda return types)
+    /// 4. Support type-preserving built-ins by analyzing argument types:
+    ///    - `abs(int)` → int, `abs(float)` → float
+    ///    - `min([int])` → int, `max([str])` → str
+    /// 5. Add collection type support (generics): `list[int]`, `dict[str, int]`
+    /// 6. Implement callable objects (classes with `__call__` method)
     fn infer_call_type(&self, func: &Expression, _args: &[Expression], _keywords: &[silk_ast::CallKeyword]) -> crate::types::Type {
         use crate::types::Type;
         
@@ -821,20 +843,23 @@ impl SemanticAnalyzer {
             ExpressionKind::Identifier(func_name) => {
                 // Look up function in symbol table
                 if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
-                    match &symbol.ty {
+                    return match &symbol.ty {
                         Type::Function { return_type } => {
-                            // Return the function's return type
-                            return *return_type.clone();
+                            // TODO: Validate argument count and types against function signature
+                            // Currently just returns the declared return type without validation
+                            *return_type.clone()
                         }
                         _ => {
-                            // Not a function, return Unknown
-                            return Type::Unknown;
+                            // Not a function (e.g., calling an integer or string)
+                            // TODO: Check for __call__ method on objects
+                            Type::Unknown
                         }
-                    }
+                    };
                 }
                 
                 // Check if it's a built-in function
                 match func_name.as_str() {
+                    // Built-ins with fixed return types
                     "len" => Type::Int,
                     "str" => Type::Str,
                     "int" => Type::Int,
@@ -842,31 +867,46 @@ impl SemanticAnalyzer {
                     "bool" => Type::Bool,
                     "print" => Type::None,
                     "input" => Type::Str,
+                    
+                    // Type-preserving built-ins (need argument analysis)
                     "abs" => {
-                        // abs preserves numeric type - would need arg analysis for precision
+                        // TODO: abs(int) -> int, abs(float) -> float
+                        // Need to infer type from first argument
                         Type::Unknown
                     }
                     "min" | "max" | "sum" => {
-                        // These preserve argument types - would need arg analysis
+                        // TODO: Preserve type of elements (min([int]) -> int)
+                        // Need to analyze argument/iterable element types
                         Type::Unknown
                     }
+                    
+                    // Collection constructors (need generic type support)
                     "list" | "dict" | "set" | "tuple" | "range" => {
-                        // Collection types - not yet supported
+                        // TODO: Return proper collection types (list[T], dict[K, V], etc.)
+                        // Requires implementing generic type system
                         Type::Unknown
                     }
+                    
+                    // Type introspection
                     "type" => {
-                        // Returns type objects - not yet supported
+                        // TODO: Return Type type (requires type object support)
                         Type::Unknown
                     }
+                    
                     _ => {
-                        // Undefined function
+                        // Undefined function - error already reported in analyze_expression
                         Type::Unknown
                     }
                 }
             }
             
-            // Method calls, attribute calls, etc. - not yet supported
-            // TODO: Implement method call type inference
+            // Method calls: obj.method()
+            // Attribute access calls: module.function()
+            // Lambda calls: (lambda x: x)(5)
+            // TODO: Implement these call patterns:
+            // - Method calls require attribute type system and class method lookup
+            // - Attribute calls need module/attribute type tracking
+            // - Lambda calls need lambda expression return type inference
             _ => Type::Unknown,
         }
     }
