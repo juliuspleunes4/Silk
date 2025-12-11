@@ -716,8 +716,22 @@ impl SemanticAnalyzer {
                 self.infer_call_type(func, args, keywords)
             }
             
+            // Collection literals
+            ExpressionKind::List { elements } => {
+                self.infer_list_type(elements)
+            }
+            ExpressionKind::Dict { keys, values } => {
+                self.infer_dict_type(keys, values)
+            }
+            ExpressionKind::Set { elements } => {
+                self.infer_set_type(elements)
+            }
+            ExpressionKind::Tuple { elements } => {
+                self.infer_tuple_type(elements)
+            }
+            
             // For now, other expressions return Unknown
-            // TODO: Infer types for collections, comprehensions, etc.
+            // TODO: Infer types for comprehensions, etc.
             _ => Type::Unknown,
         }
     }
@@ -930,6 +944,187 @@ impl SemanticAnalyzer {
             "getattr" | "setattr" | "hasattr" | "delattr" |
             "id" | "hash" | "repr" | "ascii" | "format"
         )
+    }
+
+    /// Infer type for list literals
+    /// 
+    /// Analyzes all elements in the list and determines the common element type.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty list: returns `list[Unknown]` (no elements to infer from)
+    /// - Homogeneous list: returns `list[ElementType]` (all elements same type)
+    /// - Heterogeneous list: returns `list[Unknown]` (mixed types, no union support yet)
+    /// - Nested lists: recursively infers inner list types
+    /// 
+    /// **Examples**:
+    /// - `[1, 2, 3]` → `list[int]`
+    /// - `["a", "b"]` → `list[str]`
+    /// - `[]` → `list[Unknown]`
+    /// - `[1, "a"]` → `list[Unknown]` (heterogeneous)
+    /// - `[[1, 2], [3, 4]]` → `list[list[int]]`
+    /// 
+    /// **Limitations**:
+    /// - No union type support: heterogeneous lists return `list[Unknown]`
+    /// - No type widening: `[1, 1.0]` returns `list[Unknown]`, not `list[float]`
+    /// 
+    /// **TODO: Future Improvements**:
+    /// - Add union type support for heterogeneous lists: `[1, "a"]` → `list[int | str]`
+    /// - Add type widening: int → float when mixed
+    /// - Consider context/annotation: `x: list[float] = [1, 2]` should validate
+    fn infer_list_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Empty list: cannot infer element type
+        if elements.is_empty() {
+            return Type::List(Box::new(Type::Unknown));
+        }
+        
+        // Infer type of first element
+        let first_type = self.infer_type(&elements[0]);
+        
+        // Check if all elements have the same type
+        let all_same = elements[1..].iter().all(|elem| {
+            let elem_type = self.infer_type(elem);
+            first_type.is_compatible_with(&elem_type)
+        });
+        
+        if all_same {
+            // Homogeneous list: all elements same type
+            Type::List(Box::new(first_type))
+        } else {
+            // Heterogeneous list: mixed types, no union support yet
+            // TODO: Return list[Union[...]] when union types are implemented
+            Type::List(Box::new(Type::Unknown))
+        }
+    }
+
+    /// Infer type for dict literals
+    /// 
+    /// Analyzes all keys and values in the dict and determines the common types.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty dict: returns `dict[Unknown, Unknown]` (no entries to infer from)
+    /// - Homogeneous dict: returns `dict[KeyType, ValueType]` (all keys/values same type)
+    /// - Heterogeneous keys: returns `dict[Unknown, ValueType]` (mixed key types)
+    /// - Heterogeneous values: returns `dict[KeyType, Unknown]` (mixed value types)
+    /// - Both heterogeneous: returns `dict[Unknown, Unknown]`
+    /// 
+    /// **Examples**:
+    /// - `{1: "a", 2: "b"}` → `dict[int, str]`
+    /// - `{"a": 1, "b": 2}` → `dict[str, int]`
+    /// - `{}` → `dict[Unknown, Unknown]`
+    /// - `{1: "a", "b": 2}` → `dict[Unknown, Unknown]` (heterogeneous)
+    /// 
+    /// **Limitations**:
+    /// - No union type support: heterogeneous dicts return Unknown for that dimension
+    /// 
+    /// **TODO: Future Improvements**:
+    /// - Add union type support for heterogeneous dicts
+    /// - Type widening for numeric keys/values
+    fn infer_dict_type(&self, keys: &[silk_ast::Expression], values: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Empty dict: cannot infer types
+        if keys.is_empty() {
+            return Type::Dict {
+                key_type: Box::new(Type::Unknown),
+                value_type: Box::new(Type::Unknown),
+            };
+        }
+        
+        // Infer type of first key and value
+        let first_key_type = self.infer_type(&keys[0]);
+        let first_value_type = self.infer_type(&values[0]);
+        
+        // Check if all keys have the same type
+        let all_keys_same = keys[1..].iter().all(|key| {
+            let key_type = self.infer_type(key);
+            first_key_type.is_compatible_with(&key_type)
+        });
+        
+        // Check if all values have the same type
+        let all_values_same = values[1..].iter().all(|value| {
+            let value_type = self.infer_type(value);
+            first_value_type.is_compatible_with(&value_type)
+        });
+        
+        let key_type = if all_keys_same { first_key_type } else { Type::Unknown };
+        let value_type = if all_values_same { first_value_type } else { Type::Unknown };
+        
+        Type::Dict {
+            key_type: Box::new(key_type),
+            value_type: Box::new(value_type),
+        }
+    }
+
+    /// Infer type for set literals
+    /// 
+    /// Analyzes all elements in the set and determines the common element type.
+    /// Similar to list inference, but for sets.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty set: Note that `{}` is an empty dict, not a set. Empty sets use `set()` call.
+    /// - Homogeneous set: returns `set[ElementType]` (all elements same type)
+    /// - Heterogeneous set: returns `set[Unknown]` (mixed types, no union support yet)
+    /// 
+    /// **Examples**:
+    /// - `{1, 2, 3}` → `set[int]`
+    /// - `{"a", "b"}` → `set[str]`
+    /// - `{1, "a"}` → `set[Unknown]` (heterogeneous)
+    /// 
+    /// **Note**: Python doesn't have empty set literal syntax. `{}` is empty dict, `set()` is a call.
+    fn infer_set_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Sets always have at least one element (parser creates Set only for non-empty)
+        // Empty {} is Dict, not Set
+        if elements.is_empty() {
+            // This shouldn't happen in practice, but handle it gracefully
+            return Type::Set(Box::new(Type::Unknown));
+        }
+        
+        // Infer type of first element
+        let first_type = self.infer_type(&elements[0]);
+        
+        // Check if all elements have the same type
+        let all_same = elements[1..].iter().all(|elem| {
+            let elem_type = self.infer_type(elem);
+            first_type.is_compatible_with(&elem_type)
+        });
+        
+        if all_same {
+            Type::Set(Box::new(first_type))
+        } else {
+            Type::Set(Box::new(Type::Unknown))
+        }
+    }
+
+    /// Infer type for tuple literals
+    /// 
+    /// Tuples are heterogeneous collections where each position can have a different type.
+    /// This is different from lists/sets which are homogeneous.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty tuple: returns `tuple[]`
+    /// - Single element: returns `tuple[Type]`
+    /// - Multiple elements: returns `tuple[Type1, Type2, ...]` with each inferred independently
+    /// 
+    /// **Examples**:
+    /// - `()` → `tuple[]`
+    /// - `(42,)` → `tuple[int]`
+    /// - `(1, 2, 3)` → `tuple[int, int, int]`
+    /// - `(1, "a", 3.0)` → `tuple[int, str, float]` (heterogeneous is normal)
+    /// - `((1, 2), (3, 4))` → `tuple[tuple[int, int], tuple[int, int]]`
+    fn infer_tuple_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Infer type of each element independently
+        let element_types: Vec<Type> = elements
+            .iter()
+            .map(|elem| self.infer_type(elem))
+            .collect();
+        
+        Type::Tuple(element_types)
     }
 
     /// Resolve a type annotation from AST to semantic Type

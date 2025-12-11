@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📦 Collection Type Inference - December 11, 2025
+
+**Implemented full type inference for all collection literals: lists, dicts, sets, and tuples**.
+
+**Type System Additions**:
+- Added `Type::List(Box<Type>)` variant for homogeneous list types
+- Added `Type::Dict { key_type: Box<Type>, value_type: Box<Type> }` for homogeneous dict types
+- Added `Type::Set(Box<Type>)` for homogeneous set types
+- Added `Type::Tuple(Vec<Type>)` for heterogeneous tuple types (each element preserves its own type)
+- Updated `is_compatible_with()` with compatibility rules for all collection types:
+  - List/Set: Element types must be compatible
+  - Dict: Both key and value types must be compatible
+  - Tuple: Same length and all element types compatible pairwise
+- Updated `Display` trait with clean formatting:
+  - `list[ElementType]`, `dict[KeyType, ValueType]`, `set[ElementType]`
+  - `tuple[Type1, Type2, ...]` or `tuple[]` for empty tuple
+
+**Semantic Analyzer Additions**:
+- **New method `infer_list_type(elements: &[Expression])`** (~50 lines):
+  - Infers element types recursively
+  - Homogeneous lists → `list[Type]`
+  - Heterogeneous lists → `list[Unknown]`
+  - Empty lists → `list[Unknown]`
+  - Handles nested lists, variables, expressions, and function calls
+- **New method `infer_dict_type(keys: &[Expression], values: &[Expression])`** (~60 lines):
+  - Separately infers key and value types
+  - Homogeneous dicts → `dict[KeyType, ValueType]`
+  - Mixed keys/values → Unknown for that dimension
+  - Empty dicts → `dict[Unknown, Unknown]`
+  - Supports nested dicts, variables, expressions
+- **New method `infer_set_type(elements: &[Expression])`** (~40 lines):
+  - Similar to list inference
+  - Homogeneous sets → `set[Type]`
+  - Heterogeneous sets → `set[Unknown]`
+  - Note: `{}` is empty dict, not set (Python compatibility)
+- **New method `infer_tuple_type(elements: &[Expression])`** (~30 lines):
+  - Infers each element independently
+  - Tuples are heterogeneous by design
+  - Empty tuple → `tuple[]`
+  - Preserves individual element types: `(1, "a", 3.0)` → `tuple[int, str, float]`
+- **Integrated into `infer_type()`**: Added cases for all 4 collection literal types
+
+**Example Usage**:
+```python
+# Lists - homogeneous element types
+x = [1, 2, 3]           # list[int]
+y = ["a", "b"]          # list[str]
+z = [1, "a"]            # list[Unknown] (heterogeneous)
+empty = []              # list[Unknown]
+
+# Dicts - key and value types
+d1 = {"a": 1, "b": 2}   # dict[str, int]
+d2 = {1: "x", 2: "y"}   # dict[int, str]
+d3 = {"a": 1, "b": "x"} # dict[str, Unknown] (mixed values)
+d4 = {}                 # dict[Unknown, Unknown]
+
+# Sets - homogeneous element types
+s1 = {1, 2, 3}          # set[int]
+s2 = {"a", "b"}         # set[str]
+s3 = {1, "a"}           # set[Unknown] (heterogeneous)
+
+# Tuples - heterogeneous by design
+t1 = ()                 # tuple[]
+t2 = (1,)               # tuple[int]
+t3 = (1, "a", 3.0)      # tuple[int, str, float]
+t4 = (1, 2, 3)          # tuple[int, int, int]
+```
+
+**Testing**:
+- Added 55 new comprehensive tests:
+  - 12 type system tests (Display, compatibility rules, nested collections)
+  - 13 list inference tests (homogeneous, heterogeneous, nested, empty, with variables/expressions/calls)
+  - 11 dict inference tests (all key/value type combinations, nested values, with variables/expressions)
+  - 8 set inference tests (homogeneous types, heterogeneous, with variables/expressions)
+  - 11 tuple inference tests (empty, single, homogeneous, heterogeneous, nested, mixed collections)
+- Updated 3 existing tests that expected Unknown for collections to expect proper collection types
+- All 677 tests passing (622 baseline + 55 new)
+
+**Technical Notes**:
+- Design decision: Lists, dicts, and sets should be homogeneous; mixed types → Unknown (no union types yet)
+- Tuples are special-cased as heterogeneous to match Python semantics
+- Empty collections return `Collection[Unknown]` since no elements to infer from
+- Recursive inference naturally handles nested collections through `infer_type()` calls
+
+**Impact**:
+- Type Inference progress: 60% → 80%
+- Phase 2 (Semantic Analysis) progress: 90% → 95%
+- Unblocked: Type Checking implementation (can now validate collection operations)
+
+---
+
 ### 📞 Function Call Type Inference - December 11, 2025
 
 **Implemented type inference for function calls based on return type annotations**.

@@ -24,6 +24,19 @@ pub enum Type {
         /// Return type of the function
         return_type: Box<Type>,
     },
+    /// List type with element type
+    List(Box<Type>),
+    /// Dictionary type with key and value types
+    Dict {
+        /// Type of dictionary keys
+        key_type: Box<Type>,
+        /// Type of dictionary values
+        value_type: Box<Type>,
+    },
+    /// Set type with element type
+    Set(Box<Type>),
+    /// Tuple type with element types (heterogeneous)
+    Tuple(Vec<Type>),
 }
 
 impl Type {
@@ -52,6 +65,29 @@ impl Type {
             return rt1.is_compatible_with(rt2);
         }
 
+        // Lists are compatible if their element types are compatible
+        if let (Type::List(elem1), Type::List(elem2)) = (self, other) {
+            return elem1.is_compatible_with(elem2);
+        }
+
+        // Dicts are compatible if both key and value types are compatible
+        if let (Type::Dict { key_type: k1, value_type: v1 }, Type::Dict { key_type: k2, value_type: v2 }) = (self, other) {
+            return k1.is_compatible_with(k2) && v1.is_compatible_with(v2);
+        }
+
+        // Sets are compatible if their element types are compatible
+        if let (Type::Set(elem1), Type::Set(elem2)) = (self, other) {
+            return elem1.is_compatible_with(elem2);
+        }
+
+        // Tuples are compatible if they have the same length and each element type is compatible
+        if let (Type::Tuple(elems1), Type::Tuple(elems2)) = (self, other) {
+            if elems1.len() != elems2.len() {
+                return false;
+            }
+            return elems1.iter().zip(elems2.iter()).all(|(t1, t2)| t1.is_compatible_with(t2));
+        }
+
         // Otherwise, types must match exactly
         false
     }
@@ -67,6 +103,10 @@ impl Type {
             Type::Any => "Any",
             Type::Unknown => "<unknown>",
             Type::Function { .. } => "function",
+            Type::List(_) => "list",
+            Type::Dict { .. } => "dict",
+            Type::Set(_) => "set",
+            Type::Tuple(_) => "tuple",
         }
     }
 
@@ -97,6 +137,26 @@ impl fmt::Display for Type {
         match self {
             Type::Function { return_type } => {
                 write!(f, "function -> {}", return_type)
+            }
+            Type::List(element_type) => {
+                write!(f, "list[{}]", element_type)
+            }
+            Type::Dict { key_type, value_type } => {
+                write!(f, "dict[{}, {}]", key_type, value_type)
+            }
+            Type::Set(element_type) => {
+                write!(f, "set[{}]", element_type)
+            }
+            Type::Tuple(elements) => {
+                if elements.is_empty() {
+                    write!(f, "tuple[]")
+                } else {
+                    write!(f, "tuple[{}]", 
+                        elements.iter()
+                            .map(|t| t.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", "))
+                }
             }
             _ => write!(f, "{}", self.as_str()),
         }

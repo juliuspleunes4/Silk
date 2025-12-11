@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-622%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-677%20passing-brightgreen.svg)](#testing)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
 > A compiled programming language with Python-compatible syntax and C-level performance
@@ -135,22 +135,27 @@ cargo test --package silk-parser
 cargo test --package silk-semantic
 ```
 
-**Current test coverage:** 635 tests across all components (13 ignored)
+**Current test coverage:** 690 tests across all components (13 ignored)
 - 126 lexer tests (11 unit + 115 integration)
-- 264 parser tests
+- 264 parser tests (9 annotated assignment + 255 comprehensive)
 - 8 type system unit tests
-- 231 semantic analysis tests:
-  - 28 analyzer tests (3 ignored)
-  - 8 annotated assignment tests
+- 292 semantic analysis tests:
+  - 31 analyzer tests (3 ignored)
+  - 9 annotated assignment tests
+  - 41 binary operation tests (10 ignored)
   - 19 function call type inference tests
-  - 4 function type storage tests
-  - 14 forward reference tests
-  - 44 name resolution tests
-  - 17 symbol table tests
-  - 6 parameter defaults tests
+  - 12 collection type system tests
   - 24 decorators/bases/keywords tests
+  - 11 dict type inference tests
+  - 14 forward reference tests
+  - 4 function type storage tests
+  - 13 list type inference tests
+  - 44 name resolution tests
+  - 6 parameter defaults tests
+  - 8 set type inference tests
+  - 17 symbol table tests
+  - 11 tuple type inference tests
   - 28 type inference tests
-  - 31 binary operation tests (10 ignored)
 
 ## Contributing
 
