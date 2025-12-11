@@ -57,13 +57,13 @@ impl SemanticAnalyzer {
                     // Resolve return type annotation if present
                     let func_type = if let Some(return_type_ann) = returns {
                         let return_type = self.resolve_type_annotation(return_type_ann);
-                        Type::Function {
+                        crate::types::Type::Function {
                             return_type: Box::new(return_type),
                         }
                     } else {
                         // No return type annotation means Unknown
-                        Type::Function {
-                            return_type: Box::new(Type::Unknown),
+                        crate::types::Type::Function {
+                            return_type: Box::new(crate::types::Type::Unknown),
                         }
                     };
                     
