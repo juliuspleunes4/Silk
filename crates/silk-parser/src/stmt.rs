@@ -111,7 +111,34 @@ impl Parser {
         self.advance(); // consume 'for'
 
         // Parse target (variable(s))
-        let target_expr = self.parse_expression()?;
+        // Use higher precedence to prevent 'in' from being parsed as an infix operator
+        let mut target_expr = self.parse_precedence(crate::expr::Precedence::Comparison.succ())?;
+        
+        // Check for tuple unpacking: for x, y in ...
+        if self.check(TokenKind::Comma) {
+            let start_span = target_expr.span.clone();
+            let mut elements = vec![target_expr];
+            while self.check(TokenKind::Comma) {
+                self.advance(); // consume comma
+                if self.check(TokenKind::In) {
+                    break; // Trailing comma before 'in'
+                }
+                elements.push(self.parse_precedence(crate::expr::Precedence::Comparison.succ())?);
+            }
+            // Construct tuple expression
+            let end_span = elements.last().unwrap().span.clone();
+            let span = silk_lexer::Span::new(
+                start_span.start,
+                end_span.end,
+                start_span.line,
+                start_span.column,
+            );
+            target_expr = silk_ast::Expression::new(
+                silk_ast::ExpressionKind::Tuple { elements },
+                span,
+            );
+        }
+        
         let target = self.expr_to_pattern(target_expr)?;
 
         self.expect(TokenKind::In, "Expected 'in' in for loop")?;

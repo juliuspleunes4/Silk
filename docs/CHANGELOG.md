@@ -41,6 +41,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Status**: Infrastructure complete, ready for Phase 2 (Unreachable Code Detection)
 
+### 🐛 Parser Bug Fix - December 11, 2025
+
+**Fixed critical parser bug in for loop target parsing**.
+
+**Problem**:
+- For loop targets like `for i in range(10):` were incorrectly parsing `i in range(10)` as a comparison expression
+- The `in` keyword was being treated as an infix comparison operator
+- This caused `InvalidPattern` errors because `expr_to_pattern` couldn't convert Compare expressions
+
+**Root Cause**:
+- `parse_for_statement()` used `parse_expression()` which parsed all operators including `in`
+- Expression parser treated `in` at `Precedence::Comparison` level
+
+**Solution**:
+- Changed to use `parse_precedence(Precedence::Comparison.succ())` to stop before `in` operator
+- Added manual tuple unpacking support for patterns like `for x, y in items:`
+- Made `Precedence` enum and helper methods `pub(crate)` for use across modules
+
+**Tests Added** (8 comprehensive tests):
+- Simple identifier: `for i in range(10):`
+- Tuple unpacking: `for x, y in items:`
+- List unpacking: `for [a, b] in pairs:`
+- Nested unpacking: `for (a, (b, c)) in nested:`
+- For-else clause: `for i in range(10): ... else: ...`
+- `in` operator in expressions still works: `x = 5 in numbers`
+- `in` operator in comprehensions: `for item in [x for x in items if x in valid]:`
+- Regression test for bare except clause
+
+**Files Modified**:
+- `crates/silk-parser/src/stmt.rs` - Fixed for loop parsing logic
+- `crates/silk-parser/src/expr.rs` - Made Precedence and parse_precedence pub(crate)
+- `crates/silk-parser/tests/test_control_flow_parsing.rs` - Added comprehensive tests
+
+**Test Count**: 853 tests passing (+8 new for loop tests)
+
+**Note**: Parser bug discovered during testing has been fixed separately (see above)
+
 ### �🐛 Code Review Fixes - December 11, 2025
 
 **Critical bug fix, documentation correction, and performance improvements**.
