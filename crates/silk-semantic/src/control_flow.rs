@@ -33,6 +33,10 @@ pub struct ControlFlowAnalyzer {
     assigned_variables: HashMap<String, Span>,
     /// Set of variables that have been used (read)
     used_variables: HashSet<String>,
+    /// Map of function names to their definition locations (for unused detection)
+    defined_functions: HashMap<String, Span>,
+    /// Set of functions that have been called
+    called_functions: HashSet<String>,
 }
 
 impl ControlFlowAnalyzer {
@@ -48,6 +52,8 @@ impl ControlFlowAnalyzer {
             scope_stack: vec![HashSet::new()], // Start with global scope
             assigned_variables: HashMap::new(),
             used_variables: HashSet::new(),
+            defined_functions: HashMap::new(),
+            called_functions: HashSet::new(),
         }
     }
 
@@ -60,6 +66,9 @@ impl ControlFlowAnalyzer {
         
         // Report unused variables (excluding those with _ prefix)
         self.report_unused_variables();
+        
+        // Report unused functions (excluding those with _ prefix)
+        self.report_unused_functions();
         
         if self.errors.is_empty() {
             Ok(())
@@ -86,6 +95,42 @@ impl ControlFlowAnalyzer {
                 });
             }
         }
+    }
+
+    /// Report functions that were defined but never called
+    fn report_unused_functions(&mut self) {
+        for (name, span) in &self.defined_functions {
+            // Skip functions starting with underscore (Python convention for unused)
+            if name.starts_with('_') {
+                continue;
+            }
+            
+            // Skip special functions that are implicitly used
+            if name == "main" {
+                continue; // main is the entry point
+            }
+            
+            // Check if function was ever called
+            if !self.called_functions.contains(name) {
+                self.errors.push(SemanticError::UnusedFunction {
+                    name: name.clone(),
+                    line: span.line,
+                    column: span.column,
+                    span: span.clone(),
+                });
+            }
+        }
+    }
+
+    /// Track a function definition
+    fn track_function_definition(&mut self, name: &str, span: &Span) {
+        // Only track the first definition (ignore redefinitions)
+        self.defined_functions.entry(name.to_string()).or_insert(span.clone());
+    }
+
+    /// Track a function call
+    fn track_function_call(&mut self, name: &str) {
+        self.called_functions.insert(name.to_string());
     }
 
     /// Get a reference to the collected errors (for testing)
@@ -229,6 +274,11 @@ impl ControlFlowAnalyzer {
                 }
             }
             ExpressionKind::Call { func, args, keywords } => {
+                // Track function call if calling a named function
+                if let ExpressionKind::Identifier(name) = &func.kind {
+                    self.track_function_call(name);
+                }
+                
                 // Track usage of function variable (for lambdas, variables holding functions)
                 // but don't require initialization (to allow built-in functions)
                 self.track_expression_usage(func);
@@ -440,7 +490,15 @@ impl ControlFlowAnalyzer {
             }
 
             // Function definition
-            StatementKind::FunctionDef { name, body, params, returns, .. } => {
+            StatementKind::FunctionDef { name, body, params, returns, decorator_list, .. } => {
+                // Track function definition (for unused function detection)
+                self.track_function_definition(name, &stmt.span);
+                
+                // Decorated functions are considered "used" (called by the decorator)
+                if !decorator_list.is_empty() {
+                    self.track_function_call(name);
+                }
+                
                 let previous_in_function = self.current_function_returns;
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
@@ -950,6 +1008,8 @@ y = x + 20
 def foo():
     return 42
 
+result = foo()
+
 class MyClass:
     pass
 
@@ -965,6 +1025,7 @@ pass
 
 assert True
 print(y)
+print(result)
 
 import os
 
@@ -987,7 +1048,11 @@ def outer():
     x = 1
     def inner():
         return 2
-    return x
+    result = inner()
+    return x + result
+
+value = outer()
+print(value)
 "#;
         let program = Parser::parse(source).expect("Failed to parse");
         let mut analyzer = ControlFlowAnalyzer::new();

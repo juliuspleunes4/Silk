@@ -3,10 +3,32 @@ use silk_parser::Parser;
 use silk_semantic::{ControlFlowAnalyzer, SemanticError};
 
 /// Helper to analyze source code
+/// Filters out UnusedFunction and UnusedVariable errors since we're testing
+/// return type validation, not whether test functions are called.
 fn analyze(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
     let mut analyzer = ControlFlowAnalyzer::new();
-    analyzer.analyze(&program)
+    let result = analyzer.analyze(&program);
+    
+    // Filter out UnusedFunction and UnusedVariable errors - we're testing return validation
+    match result {
+        Ok(()) => Ok(()),
+        Err(errors) => {
+            let relevant_errors: Vec<_> = errors
+                .into_iter()
+                .filter(|e| !matches!(e,
+                    SemanticError::UnusedFunction { .. } |
+                    SemanticError::UnusedVariable { .. }
+                ))
+                .collect();
+            
+            if relevant_errors.is_empty() {
+                Ok(())
+            } else {
+                Err(relevant_errors)
+            }
+        }
+    }
 }
 
 #[test]

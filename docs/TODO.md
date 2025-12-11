@@ -107,9 +107,10 @@
       - ✅ Step 12: Track Return Paths - 12 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 13: Handle Complex Return Patterns - 14 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 14: Validate Return Types Match - 14 tests - **COMPLETE** (December 12, 2025)
-    - 🔄 Phase 5: Dead Code Detection (Steps 15-17) - 25 tests - **IN PROGRESS** (December 12, 2025)
+    - 🔄 Phase 5: Dead Code Detection (Steps 15-17) - 36 tests - **IN PROGRESS** (December 13, 2025)
       - ✅ Step 15: Detect Unused Variables - 13 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 15.5: Fix Nested Scope Variable Visibility - 12 tests - **COMPLETE** (December 12, 2025) - **CRITICAL FIX**
+      - ✅ Step 16: Detect Unused Functions - 11 tests - **COMPLETE** (December 13, 2025)
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 
@@ -117,7 +118,7 @@
 
 ## ⚠️ Active Issues
 
-✅ **No active critical issues** - Control flow analysis in progress, 1015 tests passing (170 control flow tests: 8 infrastructure + 10 unreachable + 12 conditional reachability + 14 loop reachability + 15 try/except reachability + 19 variable initialization + 15 conditional initialization + 12 function parameter initialization + 12 return path tracking + 14 complex return patterns + 14 return validation + 13 unused variable detection + 12 nested scope variables = 170)
+✅ **No active critical issues** - Control flow analysis in progress, 1026 tests passing (181 control flow tests: 8 infrastructure + 10 unreachable + 12 conditional reachability + 14 loop reachability + 15 try/except reachability + 19 variable initialization + 15 conditional initialization + 12 function parameter initialization + 12 return path tracking + 14 complex return patterns + 14 return validation + 13 unused variable detection + 12 nested scope variables + 11 unused function detection = 181)
 
 ---
 

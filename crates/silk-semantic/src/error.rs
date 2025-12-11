@@ -211,4 +211,13 @@ pub enum SemanticError {
         column: usize,
         span: Span,
     },
+
+    /// Function defined but never called
+    #[error("Unused function '{name}' at line {line}, column {column}")]
+    UnusedFunction {
+        name: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
 }

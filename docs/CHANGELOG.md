@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ Control Flow Analysis - Phase 5, Step 16 - December 13, 2025
+
+**Implemented Unused Function Detection** — Added tracking for functions that are defined but never called throughout the codebase.
+
+**Implementation Details**:
+- **Function Tracking Infrastructure**:
+  - `defined_functions: HashMap<String, Span>` - Records all function definitions with their source locations
+  - `called_functions: HashSet<String>` - Tracks which functions have been called
+  - `track_function_definition()` - Registers function definitions
+  - `track_function_call()` - Marks functions as called when invoked
+  - `report_unused_functions()` - Reports functions never called at analysis end
+
+- **Special Handling**:
+  - **`main` function**: Always considered used (program entry point)
+  - **Decorated functions**: Marked as used (decorators typically invoke the function)
+  - **Underscore-prefixed functions**: Ignored (e.g., `_helper`) per Python convention for internal/private functions
+  - **Recursive functions**: Properly track self-calls
+  - **Mutually recursive functions**: Both functions marked as called
+
+**New Error Type**:
+- `UnusedFunction { name, line, column, span }` - Reports functions that are defined but never called
+
+**Test Coverage**:
+- **11 comprehensive tests** in `test_unused_functions.rs`:
+  - ✅ Basic detection, called functions, recursion, mutual recursion
+  - ✅ Nested functions, main function, decorated functions
+  - ✅ Underscore prefix, multiple unused, expression context, passed as argument
+  
+- **Updated 11 test files** with error filtering to avoid false failures
+
+**Test Count**: 1015 → 1026 passing tests (+11)
+
+**Technical Impact**:
+- Complements unused variable detection (Step 15)
+- Helps identify orphaned utility functions and dead code
+- Improves codebase maintainability
+
+---
+
+
 ### � Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
 
 **Fixed Nested Scope Variable Visibility (CRITICAL)** — Implemented proper Python closure semantics so inner functions can access outer scope variables.

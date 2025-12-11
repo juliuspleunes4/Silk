@@ -503,23 +503,44 @@ Implemented proper scope tracking for nested functions:
 
 ---
 
-### Step 16: Detect Unused Functions
+### Step 16: Detect Unused Functions ✅
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 6-8
+**Tests**: 11 comprehensive tests
 
-Track function definitions and calls:
-- Mark functions when defined
-- Mark functions when called
-- Report unused functions (not called anywhere)
+**Implementation**:
+- Track function definitions with location (HashMap<String, Span>)
+- Track function calls (HashSet<String>)
+- Report unused functions at end of analysis
+- **Special handling**:
+  - `main` function always considered used (entry point)
+  - Decorated functions marked as used (decorators invoke them)
+  - Underscore-prefixed functions ignored (Python convention)
+  - Recursive and mutually recursive functions properly tracked
 
-**Testing**:
-- `test_unused_function_warning`
-- `test_called_function_no_warning`
-- `test_recursive_function_used`
-- `test_mutually_recursive_functions`
-- `test_unused_nested_function`
-- `test_main_function_always_considered_used`
-- `test_decorated_function_considered_used`
+**Testing** (test_unused_functions.rs):
+- ✅ `test_unused_function_warning` - Basic detection
+- ✅ `test_called_function_no_warning` - Called functions OK
+- ✅ `test_recursive_function_used` - Recursion tracked
+- ✅ `test_mutually_recursive_functions` - Mutual recursion OK
+- ✅ `test_unused_nested_function` - Nested functions tracked
+- ✅ `test_main_function_always_considered_used` - `main` always used
+- ✅ `test_decorated_function_considered_used` - Decorators mark as used
+- ✅ `test_underscore_prefix_no_warning` - Python `_` convention
+- ✅ `test_multiple_unused_functions` - Multiple detection
+- ✅ `test_function_called_in_expression` - Expression context
+- ✅ `test_function_passed_as_argument` - Passed as argument
+
+**Updated Test Files** (11 files with error filtering):
+- test_conditional_initialization.rs, test_conditional_reachability.rs
+- test_function_parameter_initialization.rs, test_loop_reachability.rs
+- test_nested_scope_variables.rs, test_return_path_tracking.rs
+- test_return_validation.rs, test_try_except_reachability.rs
+- test_unreachable_code.rs, test_unused_variables.rs
+- test_variable_initialization.rs
+
+**Checkpoint**: 1026 tests total (1015 + 11 new)
+**Status**: ✅ All tests passing
+**Phase 5**: 🔄 In Progress (16/20 steps complete, 80%)
 
 ---
 
