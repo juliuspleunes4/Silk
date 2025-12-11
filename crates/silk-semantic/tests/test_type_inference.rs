@@ -284,42 +284,45 @@ result = foo()
 }
 
 #[test]
-fn test_list_literal_gets_unknown_type() {
+fn test_list_literal_gets_list_type() {
     let source = "x = [1, 2, 3]";
     let program = Parser::parse(source).unwrap();
     
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // List literals aren't handled yet, should be Unknown
+    // List literals now infer to list[ElementType]
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Unknown);
+    assert_eq!(symbol.ty, Type::List(Box::new(Type::Int)));
 }
 
 #[test]
-fn test_dict_literal_gets_unknown_type() {
+fn test_dict_literal_gets_dict_type() {
     let source = "x = {'key': 'value'}";
     let program = Parser::parse(source).unwrap();
     
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // Dict literals aren't handled yet, should be Unknown
+    // Dict literals now infer to dict[KeyType, ValueType]
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Unknown);
+    assert_eq!(symbol.ty, Type::Dict { 
+        key_type: Box::new(Type::Str),
+        value_type: Box::new(Type::Str)
+    });
 }
 
 #[test]
-fn test_tuple_literal_gets_unknown_type() {
+fn test_tuple_literal_gets_tuple_type() {
     let source = "x = (1, 2, 3)";
     let program = Parser::parse(source).unwrap();
     
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.analyze(&program).unwrap();
     
-    // Tuple literals aren't handled yet, should be Unknown
+    // Tuple literals now infer to tuple[Type1, Type2, ...]
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
-    assert_eq!(symbol.ty, Type::Unknown);
+    assert_eq!(symbol.ty, Type::Tuple(vec![Type::Int, Type::Int, Type::Int]));
 }
 
 #[test]
