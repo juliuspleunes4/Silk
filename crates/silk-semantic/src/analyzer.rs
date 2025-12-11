@@ -1699,7 +1699,7 @@ impl SemanticAnalyzer {
                         index_type: index_type.to_string(),
                         line: index_expr.span.line,
                         column: index_expr.span.column,
-                        span: index_expr.span.clone(),
+                        span: index_expr.span,
                     });
                 }
             }
@@ -1707,13 +1707,13 @@ impl SemanticAnalyzer {
             // Dict requires index type to match key type
             Type::Dict { key_type, .. } => {
                 // Check if index type is compatible with key type
-                if !key_type.is_compatible_with(index_type) {
+                if !index_type.is_compatible_with(key_type) {
                     return Err(SemanticError::InvalidSubscript {
                         collection_type: value_type.to_string(),
                         index_type: index_type.to_string(),
                         line: index_expr.span.line,
                         column: index_expr.span.column,
-                        span: index_expr.span.clone(),
+                        span: index_expr.span,
                     });
                 }
             }
@@ -1725,7 +1725,7 @@ impl SemanticAnalyzer {
                     index_type: index_type.to_string(),
                     line: value_expr.span.line,
                     column: value_expr.span.column,
-                    span: value_expr.span.clone(),
+                    span: value_expr.span,
                 });
             }
 
@@ -1741,7 +1741,7 @@ impl SemanticAnalyzer {
                     index_type: index_type.to_string(),
                     line: value_expr.span.line,
                     column: value_expr.span.column,
-                    span: value_expr.span.clone(),
+                    span: value_expr.span,
                 });
             }
         }

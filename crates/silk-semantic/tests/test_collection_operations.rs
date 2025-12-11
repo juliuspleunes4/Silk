@@ -356,3 +356,21 @@ b: int = y[999]
         errors
     );
 }
+
+#[test]
+fn test_dict_subscript_int_to_float_widening() {
+    let source = r#"
+d: dict[float, str] = {}
+result = d[42]
+"#;
+    let program = Parser::parse(source).expect("Failed to parse");
+
+    let mut analyzer = SemanticAnalyzer::new();
+    let result = analyzer.analyze(&program);
+
+    assert!(
+        result.is_ok(),
+        "Int should be compatible with float key type (widening), got error: {:?}",
+        result.err()
+    );
+}
