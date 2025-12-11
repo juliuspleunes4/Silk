@@ -113,6 +113,38 @@ impl SemanticAnalyzer {
                 }
             }
 
+            // Annotated assignment: use type annotation instead of inference
+            StatementKind::AnnAssign { target, annotation, value } => {
+                // Resolve the type annotation to semantic Type
+                let annotated_type = self.resolve_type_annotation(annotation);
+                
+                // If value exists, validate it
+                if let Some(val_expr) = value {
+                    self.analyze_expression(val_expr);
+                    
+                    // TODO (future): Check type compatibility
+                    // let value_type = self.infer_type(val_expr);
+                    // if !annotated_type.is_compatible_with(&value_type) {
+                    //     self.errors.push(...type mismatch error...);
+                    // }
+                }
+                
+                // Define the target variable with annotated type
+                if let ExpressionKind::Identifier(name) = &target.kind {
+                    let symbol = Symbol::with_type(
+                        name.clone(),
+                        SymbolKind::Variable,
+                        target.span.clone(),
+                        annotated_type,
+                    );
+                    if let Err(err) = self.symbol_table.define_symbol(symbol) {
+                        self.errors.push(err);
+                    }
+                } else {
+                    // TODO: Handle other target types (attributes, subscripts, etc.)
+                }
+            }
+
             // Augmented assignment: validate both LHS and RHS
             StatementKind::AugAssign { target, value, .. } => {
                 // Check if variable exists (must be defined before use)
@@ -763,9 +795,8 @@ impl SemanticAnalyzer {
     /// For now, handles built-in named types (int, str, bool, float).
     /// Returns Unknown for non-built-in types.
     /// 
-    /// NOTE: Currently unused pending parser implementation of AnnAssign.
-    /// Will be used once parser supports `x: int = 5` syntax.
-    #[allow(dead_code)]
+    /// Resolve a type annotation from AST to semantic Type.
+    /// Used by AnnAssign statements to determine the type from annotation.
     fn resolve_type_annotation(&self, type_ann: &silk_ast::Type) -> crate::types::Type {
         use crate::types::Type;
         
