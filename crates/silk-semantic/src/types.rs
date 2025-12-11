@@ -60,6 +60,11 @@ impl Type {
             return true;
         }
 
+        // Special case: int can be assigned to float (widening conversion)
+        if matches!(self, Type::Int) && matches!(other, Type::Float) {
+            return true;
+        }
+
         // Functions are compatible if their return types are compatible
         if let (Type::Function { return_type: rt1 }, Type::Function { return_type: rt2 }) = (self, other) {
             return rt1.is_compatible_with(rt2);
@@ -119,6 +124,14 @@ impl Type {
             "bool" => Some(Type::Bool),
             "None" => Some(Type::None),
             "Any" => Some(Type::Any),
+            // Collection types without parameters (element type is Unknown)
+            "list" => Some(Type::List(Box::new(Type::Unknown))),
+            "dict" => Some(Type::Dict {
+                key_type: Box::new(Type::Unknown),
+                value_type: Box::new(Type::Unknown),
+            }),
+            "set" => Some(Type::Set(Box::new(Type::Unknown))),
+            "tuple" => Some(Type::Tuple(vec![])),
             _ => None,
         }
     }
@@ -265,7 +278,11 @@ mod tests {
 
     #[test]
     fn test_type_compatibility_different() {
-        assert!(!Type::Int.is_compatible_with(&Type::Float));
+        // Int can widen to Float (safe conversion)
+        assert!(Type::Int.is_compatible_with(&Type::Float));
+        // But Float cannot narrow to Int (loses precision)
+        assert!(!Type::Float.is_compatible_with(&Type::Int));
+        // Other types are still incompatible
         assert!(!Type::Str.is_compatible_with(&Type::Int));
         assert!(!Type::Bool.is_compatible_with(&Type::Str));
     }

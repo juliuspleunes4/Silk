@@ -136,11 +136,11 @@ impl SemanticAnalyzer {
                 if let Some(val_expr) = value {
                     self.analyze_expression(val_expr);
                     
-                    // TODO (future): Check type compatibility
-                    // let value_type = self.infer_type(val_expr);
-                    // if !annotated_type.is_compatible_with(&value_type) {
-                    //     self.errors.push(...type mismatch error...);
-                    // }
+                    // Check type compatibility between annotated type and value type
+                    let value_type = self.infer_type(val_expr);
+                    if let Err(err) = self.check_assignment_type(&annotated_type, &value_type, target, val_expr) {
+                        self.errors.push(err);
+                    }
                 }
                 
                 // Define the target variable with annotated type
@@ -1160,6 +1160,37 @@ impl SemanticAnalyzer {
         if let Err(err) = self.symbol_table.define_symbol(param_symbol) {
             self.errors.push(err);
         }
+    }
+
+    /// Check type compatibility for annotated assignments
+    /// 
+    /// Validates that the value type is compatible with the declared type annotation.
+    /// Uses Type::is_compatible_with() for the check, which supports:
+    /// - Exact type matches (int = int, str = str)
+    /// - Numeric type compatibility (int can be assigned to float)
+    /// - Unknown type (always compatible - gradual typing)
+    /// - Collection type structural compatibility
+    /// 
+    /// Returns Ok(()) if compatible, Err(SemanticError) if not.
+    fn check_assignment_type(
+        &self,
+        expected_type: &crate::types::Type,
+        value_type: &crate::types::Type,
+        _target: &Expression,
+        value: &Expression,
+    ) -> Result<(), SemanticError> {
+        // Check if value type is compatible with expected type
+        if !value_type.is_compatible_with(expected_type) {
+            return Err(SemanticError::AssignmentTypeMismatch {
+                expected_type: expected_type.to_string(),
+                value_type: value_type.to_string(),
+                line: value.span.line,
+                column: value.span.column,
+                span: value.span.clone(),
+            });
+        }
+
+        Ok(())
     }
 }
 

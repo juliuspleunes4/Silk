@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔍 Assignment Type Checking - December 11, 2025
+
+**Implemented type checking for annotated assignments (Phase 2, Steps 4-7 of Type Checking feature)**.
+
+**Type System Improvements**:
+- Enhanced `is_compatible_with()` to support numeric widening conversion:
+  - `int` can now be assigned to `float` (safe widening)
+  - `float` cannot be assigned to `int` (narrowing loses precision)
+- Extended `Type::from_str()` to parse collection type annotations:
+  - `"list"` → `Type::List(Box::new(Type::Unknown))`
+  - `"dict"` → `Type::Dict { key_type: Unknown, value_type: Unknown }`
+  - `"set"` → `Type::Set(Box::new(Type::Unknown))`
+  - `"tuple"` → `Type::Tuple(vec![])`
+- Updated `test_type_compatibility_different()` unit test to reflect widening behavior
+
+**Semantic Analyzer Additions**:
+- **New method `check_assignment_type()`** (~25 lines):
+  - Validates value type matches declared annotation type
+  - Uses `is_compatible_with()` for compatibility checking
+  - Reports `AssignmentTypeMismatch` error with line/column info
+  - Supports gradual typing (Unknown type always compatible)
+- **Updated `analyze_statement()` for AnnAssign**:
+  - Integrated type checking into annotated assignment handling
+  - Infers value type and validates against annotation
+  - Errors collected and reported to user
+
+**Testing**:
+- **New test file `test_assignment_type_checking.rs`** with 22 comprehensive tests:
+  - Valid assignments: int, float, str, bool, collections
+  - Invalid assignments: type mismatches with proper error checking
+  - Numeric compatibility: int→float allowed, float→int rejected
+  - Collection types: list, dict, set validation
+  - Expression type checking: arithmetic, string concat
+  - Multiple assignments and errors
+  - Edge cases: None, empty collections
+- All 22 tests passing ✅
+- Total workspace tests: **732 passing** (was 710, +22 new tests)
+
+**Documentation**:
+- Updated STEPS.md to mark Phase 2 (Steps 4-7) as complete
+- Phase 1 (Error Infrastructure) already complete
+- Ready to proceed to Phase 3 (Function Call Type Checking)
+
 ### 📦 Collection Type Inference - December 11, 2025
 
 **Implemented full type inference for all collection literals: lists, dicts, sets, and tuples**.

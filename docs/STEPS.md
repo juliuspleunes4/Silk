@@ -17,10 +17,10 @@ Type checking builds on the existing type inference system to validate that oper
 
 Break this into 7 phases with incremental testing:
 
-### Phase 1: Error Infrastructure (Steps 1-3)
+### Phase 1: Error Infrastructure (Steps 1-3) ✅ COMPLETE
 Add new error types for type mismatches
 
-### Phase 2: Assignment Type Checking (Steps 4-7)
+### Phase 2: Assignment Type Checking (Steps 4-7) ✅ COMPLETE
 Validate annotated assignments receive compatible values
 
 ### Phase 3: Function Call Type Checking (Steps 8-11)
@@ -70,34 +70,47 @@ Advanced tests, full validation, documentation updates
 
 ---
 
-### **Phase 2: Assignment Type Checking**
+### **Phase 2: Assignment Type Checking** ✅ COMPLETE
 
-#### Step 4: Analyze Current Annotated Assignment Handling
+#### Step 4: Analyze Current Annotated Assignment Handling ✅
 - **File**: `crates/silk-semantic/src/analyzer.rs`
 - **Action**: Review existing `StatementKind::AnnAssign` handling
-- **Document**: Current behavior (defines symbol with type from annotation)
-- **Plan**: Where to add type checking logic
+- **Result**: Found TODO comment for type checking in lines 131-148
+- **Status**: Analysis complete
 
-#### Step 5: Implement Assignment Type Validation
+#### Step 5: Implement Assignment Type Validation ✅
 - **File**: `crates/silk-semantic/src/analyzer.rs`
 - **Action**: Add type checking in `analyze_statement` for AnnAssign
+- **Added**: `check_assignment_type()` helper method (~25 lines)
 - **Logic**:
-  - If value is present, infer its type
-  - Check if inferred type is compatible with annotation type
-  - Add error if incompatible
-- **Method**: Add `check_assignment_type()` helper (~30 lines)
+  - Infers value type using existing `infer_type()`
+  - Validates compatibility with annotated type
+  - Reports `AssignmentTypeMismatch` error if incompatible
+- **Status**: Implementation complete
 
-#### Step 6: Add Assignment Type Checking Tests
+#### Step 6: Add Assignment Type Checking Tests ✅
 - **File**: `crates/silk-semantic/tests/test_assignment_type_checking.rs`
-- **Action**: Create comprehensive test file
-- **Tests** (15 tests):
-  - Valid: `x: int = 42` ✓
-  - Invalid: `x: int = "hello"` ✗
-  - Valid: `x: str = "hello"` ✓
-  - Invalid: `x: str = 3.14` ✗
-  - Valid: `x: list[int] = [1, 2, 3]` ✓
-  - Invalid: `x: list[int] = [1, "a", 3]` ✗
-  - Valid: `x: dict[str, int] = {"a": 1}` ✓
+- **Action**: Created comprehensive test file with 22 tests
+- **Tests**:
+  - Valid assignments (int, float, str, bool, collections)
+  - Invalid assignments (type mismatches)
+  - Numeric compatibility (int→float ✓, float→int ✗)
+  - Collection types (list, dict, set)
+  - Expression type checking
+  - Multiple assignments and errors
+  - Edge cases (None, empty collections)
+- **Status**: All 22 tests passing ✅
+
+#### Step 7: Verify Assignment Type Checking ✅
+- **Action**: Run full test suite
+- **Type System Changes**:
+  - Added int→float widening in `is_compatible_with()`
+  - Extended `Type::from_str()` for collection type names
+  - Updated `test_type_compatibility_different()` unit test
+- **Result**: **732 tests passing** (was 710, +22 new tests)
+- **Status**: Phase 2 complete ✅
+
+---
   - Invalid: `x: dict[str, int] = {"a": "b"}` ✗
   - Unknown assignments (should pass - no type annotation)
   - Multiple assignments with errors
