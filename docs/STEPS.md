@@ -482,11 +482,15 @@ Update documentation:
   - [x] **Step 4**: Basic Statement Traversal ✅ (3 tests)
   - **Total: 15 tests passing (8 error + 7 control_flow module)**
   - **Parser Bug Fixed**: During testing, discovered and fixed critical bug in for loop parsing (+8 tests)
-- [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
+- [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8) - IN PROGRESS
+  - [x] **Step 5**: Track Statement Reachability ✅ (10 tests)
+  - [ ] **Step 6**: Handle Conditional Reachability
+  - [ ] **Step 7**: Handle Loop Reachability
+  - [ ] **Step 8**: Handle Try/Except Reachability
 - [ ] **Phase 3**: Variable Initialization Tracking (Steps 9-11)
 - [ ] **Phase 4**: Return Path Validation (Steps 12-14)
 - [ ] **Phase 5**: Dead Code Detection (Steps 15-17)
 - [ ] **Phase 6**: Integration & Documentation (Steps 18-20)
 
-**Current Test Count**: 853 passing (830 baseline + 8 parser + 15 control flow)
-**Next Step**: Step 5 - Track Statement Reachability
+**Current Test Count**: 863 passing (830 baseline + 8 parser + 15 infrastructure + 10 unreachable code)
+**Next Step**: Step 6 - Handle Conditional Reachability

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 2, Step 5 - December 11, 2025
+
+**Implemented unreachable code detection**.
+
+**Features**:
+- Track statement reachability throughout code blocks
+- Detect unreachable code after `return`, `break`, `continue`, and `raise` statements
+- Report only the first unreachable statement in each block (prevents cascading errors)
+- Properly handle reachability across branches (if/else), loops, and exception handlers
+
+**Implementation**:
+- Added `is_reachable` and `unreachable_reported` fields to `ControlFlowAnalyzer`
+- Modified `analyze_statement` to check reachability before analyzing
+- Save/restore reachability context when entering/exiting scopes
+- Handle if/else reachability: code after is reachable if ANY branch is reachable
+- Handle loops: code after loop is always reachable (even with break inside)
+- Handle try/except: exception handlers reset reachability (exceptions can occur)
+
+**Tests Added** (10 comprehensive tests):
+- `test_unreachable_after_return` - Code after return statement
+- `test_unreachable_after_break` - Code after break in loop
+- `test_unreachable_after_continue` - Code after continue in loop
+- `test_unreachable_after_raise` - Code after raise statement
+- `test_multiple_unreachable_statements` - Only first error reported
+- `test_reachable_in_if_branch` - If without else keeps code reachable
+- `test_unreachable_after_if_all_branches_return` - All branches terminate
+- `test_reachable_after_loop` - Loops can be exited
+- `test_nested_unreachable_code` - Unreachable in nested blocks
+- `test_unreachable_in_try_block` - Unreachable code in try blocks
+
+**Files Modified**:
+- `crates/silk-semantic/src/control_flow.rs` - Reachability tracking implementation
+- `crates/silk-semantic/tests/test_unreachable_code.rs` - New test file with 10 tests
+
+**Test Count**: 863 tests passing (+10 new unreachable code tests)
+
 ### � Control Flow Analysis - December 11, 2025
 
 **Phase 1: Infrastructure Setup - COMPLETE** (Steps 1-4)
