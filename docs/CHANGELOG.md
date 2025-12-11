@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 3, Step 11 - December 12, 2025
+
+**Implemented Function Parameter Initialization Tracking** — The control flow analyzer now properly handles function parameters, default parameter expressions, and lambda parameters for initialization tracking.
+
+**Implementation**:
+- **Default Parameter Expression Checking** (lines 325-331):
+  - Check default expressions BEFORE entering function scope
+  - Defaults are evaluated in outer scope, not function scope
+  - Can use outer variables but cannot reference other parameters
+  - Applied to both regular args and keyword-only args
+- **Lambda Parameter Handling** (lines 161-175):
+  - Lambda parameters are scoped to the lambda body
+  - Save current initialization state before checking lambda
+  - Mark lambda parameters as initialized
+  - Check lambda body with parameters initialized
+  - Restore previous state after (lambda is an expression, not a statement)
+- **Function Parameter Initialization** (already implemented in Step 9):
+  - All parameters marked as initialized on function entry
+  - Includes: args, vararg (*args), kwonlyargs, kwarg (**kwargs)
+
+**Testing** (12 comprehensive tests in test_function_parameter_initialization.rs):
+- test_parameter_initialized_on_entry - Regular parameters initialized
+- test_args_kwargs_initialized - *args and **kwargs initialized
+- test_default_parameter_expression_checked - Detects uninitialized vars in defaults
+- test_default_uses_outer_variable - Defaults can use outer scope
+- test_default_cannot_use_parameter - Defaults cannot use other parameters
+- test_parameter_shadows_outer_scope - Parameters shadow outer variables
+- test_nested_function_parameter_scope - Nested function parameters initialized
+- test_lambda_parameter_initialization - Lambda parameters initialized within lambda body
+- test_multiple_defaults_with_expression - Multiple defaults with expressions work
+- test_kwonly_default_checked - Keyword-only parameter defaults checked
+- test_mixed_params_all_initialized - All parameter types work together
+- test_default_with_function_call - Defaults can call functions from outer scope
+
+**Impact**:
+- **Total Tests**: 950 (938 → 950, +12)
+- **Files Modified**: 2
+  - crates/silk-semantic/src/control_flow.rs: Added default checking and lambda scoping
+  - crates/silk-semantic/tests/test_function_parameter_initialization.rs: New test file
+- **Phase 3 Status**: COMPLETE (Steps 9-11, 46 tests total)
+
+**Next Steps**: Phase 4 - Return Path Validation (Steps 12-14)
+
+---
+
 ### 🔄 Control Flow Analysis - Phase 3, Step 10 - December 12, 2025
 
 **Implemented Conditional Initialization Tracking** — The control flow analyzer now tracks variable initialization through conditional branches, requiring variables to be initialized in ALL reachable paths before use.

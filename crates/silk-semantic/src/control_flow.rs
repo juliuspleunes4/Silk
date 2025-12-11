@@ -158,8 +158,21 @@ impl ControlFlowAnalyzer {
                 self.check_expression(body);
                 self.check_expression(orelse);
             }
-            ExpressionKind::Lambda { body, .. } => {
+            ExpressionKind::Lambda { params, body } => {
+                // Lambda parameters are initialized within the lambda body scope
+                // Save current initialized variables
+                let previous_initialized = self.initialized_variables.clone();
+                
+                // Mark lambda parameters as initialized
+                for param in params {
+                    self.mark_initialized(&param.name);
+                }
+                
+                // Check lambda body with parameters marked as initialized
                 self.check_expression(body);
+                
+                // Restore previous initialization state (lambda is an expression)
+                self.initialized_variables = previous_initialized;
             }
             ExpressionKind::LogicalOp { left, right, .. } => {
                 self.check_expression(left);
@@ -320,6 +333,19 @@ impl ControlFlowAnalyzer {
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
                 let previous_initialized = self.initialized_variables.clone();
+                
+                // Check default parameter expressions BEFORE entering function scope
+                // Default expressions are evaluated in the outer scope, not the function scope
+                for param in &params.args {
+                    if let Some(default_expr) = &param.default {
+                        self.check_expression(default_expr);
+                    }
+                }
+                for param in &params.kwonlyargs {
+                    if let Some(default_expr) = &param.default {
+                        self.check_expression(default_expr);
+                    }
+                }
                 
                 self.current_function_returns = false;
                 self.in_loop = false;

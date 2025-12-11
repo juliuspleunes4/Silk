@@ -270,25 +270,38 @@ Implemented reachability-aware conditional initialization tracking:
 
 ---
 
-### Step 11: Function Parameters and Defaults
-**File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 6-8
+### Step 11: Function Parameters and Defaults ✅
+**Status**: COMPLETE (December 12, 2025)
+**File**: `crates/silk-semantic/tests/test_function_parameter_initialization.rs`
+**Tests**: 12 tests, all passing
 
-Handle function-specific initialization:
-- Function parameters are always initialized
-- Default parameter expressions checked separately
-- Handle *args and **kwargs
+Implemented function-specific initialization tracking:
+- Function parameters are always initialized on entry
+- Default parameter expressions checked BEFORE entering function scope (evaluated in outer scope)
+- Lambda parameters marked as initialized within lambda body
+- *args and **kwargs marked as initialized
 
-**Testing**:
-- `test_parameter_initialized_on_entry`
-- `test_args_kwargs_initialized`
-- `test_default_parameter_expression_checked`
-- `test_parameter_shadows_outer_scope`
-- `test_nested_function_parameter_scope`
-- `test_lambda_parameter_initialization`
+**Implementation Details**:
+- Added default expression checking before function scope entry (lines 325-331)
+- Lambda parameter handling with scoped initialization (lines 161-175)
+- All parameter types marked as initialized: args, vararg, kwonlyargs, kwarg
 
-**Checkpoint**: 947-949 tests total (6-8 new)
-**Run**: `cargo test --package silk-semantic`
+**Tests Implemented**:
+- ✅ test_parameter_initialized_on_entry - Regular parameters initialized
+- ✅ test_args_kwargs_initialized - *args and **kwargs initialized
+- ✅ test_default_parameter_expression_checked - Detects uninitialized vars in defaults
+- ✅ test_default_uses_outer_variable - Defaults can use outer scope
+- ✅ test_default_cannot_use_parameter - Defaults cannot use other parameters
+- ✅ test_parameter_shadows_outer_scope - Parameters shadow outer variables
+- ✅ test_nested_function_parameter_scope - Nested function parameters initialized
+- ✅ test_lambda_parameter_initialization - Lambda parameters initialized
+- ✅ test_multiple_defaults_with_expression - Multiple defaults with expressions
+- ✅ test_kwonly_default_checked - Keyword-only defaults checked
+- ✅ test_mixed_params_all_initialized - All parameter types work together
+- ✅ test_default_with_function_call - Defaults can call functions
+
+**Checkpoint**: 950 tests total (938 + 12 new)
+**Status**: ✅ All tests passing
 
 ---
 
