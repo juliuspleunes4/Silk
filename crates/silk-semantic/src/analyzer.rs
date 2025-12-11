@@ -847,7 +847,7 @@ impl SemanticAnalyzer {
                         Type::Function { return_type } => {
                             // TODO: Validate argument count and types against function signature
                             // Currently just returns the declared return type without validation
-                            *return_type.clone()
+                            return_type.as_ref().clone()
                         }
                         _ => {
                             // Not a function (e.g., calling an integer or string)
