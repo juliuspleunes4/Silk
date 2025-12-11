@@ -446,7 +446,9 @@ Update documentation:
 ## Summary
 
 **Total Estimated Tests**: 100-150 new tests
-**Expected Final Test Count**: ~930-980 tests (830 baseline + 100-150 new)
+**Expected Final Test Count**: ~950-1000 tests (853 baseline + 100-150 new)
+
+**Note**: Baseline increased from 830 to 853 during Phase 1 due to parser bug fix (+8 for loop tests, +15 control flow tests)
 
 **Phases**:
 1. Infrastructure (4 steps, 8-13 tests)
@@ -479,11 +481,12 @@ Update documentation:
   - [x] **Step 3**: Add Module to Crate ✅ (build verified)
   - [x] **Step 4**: Basic Statement Traversal ✅ (3 tests)
   - **Total: 15 tests passing (8 error + 7 control_flow module)**
-- [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
+  - **Parser Bug Fixed**: During testing, discovered and fixed critical bug in for loop parsing (+8 tests)
 - [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
 - [ ] **Phase 3**: Variable Initialization Tracking (Steps 9-11)
 - [ ] **Phase 4**: Return Path Validation (Steps 12-14)
 - [ ] **Phase 5**: Dead Code Detection (Steps 15-17)
 - [ ] **Phase 6**: Integration & Documentation (Steps 18-20)
 
-**Next Step**: Step 1 - Create Control Flow Error Types
+**Current Test Count**: 853 passing (830 baseline + 8 parser + 15 control flow)
+**Next Step**: Step 5 - Track Statement Reachability
