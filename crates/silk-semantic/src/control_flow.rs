@@ -8,7 +8,9 @@
 //! - Dead code
 
 use crate::SemanticError;
-use silk_ast::{Program, Statement, StatementKind};
+use silk_ast::{Expression, ExpressionKind, Pattern, Program, Statement, StatementKind};
+use silk_lexer::Span;
+use std::collections::HashSet;
 
 /// Control flow analyzer for detecting control flow errors
 pub struct ControlFlowAnalyzer {
@@ -24,6 +26,8 @@ pub struct ControlFlowAnalyzer {
     unreachable_reported: bool,
     /// Whether the current loop contains a break statement
     loop_has_break: bool,
+    /// Set of variables that have been initialized in the current scope
+    initialized_variables: HashSet<String>,
 }
 
 impl ControlFlowAnalyzer {
@@ -36,6 +40,7 @@ impl ControlFlowAnalyzer {
             is_reachable: true,
             unreachable_reported: false,
             loop_has_break: false,
+            initialized_variables: HashSet::new(),
         }
     }
 
@@ -59,6 +64,140 @@ impl ControlFlowAnalyzer {
     }
 
     // ========== HELPER METHODS ==========
+
+    /// Mark a variable as initialized
+    fn mark_initialized(&mut self, name: &str) {
+        self.initialized_variables.insert(name.to_string());
+    }
+
+    /// Check if a variable is initialized, report error if not
+    fn check_initialized(&mut self, name: &str, span: &Span) {
+        if !self.initialized_variables.contains(name) {
+            self.errors.push(SemanticError::UninitializedVariable {
+                name: name.to_string(),
+                line: span.line,
+                column: span.column,
+                span: span.clone(),
+            });
+        }
+    }
+
+    /// Extract variable name from an expression (for assignments)
+    fn extract_variable_name(expr: &Expression) -> Option<String> {
+        match &expr.kind {
+            ExpressionKind::Identifier(name) => Some(name.clone()),
+            _ => None,
+        }
+    }
+
+    /// Extract variable name from a pattern (for loops, with statements, etc.)
+    fn extract_pattern_variable(pattern: &Pattern) -> Option<String> {
+        match &pattern.kind {
+            silk_ast::PatternKind::Name(name) => Some(name.clone()),
+            _ => None, // For now, ignore complex patterns (tuples, etc.)
+        }
+    }
+
+    /// Check an expression for uninitialized variable usage
+    fn check_expression(&mut self, expr: &Expression) {
+        match &expr.kind {
+            ExpressionKind::Identifier(name) => {
+                self.check_initialized(name, &expr.span);
+            }
+            ExpressionKind::BinaryOp { left, right, .. } => {
+                self.check_expression(left);
+                self.check_expression(right);
+            }
+            ExpressionKind::UnaryOp { operand, .. } => {
+                self.check_expression(operand);
+            }
+            ExpressionKind::Compare {
+                left, comparators, ..
+            } => {
+                self.check_expression(left);
+                for comp in comparators {
+                    self.check_expression(comp);
+                }
+            }
+            ExpressionKind::Call { func: _, args, keywords } => {
+                // Don't check func - functions are resolved separately (not variable initialization)
+                // This avoids false positives for built-in functions like print, len, etc.
+                for arg in args {
+                    self.check_expression(arg);
+                }
+                for keyword in keywords {
+                    self.check_expression(&keyword.value);
+                }
+            }
+            ExpressionKind::Attribute { value, .. } => {
+                self.check_expression(value);
+            }
+            ExpressionKind::Subscript { value, index } => {
+                self.check_expression(value);
+                self.check_expression(index);
+            }
+            ExpressionKind::List { elements } | ExpressionKind::Tuple { elements } | ExpressionKind::Set { elements } => {
+                for elem in elements {
+                    self.check_expression(elem);
+                }
+            }
+            ExpressionKind::Dict { keys, values } => {
+                for key in keys {
+                    self.check_expression(key);
+                }
+                for value in values {
+                    self.check_expression(value);
+                }
+            }
+            ExpressionKind::IfExp {
+                test,
+                body,
+                orelse,
+            } => {
+                self.check_expression(test);
+                self.check_expression(body);
+                self.check_expression(orelse);
+            }
+            ExpressionKind::Lambda { body, .. } => {
+                self.check_expression(body);
+            }
+            ExpressionKind::LogicalOp { left, right, .. } => {
+                self.check_expression(left);
+                self.check_expression(right);
+            }
+            ExpressionKind::NamedExpr { target, value } => {
+                // Walrus operator: check value, then mark target as initialized
+                self.check_expression(value);
+                if let Some(name) = Self::extract_variable_name(target) {
+                    self.mark_initialized(&name);
+                }
+            }
+            // Literals don't need checking
+            ExpressionKind::Integer(_)
+            | ExpressionKind::Float(_)
+            | ExpressionKind::String(_)
+            | ExpressionKind::RawString(_)
+            | ExpressionKind::ByteString(_)
+            | ExpressionKind::ByteRawString(_)
+            | ExpressionKind::FString { .. }
+            | ExpressionKind::Boolean(_)
+            | ExpressionKind::None
+            | ExpressionKind::NotImplemented
+            | ExpressionKind::Ellipsis => {}
+            
+            // Slice, yield, await - skip for now
+            ExpressionKind::Slice { .. }
+            | ExpressionKind::Yield { .. }
+            | ExpressionKind::YieldFrom { .. }
+            | ExpressionKind::Await { .. } => {}
+            
+            // Comprehensions, generators - skip for now (they have their own scope)
+            ExpressionKind::ListComp { .. }
+            | ExpressionKind::SetComp { .. }
+            | ExpressionKind::DictComp { .. }
+            | ExpressionKind::GeneratorExp { .. } => {}
+        }
+    }
 
     /// Check if a while loop condition is always true (infinite loop)
     /// Detects patterns like `while True:` or `while 1:`
@@ -134,25 +273,73 @@ impl ControlFlowAnalyzer {
 
         match &stmt.kind {
             // Assignment statements
-            StatementKind::Assign { .. } | StatementKind::AugAssign { .. } => {
-                // TODO: Track variable initialization
+            StatementKind::Assign {
+                targets,
+                value,
+                type_annotation: _,
+            } => {
+                // Check value expression for uninitialized variables
+                self.check_expression(value);
+                
+                // Mark all target variables as initialized
+                for target in targets {
+                    if let Some(name) = Self::extract_variable_name(target) {
+                        self.mark_initialized(&name);
+                    }
+                }
             }
 
-            StatementKind::AnnAssign { .. } => {
-                // TODO: Track variable initialization with type annotation
+            StatementKind::AnnAssign {
+                target,
+                value,
+                annotation: _,
+                ..
+            } => {
+                // Check value if present
+                if let Some(val) = value {
+                    self.check_expression(val);
+                }
+                
+                // Mark target as initialized
+                if let Some(name) = Self::extract_variable_name(target) {
+                    self.mark_initialized(&name);
+                }
+            }
+
+            StatementKind::AugAssign { target, op: _, value } => {
+                // Augmented assignment requires variable to already exist
+                // Check both target (must be initialized) and value
+                self.check_expression(target);
+                self.check_expression(value);
             }
 
             // Function definition
-            StatementKind::FunctionDef { body, .. } => {
+            StatementKind::FunctionDef { body, params, .. } => {
                 let previous_in_function = self.current_function_returns;
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
+                let previous_initialized = self.initialized_variables.clone();
                 
                 self.current_function_returns = false;
                 self.in_loop = false;
                 self.is_reachable = true; // Function body starts reachable
                 self.unreachable_reported = false; // Reset for new scope
+                self.initialized_variables.clear(); // New scope - start fresh
+                
+                // Mark all function parameters as initialized
+                for param in &params.args {
+                    self.mark_initialized(&param.name);
+                }
+                if let Some(vararg) = &params.vararg {
+                    self.mark_initialized(&vararg.name);
+                }
+                for param in &params.kwonlyargs {
+                    self.mark_initialized(&param.name);
+                }
+                if let Some(kwarg) = &params.kwarg {
+                    self.mark_initialized(&kwarg.name);
+                }
 
                 // Analyze function body
                 for stmt in body {
@@ -165,6 +352,7 @@ impl ControlFlowAnalyzer {
                 self.in_loop = previous_in_loop;
                 self.is_reachable = previous_reachable; // Restore reachability
                 self.unreachable_reported = previous_unreachable_reported;
+                self.initialized_variables = previous_initialized;
             }
 
             // Class definition
@@ -177,10 +365,13 @@ impl ControlFlowAnalyzer {
 
             // Control flow statements
             StatementKind::If {
-                test: _,
+                test,
                 body,
                 orelse,
             } => {
+                // Check test expression first (this may include walrus operator that initializes variables)
+                self.check_expression(test);
+                
                 let previous_reachable = self.is_reachable;
                 let previous_unreachable_reported = self.unreachable_reported;
                 
@@ -215,6 +406,9 @@ impl ControlFlowAnalyzer {
                 body,
                 orelse,
             } => {
+                // Check test expression
+                self.check_expression(test);
+                
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
                 let previous_loop_has_break = self.loop_has_break;
@@ -251,12 +445,20 @@ impl ControlFlowAnalyzer {
             }
 
             StatementKind::For {
-                target: _,
-                iter: _,
+                target,
+                iter,
                 body,
                 orelse,
                 is_async: _,
             } => {
+                // Check iterator expression
+                self.check_expression(iter);
+                
+                // Mark loop variable as initialized
+                if let Some(name) = Self::extract_pattern_variable(target) {
+                    self.mark_initialized(&name);
+                }
+                
                 let previous_in_loop = self.in_loop;
                 let previous_reachable = self.is_reachable;
                 let previous_loop_has_break = self.loop_has_break;
@@ -307,6 +509,12 @@ impl ControlFlowAnalyzer {
                 for handler in handlers {
                     self.is_reachable = previous_reachable; // Each handler starts fresh
                     self.unreachable_reported = false;
+                    
+                    // Mark exception variable as initialized
+                    if let Some(name) = &handler.name {
+                        self.mark_initialized(name);
+                    }
+                    
                     for stmt in &handler.body {
                         self.analyze_statement(stmt);
                     }
@@ -351,10 +559,23 @@ impl ControlFlowAnalyzer {
             }
 
             StatementKind::With {
-                items: _,
+                items,
                 body,
                 is_async: _,
             } => {
+                // Mark with statement variables as initialized
+                for item in items {
+                    // Check context expression
+                    self.check_expression(&item.context_expr);
+                    
+                    // Mark optional variable as initialized
+                    if let Some(optional_vars) = &item.optional_vars {
+                        if let Some(name) = Self::extract_variable_name(optional_vars) {
+                            self.mark_initialized(&name);
+                        }
+                    }
+                }
+                
                 // Analyze with body
                 for stmt in body {
                     self.analyze_statement(stmt);
@@ -421,8 +642,9 @@ impl ControlFlowAnalyzer {
                 // No control flow impact
             }
 
-            StatementKind::Expr { .. } => {
-                // Expression statement - no control flow impact
+            StatementKind::Expr(expression) => {
+                // Check expression for uninitialized variable usage
+                self.check_expression(expression);
             }
         }
     }

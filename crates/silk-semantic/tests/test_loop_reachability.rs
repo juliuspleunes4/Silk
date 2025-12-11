@@ -13,6 +13,7 @@ fn analyze_control_flow(source: &str) -> Result<(), Vec<SemanticError>> {
 fn test_reachable_after_while_loop() {
     let source = r#"
 def foo():
+    x = 10
     while x > 0:
         x = x - 1
     print("reachable - loop can exit")
@@ -53,6 +54,7 @@ def foo():
 fn test_reachable_after_infinite_loop_with_break() {
     let source = r#"
 def foo():
+    x = 0
     while True:
         if x > 10:
             break
@@ -67,6 +69,7 @@ def foo():
 fn test_reachable_after_infinite_loop_conditional_break() {
     let source = r#"
 def foo():
+    x = 0
     while True:
         x = x + 1
         if x > 100:
@@ -81,6 +84,7 @@ def foo():
 fn test_loop_else_reachability() {
     let source = r#"
 def foo():
+    x = 10
     while x > 0:
         x = x - 1
     else:
@@ -136,6 +140,8 @@ def foo():
 fn test_while_with_break_in_nested_if() {
     let source = r#"
 def foo():
+    condition1 = True
+    condition2 = True
     while True:
         if condition1:
             if condition2:
@@ -191,6 +197,7 @@ def foo():
 fn test_loop_else_with_break() {
     let source = r#"
 def foo():
+    x = 10
     while x > 0:
         if x == 5:
             break

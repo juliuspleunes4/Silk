@@ -148,6 +148,7 @@ def early_return(x, y, z):
 #[test]
 fn test_if_with_break_in_loop() {
     let source = r#"
+condition = True
 while True:
     if condition:
         break

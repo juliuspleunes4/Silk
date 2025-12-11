@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 3, Step 9 - December 12, 2025
+
+**Implemented Variable Initialization Tracking** — The control flow analyzer now tracks which variables are initialized in the current scope and detects uninitialized variable usage.
+
+**Implementation**:
+- Added `initialized_variables: HashSet<String>` field to `ControlFlowAnalyzer` to track initialized variables in current scope
+- Added helper methods:
+  - `mark_initialized(name)` - marks a variable as initialized
+  - `check_initialized(name, span)` - reports error if variable not initialized
+  - `extract_variable_name(expr)` - extracts variable name from expression
+  - `extract_pattern_variable(pattern)` - extracts variable name from pattern
+  - `check_expression(expr)` - recursively checks expressions for uninitialized variables
+- Updated statement handlers:
+  - **Assign/AnnAssign**: Check value expression, mark target as initialized
+  - **AugAssigned**: Requires target to be initialized first (checks both target and value)
+  - **FunctionDef**: Clear initialized_variables (new scope), mark all parameters as initialized
+  - **For**: Check iter expression, mark loop variable as initialized
+  - **If/While**: Check test expression (handles walrus operator in conditions)
+  - **Try/Except**: Mark exception handler variable (as e) as initialized
+  - **With**: Check context expression, mark context variable (as f) as initialized
+  - **Expr**: Check expression for uninitialized variable usage
+- Function scope isolation: Functions create new scopes with `initialized_variables.clear()`
+- Walrus operator support: `NamedExpr` marks target as initialized after checking value
+
+**Tests Added** (19 comprehensive tests):
+- `test_variable_initialized_before_use` - Basic initialization before use
+- `test_uninitialized_variable_error` - Error when using uninitialized variable
+- `test_function_parameter_always_initialized` - Function parameters are initialized
+- `test_loop_variable_initialized` - Loop variables marked as initialized
+- `test_multiple_assignments` - Multiple assignments work correctly
+- `test_initialization_in_if_branch` - Initialization in if branch (Step 9 scope)
+- `test_walrus_operator_initialization` - Walrus operator initializes variables
+- `test_for_loop_target_initialization` - For loop target is initialized
+- `test_reassignment_is_allowed` - Variables can be reassigned
+- `test_except_handler_variable_initialization` - Exception handler variable initialized
+- `test_with_statement_variable_initialization` - With statement variable initialized
+- `test_uninitialized_in_expression` - Detects uninitialized in complex expressions
+- `test_augmented_assignment_initialization` - Augmented assignment works when initialized
+- `test_augmented_assignment_requires_initialization` - Augmented assignment errors when not initialized
+- `test_annotated_assignment_with_value` - Annotated assignment with value
+- `test_annotated_assignment_without_value` - Annotated assignment without value still initializes
+- `test_nested_function_scope` - Functions have isolated scopes
+- `test_multiple_function_parameters` - All function parameters are initialized
+- `test_vararg_and_kwarg_parameters` - Vararg and kwarg parameters are initialized
+
+**Test Statistics**:
+- 19 new tests (exceeded estimate of 8-10)
+- All 19 tests passing (100% success rate)
+- Total tests: **926** (previously 904, +19 new, +3 from other work)
+- No existing tests broken
+
+**Next Steps**: Step 10 will implement per-branch initialization tracking (variables initialized if initialized in ALL branches).
+
+---
+
 ### 🔄 Control Flow Analysis - Phase 2, Step 8 - December 11, 2025
 
 **Implemented comprehensive try/except/finally reachability analysis**.
