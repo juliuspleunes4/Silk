@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Parser Bug Fix - `is` and `in` Operators - December 11, 2025
+
+**Fixed missing comparison operators in parser causing infinite loops**.
+
+**Parser Fix**:
+- **Added missing `is` operator case** in `parse_infix()` method
+- **Added missing `in` operator case** in `parse_infix()` method
+- Both operators now correctly parse as comparison expressions
+- Previously these tokens were only in the precedence function but missing from the actual parsing logic
+- Parser would return without advancing token → infinite loop
+
+**Test Updates**:
+- **Removed all `#[ignore]` attributes** from `test_binary_operations.rs`
+- All 10 previously ignored tests now pass:
+  - `test_int_floordiv_int` - floor division
+  - `test_int_mod_int` - modulo
+  - `test_int_bitor_int` - bitwise OR
+  - `test_int_bitand_int` - bitwise AND
+  - `test_int_bitxor_int` - bitwise XOR
+  - `test_int_lshift_int` - left shift
+  - `test_int_rshift_int` - right shift
+  - `test_comparison_is` - identity comparison
+  - `test_comparison_in` - membership test
+  - `test_bitwise_on_float_unsupported` - updated to expect error (correct behavior)
+- Updated `test_bitwise_on_float_unsupported` to expect `InvalidBinaryOperation` error instead of Unknown type
+
+**Impact**:
+- Fixes all remaining parser hanging issues
+- All 41 binary operation tests now pass (previously 31 passing, 10 ignored)
+- Test count increased: 819 → 829 tests passing
+- Complete binary operation support: arithmetic, bitwise, comparison, logical
+
 ### 🎯 Integration Testing & Documentation - December 11, 2025
 
 **Completed comprehensive integration testing (Phase 7, Steps 21-25 of Type Checking feature)**.

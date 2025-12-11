@@ -92,10 +92,10 @@
     - ✅ Phase 2: Assignment Type Checking (Steps 4-7) - 22 tests
     - ✅ Phase 3: Function Call Type Checking (Steps 8-11) - 20 tests
     - ✅ Phase 4: Return Type Checking (Steps 12-14) - 20 tests
-    - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 21 tests
+    - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 31 tests
     - ✅ Phase 6: Collection Operations (Steps 18-20) - 16 tests
     - ✅ Phase 7: Integration & Documentation (Steps 21-25) - 10 tests - **COMPLETE**
-    - **Total tests: 819 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 21 binary operation + 16 collection + 10 integration tests)
+    - **Total tests: 829 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration tests)
   - Control Flow Analysis ❌ (0% - future)
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
