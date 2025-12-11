@@ -473,8 +473,13 @@ Update documentation:
 ## Current Status
 
 - [x] Branch created: `feat/control-flow-analysis`
-- [ ] **Phase 1**: Infrastructure Setup (Steps 1-4)
+- [x] **Phase 1**: Infrastructure Setup (Steps 1-4) ✅ **COMPLETE**
   - [x] **Step 1**: Create Control Flow Error Types ✅ (8 tests)
+  - [x] **Step 2**: Create ControlFlowAnalyzer Structure ✅ (4 tests)
+  - [x] **Step 3**: Add Module to Crate ✅ (build verified)
+  - [x] **Step 4**: Basic Statement Traversal ✅ (3 tests)
+  - **Total: 15 tests passing (8 error + 7 control_flow module)**
+- [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
 - [ ] **Phase 2**: Unreachable Code Detection (Steps 5-8)
 - [ ] **Phase 3**: Variable Initialization Tracking (Steps 9-11)
 - [ ] **Phase 4**: Return Path Validation (Steps 12-14)
