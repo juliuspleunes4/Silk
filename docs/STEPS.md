@@ -545,6 +545,42 @@ Refine dead code detection:
 
 ---
 
+### Step 17.5: Implement Comprehension Scope Support
+**File**: `crates/silk-semantic/src/control_flow.rs`
+**Estimated Tests**: 8-10
+
+Implement proper control flow analysis for comprehensions:
+- List comprehensions: `[x for x in items]`
+- Dict comprehensions: `{k: v for k, v in items}`
+- Set comprehensions: `{x for x in items}`
+- Generator expressions: `(x for x in items)`
+
+**Current Issue**: Comprehensions are currently skipped (line ~319-322), causing:
+- Variables used inside comprehensions not tracked as "used"
+- Comprehension variables incorrectly leaking to outer scope
+
+**Implementation**:
+- Track variable usage inside comprehension expressions
+- Create isolated scope for comprehension variables (they don't leak in Python 3+)
+- Handle nested comprehensions with multiple `for` clauses
+- Support comprehension with filters (`if` conditions)
+
+**Testing** (test_comprehension_control_flow.rs):
+- `test_comprehension_uses_outer_variable`
+- `test_comprehension_variable_doesnt_leak`
+- `test_nested_comprehensions`
+- `test_comprehension_with_filter`
+- `test_dict_comprehension_scope`
+- `test_generator_expression_scope`
+- `test_comprehension_in_function`
+- `test_walrus_in_comprehension`
+- `test_multiple_generators_in_comprehension`
+
+**Checkpoint**: ~1023-1025 tests total (8-10 new)
+**Run**: `cargo test --package silk-semantic`
+
+---
+
 ## Phase 6: Integration & Documentation (Steps 18-20)
 
 ### Step 18: Integrate with SemanticAnalyzer
