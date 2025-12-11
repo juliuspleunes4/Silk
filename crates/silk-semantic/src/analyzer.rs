@@ -53,11 +53,25 @@ impl SemanticAnalyzer {
     fn collect_forward_declarations(&mut self, program: &Program) {
         for statement in &program.statements {
             match &statement.kind {
-                StatementKind::FunctionDef { name, .. } => {
-                    let func_symbol = Symbol::new(
+                StatementKind::FunctionDef { name, returns, .. } => {
+                    // Resolve return type annotation if present
+                    let func_type = if let Some(return_type_ann) = returns {
+                        let return_type = self.resolve_type_annotation(return_type_ann);
+                        Type::Function {
+                            return_type: Box::new(return_type),
+                        }
+                    } else {
+                        // No return type annotation means Unknown
+                        Type::Function {
+                            return_type: Box::new(Type::Unknown),
+                        }
+                    };
+                    
+                    let func_symbol = Symbol::with_type(
                         name.clone(),
                         SymbolKind::Function,
                         statement.span.clone(),
+                        func_type,
                     );
                     if let Err(err) = self.symbol_table.define_symbol(func_symbol) {
                         self.errors.push(err);

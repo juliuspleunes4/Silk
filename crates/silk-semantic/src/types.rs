@@ -19,6 +19,11 @@ pub enum Type {
     Any,
     /// Unknown type - type hasn't been inferred yet
     Unknown,
+    /// Function type with return type
+    Function {
+        /// Return type of the function
+        return_type: Box<Type>,
+    },
 }
 
 impl Type {
@@ -42,6 +47,11 @@ impl Type {
             return true;
         }
 
+        // Functions are compatible if their return types are compatible
+        if let (Type::Function { return_type: rt1 }, Type::Function { return_type: rt2 }) = (self, other) {
+            return rt1.is_compatible_with(rt2);
+        }
+
         // Otherwise, types must match exactly
         false
     }
@@ -56,6 +66,7 @@ impl Type {
             Type::None => "None",
             Type::Any => "Any",
             Type::Unknown => "<unknown>",
+            Type::Function { .. } => "function",
         }
     }
 
@@ -83,7 +94,12 @@ impl Type {
 
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
+        match self {
+            Type::Function { return_type } => {
+                write!(f, "function -> {}", return_type)
+            }
+            _ => write!(f, "{}", self.as_str()),
+        }
     }
 }
 
