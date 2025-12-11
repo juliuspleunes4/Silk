@@ -61,6 +61,80 @@ pub enum SemanticError {
         span: Span,
     },
 
+    /// Assignment type mismatch - value doesn't match annotated type
+    #[error("Type mismatch in assignment at line {line}, column {column}: cannot assign '{value_type}' to variable of type '{expected_type}'")]
+    AssignmentTypeMismatch {
+        expected_type: String,
+        value_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Function argument type mismatch
+    #[error("Type mismatch in function call at line {line}, column {column}: argument {arg_index} has type '{actual_type}' but parameter '{param_name}' expects type '{expected_type}'")]
+    ArgumentTypeMismatch {
+        param_name: String,
+        arg_index: usize,
+        expected_type: String,
+        actual_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Return type mismatch
+    #[error("Type mismatch in return statement at line {line}, column {column}: returning '{actual_type}' but function expects '{expected_type}'")]
+    ReturnTypeMismatch {
+        expected_type: String,
+        actual_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Invalid binary operation - operand types incompatible
+    #[error("Invalid operation at line {line}, column {column}: cannot apply operator '{operator}' to types '{left_type}' and '{right_type}'")]
+    InvalidBinaryOperation {
+        operator: String,
+        left_type: String,
+        right_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Invalid unary operation - operand type incompatible
+    #[error("Invalid operation at line {line}, column {column}: cannot apply operator '{operator}' to type '{operand_type}'")]
+    InvalidUnaryOperation {
+        operator: String,
+        operand_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Invalid subscript operation - wrong index type
+    #[error("Invalid subscript at line {line}, column {column}: cannot index '{container_type}' with '{index_type}'")]
+    InvalidSubscript {
+        container_type: String,
+        index_type: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
+    /// Argument count mismatch
+    #[error("Argument count mismatch at line {line}, column {column}: function '{function_name}' expects {expected} argument(s) but got {actual}")]
+    ArgumentCountMismatch {
+        function_name: String,
+        expected: usize,
+        actual: usize,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
+
     /// Break statement outside of loop
     #[error("'break' statement outside of loop at line {line}, column {column}")]
     BreakOutsideLoop {
