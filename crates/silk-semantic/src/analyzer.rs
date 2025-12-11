@@ -716,8 +716,13 @@ impl SemanticAnalyzer {
                 self.infer_call_type(func, args, keywords)
             }
             
+            // Collection literals
+            ExpressionKind::List { elements } => {
+                self.infer_list_type(elements)
+            }
+            
             // For now, other expressions return Unknown
-            // TODO: Infer types for collections, comprehensions, etc.
+            // TODO: Infer types for dict, set, tuple, comprehensions, etc.
             _ => Type::Unknown,
         }
     }
@@ -930,6 +935,58 @@ impl SemanticAnalyzer {
             "getattr" | "setattr" | "hasattr" | "delattr" |
             "id" | "hash" | "repr" | "ascii" | "format"
         )
+    }
+
+    /// Infer type for list literals
+    /// 
+    /// Analyzes all elements in the list and determines the common element type.
+    /// 
+    /// **Current Behavior**:
+    /// - Empty list: returns `list[Unknown]` (no elements to infer from)
+    /// - Homogeneous list: returns `list[ElementType]` (all elements same type)
+    /// - Heterogeneous list: returns `list[Unknown]` (mixed types, no union support yet)
+    /// - Nested lists: recursively infers inner list types
+    /// 
+    /// **Examples**:
+    /// - `[1, 2, 3]` → `list[int]`
+    /// - `["a", "b"]` → `list[str]`
+    /// - `[]` → `list[Unknown]`
+    /// - `[1, "a"]` → `list[Unknown]` (heterogeneous)
+    /// - `[[1, 2], [3, 4]]` → `list[list[int]]`
+    /// 
+    /// **Limitations**:
+    /// - No union type support: heterogeneous lists return `list[Unknown]`
+    /// - No type widening: `[1, 1.0]` returns `list[Unknown]`, not `list[float]`
+    /// 
+    /// **TODO: Future Improvements**:
+    /// - Add union type support for heterogeneous lists: `[1, "a"]` → `list[int | str]`
+    /// - Add type widening: int → float when mixed
+    /// - Consider context/annotation: `x: list[float] = [1, 2]` should validate
+    fn infer_list_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+        use crate::types::Type;
+        
+        // Empty list: cannot infer element type
+        if elements.is_empty() {
+            return Type::List(Box::new(Type::Unknown));
+        }
+        
+        // Infer type of first element
+        let first_type = self.infer_type(&elements[0]);
+        
+        // Check if all elements have the same type
+        let all_same = elements[1..].iter().all(|elem| {
+            let elem_type = self.infer_type(elem);
+            first_type.is_compatible_with(&elem_type)
+        });
+        
+        if all_same {
+            // Homogeneous list: all elements same type
+            Type::List(Box::new(first_type))
+        } else {
+            // Heterogeneous list: mixed types, no union support yet
+            // TODO: Return list[Union[...]] when union types are implemented
+            Type::List(Box::new(Type::Unknown))
+        }
     }
 
     /// Resolve a type annotation from AST to semantic Type
