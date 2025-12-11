@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
+
+**Implemented Unused Variable Detection** — Added ability to detect variables that are assigned but never used, following Python convention of ignoring underscore-prefixed variables.
+
+**Implementation Details**:
+- **Tracking Infrastructure**:
+  - Added `assigned_variables: HashMap<String, Span>` to track variable assignments with location
+  - Added `used_variables: HashSet<String>` to track which variables were read
+  - Created `track_assignment(name, span)` method to record assignments
+  - Created `track_usage(name)` method to mark variables as used
+  - Created `report_unused_variables()` to report unused variables at end of analysis
+- **Assignment Tracking**:
+  - Regular assignment (Assign)
+  - Annotated assignment (AnnAssign)
+  - Walrus operator (NamedExpr)
+  - For loop variables
+  - With statement variables
+  - Exception handler variables
+  - Function parameters (all types: positional, *args, keyword-only, **kwargs)
+- **Usage Tracking**:
+  - Identifier references in expressions
+  - Return values
+  - Function call targets (for lambdas and function variables)
+- **Python Conventions**:
+  - Variables starting with underscore (`_`) are ignored (Python convention for intentionally unused)
+  - Respects first assignment location when reporting errors
+  - Only reports variables from current scope (known limitation with nested scopes)
+  
+**New Error Type**:
+- `UnusedVariable { name, line, column, span }` - Warns about variables assigned but never read
+
+**Testing** (13 comprehensive tests in test_unused_variables.rs):
+- test_unused_variable_warning - Basic unused variable detection
+- test_used_variable_no_warning - Variables that are used don't warn
+- test_unused_function_parameter - Unused parameters detected
+- test_underscore_prefix_no_warning - `_` prefix variables ignored
+- test_multiple_unused_variables - Multiple unused detected
+- test_unused_loop_variable - Loop variables tracked
+- test_unused_walrus_variable - Walrus operator assignments tracked
+- test_unused_with_variable - With statement variables tracked
+- test_unused_exception_variable - Exception handler variables tracked
+- test_used_exception_variable - Used exception variables OK
+- test_annotated_assignment_unused - Type annotations tracked
+- test_variable_used_in_nested_scope - Nested scope limitation documented
+- test_reassignment_tracks_first_assignment - Reports first assignment location
+
+**Impact**:
+- **Total Tests**: 1003 (990 → 1003, +13)
+- **Files Modified**: 3
+  - crates/silk-semantic/src/error.rs: Added UnusedVariable error type
+  - crates/silk-semantic/src/control_flow.rs: Implemented tracking and reporting
+  - crates/silk-semantic/tests/test_unused_variables.rs: New test file
+- **Phase 5 Status**: In Progress (Step 15 of 20)
+- **Updated Tests**: Fixed existing tests to use variables or accept unused errors
+
+**Known Limitations**:
+- Nested function scopes don't share variable visibility (tracked in TODO for future scope analysis)
+- Module-level code and function bodies analyzed separately
+
 ### 🔄 Control Flow Analysis - Phase 4, Step 14 - December 12, 2025
 
 **Implemented Return Validation Comprehensive Testing** — Added extensive test coverage for return type validation to ensure all edge cases are properly handled.

@@ -48,7 +48,7 @@ while True:
 #[test]
 fn test_unreachable_after_continue() {
     let source = r#"
-for i in range(10):
+for _i in range(10):
     continue
     print("unreachable")
 "#;

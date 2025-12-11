@@ -2,11 +2,27 @@ use silk_parser::Parser;
 use silk_semantic::{ControlFlowAnalyzer, SemanticError};
 
 /// Helper to parse source and run control flow analysis
+/// Filters out UnusedVariable errors since this file tests initialization, not usage
 fn analyze_control_flow(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser failed");
     
     let mut analyzer = ControlFlowAnalyzer::new();
-    analyzer.analyze(&program)
+    match analyzer.analyze(&program) {
+        Ok(()) => Ok(()),
+        Err(errors) => {
+            // Filter out UnusedVariable errors - we're only testing initialization
+            let relevant_errors: Vec<SemanticError> = errors
+                .into_iter()
+                .filter(|e| !matches!(e, SemanticError::UnusedVariable { .. }))
+                .collect();
+            
+            if relevant_errors.is_empty() {
+                Ok(())
+            } else {
+                Err(relevant_errors)
+            }
+        }
+    }
 }
 
 /// Helper to check if error is UninitializedVariable
@@ -19,6 +35,7 @@ fn test_variable_initialized_before_use() {
     let source = r#"
 x = 5
 y = x
+z = y
 "#;
     let result = analyze_control_flow(source);
     assert!(result.is_ok(), "Should have no errors when variable is initialized before use");

@@ -10,7 +10,7 @@
 use crate::SemanticError;
 use silk_ast::{Expression, ExpressionKind, Pattern, Program, Statement, StatementKind};
 use silk_lexer::Span;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Control flow analyzer for detecting control flow errors
 pub struct ControlFlowAnalyzer {
@@ -28,6 +28,10 @@ pub struct ControlFlowAnalyzer {
     loop_has_break: bool,
     /// Set of variables that have been initialized in the current scope
     initialized_variables: HashSet<String>,
+    /// Map of variable names to their assignment locations (for unused detection)
+    assigned_variables: HashMap<String, Span>,
+    /// Set of variables that have been used (read)
+    used_variables: HashSet<String>,
 }
 
 impl ControlFlowAnalyzer {
@@ -41,6 +45,8 @@ impl ControlFlowAnalyzer {
             unreachable_reported: false,
             loop_has_break: false,
             initialized_variables: HashSet::new(),
+            assigned_variables: HashMap::new(),
+            used_variables: HashSet::new(),
         }
     }
 
@@ -51,10 +57,33 @@ impl ControlFlowAnalyzer {
             self.analyze_statement(statement);
         }
         
+        // Report unused variables (excluding those with _ prefix)
+        self.report_unused_variables();
+        
         if self.errors.is_empty() {
             Ok(())
         } else {
             Err(std::mem::take(&mut self.errors))
+        }
+    }
+
+    /// Report variables that were assigned but never used
+    fn report_unused_variables(&mut self) {
+        for (name, span) in &self.assigned_variables {
+            // Skip variables starting with underscore (Python convention for unused)
+            if name.starts_with('_') {
+                continue;
+            }
+            
+            // Check if variable was ever used
+            if !self.used_variables.contains(name) {
+                self.errors.push(SemanticError::UnusedVariable {
+                    name: name.clone(),
+                    line: span.line,
+                    column: span.column,
+                    span: span.clone(),
+                });
+            }
         }
     }
 
@@ -68,6 +97,19 @@ impl ControlFlowAnalyzer {
     /// Mark a variable as initialized
     fn mark_initialized(&mut self, name: &str) {
         self.initialized_variables.insert(name.to_string());
+    }
+
+    /// Track that a variable was assigned (for unused variable detection)
+    fn track_assignment(&mut self, name: &str, span: &Span) {
+        // Only track the first assignment location
+        if !self.assigned_variables.contains_key(name) {
+            self.assigned_variables.insert(name.to_string(), span.clone());
+        }
+    }
+
+    /// Track that a variable was used (read)
+    fn track_usage(&mut self, name: &str) {
+        self.used_variables.insert(name.to_string());
     }
 
     /// Check if a variable is initialized, report error if not
@@ -98,11 +140,37 @@ impl ControlFlowAnalyzer {
         }
     }
 
+    /// Track usage without checking initialization (for function calls to built-ins)
+    fn track_expression_usage(&mut self, expr: &Expression) {
+        match &expr.kind {
+            ExpressionKind::Identifier(name) => {
+                self.track_usage(name);
+            }
+            ExpressionKind::Attribute { value, .. } => {
+                self.track_expression_usage(value);
+            }
+            ExpressionKind::Subscript { value, index } => {
+                self.track_expression_usage(value);
+                self.track_expression_usage(index);
+            }
+            // For other expressions, just track nested identifiers
+            ExpressionKind::BinaryOp { left, right, .. } => {
+                self.track_expression_usage(left);
+                self.track_expression_usage(right);
+            }
+            ExpressionKind::UnaryOp { operand, .. } => {
+                self.track_expression_usage(operand);
+            }
+            _ => {}
+        }
+    }
+
     /// Check an expression for uninitialized variable usage
     fn check_expression(&mut self, expr: &Expression) {
         match &expr.kind {
             ExpressionKind::Identifier(name) => {
                 self.check_initialized(name, &expr.span);
+                self.track_usage(name);
             }
             ExpressionKind::BinaryOp { left, right, .. } => {
                 self.check_expression(left);
@@ -119,9 +187,10 @@ impl ControlFlowAnalyzer {
                     self.check_expression(comp);
                 }
             }
-            ExpressionKind::Call { func: _, args, keywords } => {
-                // Don't check func - functions are resolved separately (not variable initialization)
-                // This avoids false positives for built-in functions like print, len, etc.
+            ExpressionKind::Call { func, args, keywords } => {
+                // Track usage of function variable (for lambdas, variables holding functions)
+                // but don't require initialization (to allow built-in functions)
+                self.track_expression_usage(func);
                 for arg in args {
                     self.check_expression(arg);
                 }
@@ -183,6 +252,7 @@ impl ControlFlowAnalyzer {
                 self.check_expression(value);
                 if let Some(name) = Self::extract_variable_name(target) {
                     self.mark_initialized(&name);
+                    self.track_assignment(&name, &target.span);
                 }
             }
             // Literals don't need checking
@@ -294,10 +364,11 @@ impl ControlFlowAnalyzer {
                 // Check value expression for uninitialized variables
                 self.check_expression(value);
                 
-                // Mark all target variables as initialized
+                // Mark all target variables as initialized and track assignment
                 for target in targets {
                     if let Some(name) = Self::extract_variable_name(target) {
                         self.mark_initialized(&name);
+                        self.track_assignment(&name, &target.span);
                     }
                 }
             }
@@ -313,9 +384,10 @@ impl ControlFlowAnalyzer {
                     self.check_expression(val);
                 }
                 
-                // Mark target as initialized
+                // Mark target as initialized and track assignment
                 if let Some(name) = Self::extract_variable_name(target) {
                     self.mark_initialized(&name);
+                    self.track_assignment(&name, &target.span);
                 }
             }
 
@@ -353,18 +425,22 @@ impl ControlFlowAnalyzer {
                 self.unreachable_reported = false; // Reset for new scope
                 self.initialized_variables.clear(); // New scope - start fresh
                 
-                // Mark all function parameters as initialized
+                // Mark all function parameters as initialized and track as assigned
                 for param in &params.args {
                     self.mark_initialized(&param.name);
+                    self.track_assignment(&param.name, &param.span);
                 }
                 if let Some(vararg) = &params.vararg {
                     self.mark_initialized(&vararg.name);
+                    self.track_assignment(&vararg.name, &vararg.span);
                 }
                 for param in &params.kwonlyargs {
                     self.mark_initialized(&param.name);
+                    self.track_assignment(&param.name, &param.span);
                 }
                 if let Some(kwarg) = &params.kwarg {
                     self.mark_initialized(&kwarg.name);
+                    self.track_assignment(&kwarg.name, &kwarg.span);
                 }
 
                 // Analyze function body
@@ -519,9 +595,10 @@ impl ControlFlowAnalyzer {
                 // Check iterator expression
                 self.check_expression(iter);
                 
-                // Mark loop variable as initialized
+                // Mark loop variable as initialized and track assignment
                 if let Some(name) = Self::extract_pattern_variable(target) {
                     self.mark_initialized(&name);
+                    self.track_assignment(&name, &target.span);
                 }
                 
                 let previous_in_loop = self.in_loop;
@@ -531,8 +608,6 @@ impl ControlFlowAnalyzer {
                 self.in_loop = true;
                 self.loop_has_break = false; // Reset for this loop
                 self.is_reachable = true; // Loop body starts reachable
-
-                // TODO: Track loop variable initialization
 
                 // Analyze for body
                 for stmt in body {
@@ -580,9 +655,11 @@ impl ControlFlowAnalyzer {
                     self.initialized_variables = previous_initialized.clone();
                     self.unreachable_reported = false;
                     
-                    // Mark exception variable as initialized
+                    // Mark exception variable as initialized and track assignment
                     if let Some(name) = &handler.name {
                         self.mark_initialized(name);
+                        // Exception handler variable - get span from handler
+                        self.track_assignment(name, &handler.span);
                     }
                     
                     for stmt in &handler.body {
@@ -659,15 +736,16 @@ impl ControlFlowAnalyzer {
                 body,
                 is_async: _,
             } => {
-                // Mark with statement variables as initialized
+                // Mark with statement variables as initialized and track assignment
                 for item in items {
                     // Check context expression
                     self.check_expression(&item.context_expr);
                     
-                    // Mark optional variable as initialized
+                    // Mark optional variable as initialized and track assignment
                     if let Some(optional_vars) = &item.optional_vars {
                         if let Some(name) = Self::extract_variable_name(optional_vars) {
                             self.mark_initialized(&name);
+                            self.track_assignment(&name, &optional_vars.span);
                         }
                     }
                 }
@@ -689,7 +767,11 @@ impl ControlFlowAnalyzer {
             }
 
             // Simple statements - no nested structure
-            StatementKind::Return { .. } => {
+            StatementKind::Return { value } => {
+                // Check return value expression
+                if let Some(expr) = value {
+                    self.check_expression(expr);
+                }
                 // Mark code after return as unreachable
                 self.is_reachable = false;
                 self.current_function_returns = true;
@@ -812,7 +894,7 @@ mod tests {
         // This test verifies the analyzer can traverse a program with all statement types
         let source = r#"
 x = 10
-y = 20
+y = x + 20
 
 def foo():
     return 42
@@ -831,7 +913,7 @@ while False:
 pass
 
 assert True
-del x
+print(y)
 
 import os
 
@@ -853,14 +935,14 @@ global g
 def outer():
     x = 1
     def inner():
-        y = 2
+        return 2
     return x
 "#;
         let program = Parser::parse(source).expect("Failed to parse");
         let mut analyzer = ControlFlowAnalyzer::new();
         
         let result = analyzer.analyze(&program);
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Should succeed: {:?}", result);
     }
 
     #[test]

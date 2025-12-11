@@ -202,4 +202,13 @@ pub enum SemanticError {
         column: usize,
         span: Span,
     },
+
+    /// Variable assigned but never used
+    #[error("Unused variable '{name}' at line {line}, column {column}")]
+    UnusedVariable {
+        name: String,
+        line: usize,
+        column: usize,
+        span: Span,
+    },
 }

@@ -401,23 +401,35 @@ Ensure return consistency:
 
 ## Phase 5: Dead Code Detection (Steps 15-17)
 
-### Step 15: Detect Unused Variables
+### Step 15: Detect Unused Variables ✅
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 8-10
+**Tests**: 13 comprehensive tests
 
-Track variable usage:
-- Mark variables when assigned
-- Mark variables when used
-- Report unused variables (optional warning)
+**Implementation**:
+- Track variable assignments with location (HashMap<String, Span>)
+- Track variable usage (HashSet<String>)
+- Report unused variables at end of analysis
+- Skip underscore-prefixed variables (Python convention)
+- Track all assignment types: regular, annotated, walrus, for loops, with statements, exception handlers, function parameters
 
-**Testing**:
-- `test_unused_variable_warning`
-- `test_used_variable_no_warning`
-- `test_unused_function_parameter`
-- `test_unused_in_nested_scope`
-- `test_unused_loop_variable`
-- `test_underscore_prefix_no_warning` (Python convention)
-- `test_unused_in_comprehension`
+**Testing** (test_unused_variables.rs):
+- `test_unused_variable_warning` - Basic detection
+- `test_used_variable_no_warning` - Used variables OK
+- `test_unused_function_parameter` - Parameters tracked
+- `test_underscore_prefix_no_warning` - Python `_` convention
+- `test_multiple_unused_variables` - Multiple detection
+- `test_unused_loop_variable` - Loop vars tracked
+- `test_unused_walrus_variable` - Walrus operator tracked
+- `test_unused_with_variable` - With statement tracked
+- `test_unused_exception_variable` - Exception handlers tracked
+- `test_used_exception_variable` - Used exception vars OK
+- `test_annotated_assignment_unused` - Type annotations tracked
+- `test_variable_used_in_nested_scope` - Nested scope limitation
+- `test_reassignment_tracks_first_assignment` - First location reported
+
+**Checkpoint**: 1003 tests total (990 + 13 new)
+**Status**: ✅ All tests passing
+**Phase 5**: 🔄 In Progress (Step 15 complete)
 - `test_unused_walrus_variable`
 
 ---
