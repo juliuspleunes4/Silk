@@ -1,7 +1,7 @@
 //! Tests for binary operation type inference
 
 use silk_parser::Parser;
-use silk_semantic::{SemanticAnalyzer, Type};
+use silk_semantic::{SemanticAnalyzer, SemanticError, Type};
 
 // ========== ARITHMETIC OPERATIONS - INT ==========
 
@@ -452,14 +452,20 @@ result = x + y
 
 #[test]
 fn test_string_multiply_unsupported() {
-    // String * Int would work in Python, but we return Unknown for now
+    // String * Int is not supported and should produce a validation error
     let source = r#"result = "hello" * 3"#;
     let program = Parser::parse(source).unwrap();
     let mut analyzer = SemanticAnalyzer::new();
-    analyzer.analyze(&program).unwrap();
+    let result = analyzer.analyze(&program);
     
-    let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
-    assert_eq!(symbol.ty, Type::Unknown, "String * Int not yet supported");
+    // Should have a binary operation error
+    assert!(result.is_err(), "Expected error for str * int");
+    let errors = result.err().unwrap();
+    assert_eq!(errors.len(), 1);
+    assert!(
+        matches!(&errors[0], SemanticError::InvalidBinaryOperation { operator, .. } if operator == "*"),
+        "Expected InvalidBinaryOperation error"
+    );
 }
 
 

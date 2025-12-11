@@ -409,6 +409,71 @@ impl Parser {
                     right: Box::new(right),
                 }
             }
+            TokenKind::DoubleSlash => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Multiplication.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::FloorDiv,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Percent => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Multiplication.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::Mod,
+                    right: Box::new(right),
+                }
+            }
+            
+            // Bitwise operators
+            TokenKind::Pipe => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::BitwiseOr.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::BitOr,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Caret => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::BitwiseXor.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::BitXor,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::Ampersand => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::BitwiseAnd.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::BitAnd,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::LeftShift => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Shift.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::LShift,
+                    right: Box::new(right),
+                }
+            }
+            TokenKind::RightShift => {
+                self.advance();
+                let right = self.parse_precedence(Precedence::Shift.succ())?;
+                ExpressionKind::BinaryOp {
+                    left: Box::new(left),
+                    op: BinaryOperator::RShift,
+                    right: Box::new(right),
+                }
+            }
             
             // Comparison operators
             TokenKind::Equal => {

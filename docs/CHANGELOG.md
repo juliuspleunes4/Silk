@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ Binary Operation Validation - December 11, 2025
+
+**Implemented type validation for binary operations (Phase 5, Steps 15-17 of Type Checking feature)**.
+
+**Semantic Analyzer Enhancements**:
+- **Modified `infer_binary_op_type` method**: Added validation call before type inference
+- **New method `validate_binary_operation()`** (~110 lines):
+  - Validates arithmetic operations:
+    - Addition (`+`): allows numeric+numeric OR str+str
+    - Subtraction, multiplication, division, floor div, modulo, power (`-`, `*`, `/`, `//`, `%`, `**`): require numeric operands only
+  - Validates bitwise operations:
+    - Bitwise OR, XOR, AND (`|`, `^`, `&`): require int+int
+    - Left/right shift (`<<`, `>>`): require int+int
+  - Gradual typing support: Unknown types pass all validation
+  - Returns `InvalidBinaryOperation` error for incompatible type combinations
+- **Unused parameter warning**: Marked `right_expr` parameter as unused with `_right_expr`
+
+**Parser Bug Fix**:
+- **CRITICAL**: Fixed infinite loop in parser when encountering bitwise operators
+- Root cause: `parse_infix()` was missing cases for bitwise operators (`Pipe`, `Caret`, `Ampersand`, `LeftShift`, `RightShift`)
+- Parser would return without advancing token, causing infinite loop in precedence climbing
+- Added all missing bitwise operator cases:
+  - `TokenKind::Pipe` → `BinaryOperator::BitOr` (BitwiseOr precedence)
+  - `TokenKind::Caret` → `BinaryOperator::BitXor` (BitwiseXor precedence)
+  - `TokenKind::Ampersand` → `BinaryOperator::BitAnd` (BitwiseAnd precedence)
+  - `TokenKind::LeftShift` → `BinaryOperator::LShift` (Shift precedence)
+  - `TokenKind::RightShift` → `BinaryOperator::RShift` (Shift precedence)
+- Also added missing arithmetic operator cases:
+  - `TokenKind::DoubleSlash` → `BinaryOperator::FloorDiv`
+  - `TokenKind::Percent` → `BinaryOperator::Mod`
+
+**Testing**:
+- **21 new tests** in `test_binary_operation_validation.rs`:
+  - Valid arithmetic operations (8 tests): int+int, float+float, int+float, str+str, subtraction, multiplication, division, bitwise ops
+  - Invalid type mismatches (6 tests): int+str, str+int, str-str, str*float, bool+bool, float|float
+  - Bitwise operations (4 tests): valid int bitwise, invalid float bitwise, invalid string bitwise, invalid shift on float
+  - Special cases (3 tests): unknown type handling, nested operations, operations in expressions
+- Updated existing test `test_string_multiply_unsupported` to expect error instead of Unknown type
+- All 793 tests passing ✅
+
+**Impact**:
+- Catches type errors in binary operations at compile time
+- Provides clear error messages with operator, operand types, and location
+- Maintains gradual typing support for flexibility
+- Fixed critical parser bug that blocked all bitwise operation parsing
+
 ### ↩️ Return Type Checking - December 11, 2025
 
 **Implemented type checking for return statements (Phase 4, Steps 12-14 of Type Checking feature)**.

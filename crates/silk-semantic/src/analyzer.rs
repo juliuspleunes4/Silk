@@ -793,6 +793,11 @@ impl SemanticAnalyzer {
         let left_type = self.infer_type(left);
         let right_type = self.infer_type(right);
         
+        // Validate operation before inferring result type
+        if let Err(err) = self.validate_binary_operation(&left_type, op, &right_type, left, right) {
+            self.errors.push(err);
+        }
+        
         match op {
             // Arithmetic operators
             BinaryOperator::Add => {
@@ -1336,6 +1341,113 @@ impl SemanticAnalyzer {
                 column: return_stmt.span.column,
                 span: return_stmt.span.clone(),
             });
+        }
+
+        Ok(())
+    }
+
+    /// Validate binary operation operand types
+    /// 
+    /// Checks that operand types are compatible with the operator.
+    /// Returns Ok(()) if valid, Err(SemanticError) if invalid.
+    fn validate_binary_operation(
+        &self,
+        left_type: &crate::types::Type,
+        op: silk_ast::BinaryOperator,
+        right_type: &crate::types::Type,
+        left_expr: &Expression,
+        _right_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        use crate::types::Type;
+        use silk_ast::BinaryOperator;
+
+        // Unknown types pass validation (gradual typing)
+        if *left_type == Type::Unknown || *right_type == Type::Unknown {
+            return Ok(());
+        }
+
+        match op {
+            // Addition: numeric + numeric, or str + str
+            BinaryOperator::Add => {
+                let valid = matches!(
+                    (left_type, right_type),
+                    (Type::Int, Type::Int) |
+                    (Type::Float, Type::Float) |
+                    (Type::Int, Type::Float) |
+                    (Type::Float, Type::Int) |
+                    (Type::Str, Type::Str)
+                );
+                
+                if !valid {
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: "+".to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
+
+            // Arithmetic operators: only numeric types
+            BinaryOperator::Sub | BinaryOperator::Mult | BinaryOperator::Div |
+            BinaryOperator::FloorDiv | BinaryOperator::Mod | BinaryOperator::Pow => {
+                let valid = matches!(
+                    (left_type, right_type),
+                    (Type::Int, Type::Int) |
+                    (Type::Float, Type::Float) |
+                    (Type::Int, Type::Float) |
+                    (Type::Float, Type::Int)
+                );
+
+                if !valid {
+                    let op_str = match op {
+                        BinaryOperator::Sub => "-",
+                        BinaryOperator::Mult => "*",
+                        BinaryOperator::Div => "/",
+                        BinaryOperator::FloorDiv => "//",
+                        BinaryOperator::Mod => "%",
+                        BinaryOperator::Pow => "**",
+                        _ => "?",
+                    };
+
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: op_str.to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
+
+            // Bitwise operators: only integers
+            BinaryOperator::BitOr | BinaryOperator::BitXor | BinaryOperator::BitAnd |
+            BinaryOperator::LShift | BinaryOperator::RShift => {
+                let valid = matches!((left_type, right_type), (Type::Int, Type::Int));
+
+                if !valid {
+                    let op_str = match op {
+                        BinaryOperator::BitOr => "|",
+                        BinaryOperator::BitXor => "^",
+                        BinaryOperator::BitAnd => "&",
+                        BinaryOperator::LShift => "<<",
+                        BinaryOperator::RShift => ">>",
+                        _ => "?",
+                    };
+
+                    return Err(SemanticError::InvalidBinaryOperation {
+                        operator: op_str.to_string(),
+                        left_type: left_type.to_string(),
+                        right_type: right_type.to_string(),
+                        line: left_expr.span.line,
+                        column: left_expr.span.column,
+                        span: left_expr.span.clone(),
+                    });
+                }
+            }
         }
 
         Ok(())

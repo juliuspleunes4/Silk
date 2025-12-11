@@ -87,15 +87,15 @@
     - ✅ Unary operation type inference (not, +, -, ~)
     - ✅ Function call type inference (23 tests: 19 call inference + 4 function types, covering user functions + 40+ built-ins)
     - ✅ Collection type inference (list, dict, set, tuple) - **COMPLETE** (55 tests)
-  - Type Checking ⏳ (64% - **IN PROGRESS**)
+  - Type Checking ⏳ (76% - **IN PROGRESS**)
     - ✅ Phase 1: Error Infrastructure (Steps 1-3) - 33 tests
     - ✅ Phase 2: Assignment Type Checking (Steps 4-7) - 22 tests
     - ✅ Phase 3: Function Call Type Checking (Steps 8-11) - 20 tests
     - ✅ Phase 4: Return Type Checking (Steps 12-14) - 20 tests
-    - ❌ Phase 5: Binary Operation Validation (Steps 15-17) - **NEXT**
-    - ❌ Phase 6: Collection Operations (Steps 18-20) - future
+    - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 21 tests - **COMPLETE**
+    - ❌ Phase 6: Collection Operations (Steps 18-20) - **NEXT**
     - ❌ Phase 7: Integration & Documentation (Steps 21-25) - future
-    - **Total tests: 772 passing** (710 baseline + 22 assignment + 20 function call + 20 return tests)
+    - **Total tests: 793 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 21 binary operation tests)
   - Control Flow Analysis ❌ (0% - future)
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
