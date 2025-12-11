@@ -835,32 +835,32 @@ impl SemanticAnalyzer {
                 
                 // Check if it's a built-in function
                 match func_name.as_str() {
-                    "len" => return Type::Int,
-                    "str" => return Type::Str,
-                    "int" => return Type::Int,
-                    "float" => return Type::Float,
-                    "bool" => return Type::Bool,
-                    "print" => return Type::None,
-                    "input" => return Type::Str,
+                    "len" => Type::Int,
+                    "str" => Type::Str,
+                    "int" => Type::Int,
+                    "float" => Type::Float,
+                    "bool" => Type::Bool,
+                    "print" => Type::None,
+                    "input" => Type::Str,
                     "abs" => {
                         // abs preserves numeric type - would need arg analysis for precision
-                        return Type::Unknown;
+                        Type::Unknown
                     }
                     "min" | "max" | "sum" => {
                         // These preserve argument types - would need arg analysis
-                        return Type::Unknown;
+                        Type::Unknown
                     }
                     "list" | "dict" | "set" | "tuple" | "range" => {
                         // Collection types - not yet supported
-                        return Type::Unknown;
+                        Type::Unknown
                     }
                     "type" => {
                         // Returns type objects - not yet supported
-                        return Type::Unknown;
+                        Type::Unknown
                     }
                     _ => {
                         // Undefined function
-                        return Type::Unknown;
+                        Type::Unknown
                     }
                 }
             }
@@ -920,7 +920,7 @@ impl SemanticAnalyzer {
         let param_symbol = Symbol::new(
             arg.name.clone(),
             SymbolKind::Parameter,
-            arg.span.clone(),
+            arg.span,
         );
         if let Err(err) = self.symbol_table.define_symbol(param_symbol) {
             self.errors.push(err);

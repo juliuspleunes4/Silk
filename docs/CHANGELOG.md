@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📞 Function Call Type Inference - December 11, 2025
+
+**Implemented type inference for function calls based on return type annotations**.
+
+**Type System Changes**:
+- Added `Type::Function { return_type: Box<Type> }` variant to represent function types
+- Updated `is_compatible_with()` method to handle function type compatibility
+- Updated `Display` trait to show function types as "function -> ReturnType"
+
+**Semantic Analyzer Changes**:
+- **Pre-pass modification**: Function symbols now store their return types
+  - Resolves `returns: Option<Type>` field from AST during pre-pass
+  - Creates function symbols with `Type::Function { return_type }`
+  - Functions without return type annotation get `Type::Unknown` as return type
+- **New method `infer_call_type()`**: Infers the type of function call expressions
+  - Looks up function symbol in symbol table
+  - Extracts and returns the function's return type
+  - Handles built-in functions with known return types
+  - Returns Unknown for undefined functions or non-function calls
+- **Built-in function support**: Added comprehensive list of Python built-ins
+  - Type-returning built-ins: `len() → int`, `str() → str`, `int() → int`, `float() → float`, `bool() → bool`
+  - IO built-ins: `print() → None`, `input() → str`, `open() → Unknown`
+  - Collection constructors: `list()`, `dict()`, `set()`, `tuple()`, `range()` → Unknown (for now)
+  - Utility functions: `abs()`, `min()`, `max()`, `sum()`, `type()` → Unknown (need argument analysis)
+  - 40+ built-in functions recognized (no undefined variable errors)
+- **Integrated into `infer_type()`**: Added `ExpressionKind::Call` case
+  - Wired `infer_call_type()` into main type inference pipeline
+  - Function call results now have correct types in assignments
+
+**Example Usage**:
+```python
+# User-defined functions with return types
+def get_number() -> int:
+    return 42
+
+result = get_number()  # result has type int
+
+def get_message() -> str:
+    return "hello"
+
+msg = get_message()  # msg has type str
+
+# Functions without return type annotation
+def some_func():
+    pass
+
+x = some_func()  # x has type Unknown
+
+# Built-in functions
+length = len([1, 2, 3])  # length has type int
+text = str(123)  # text has type str
+nothing = print("hi")  # nothing has type None
+```
+
+**Files Modified**:
+- `crates/silk-semantic/src/types.rs`: Added `Type::Function` variant, updated compatibility and display
+- `crates/silk-semantic/src/analyzer.rs`:
+  - Modified `collect_forward_declarations()` to resolve and store function return types
+  - Added `infer_call_type()` method for call expression type inference
+  - Added `is_builtin_function()` helper to recognize Python built-ins
+  - Updated `infer_type()` to handle `ExpressionKind::Call`
+  - Updated `analyze_expression()` to skip undefined variable errors for built-ins
+- `crates/silk-semantic/tests/test_analyzer.rs`: Updated `test_collect_with_statement_variable` (open is now built-in)
+- `crates/silk-semantic/tests/test_type_inference.rs`: Updated comment in `test_function_call_result_gets_unknown_type`
+
+**Tests Added**: 11 new tests
+- 4 function type storage tests in `test_function_types.rs`:
+  - Function with return type creates symbol
+  - Function without return type gets Unknown
+  - Function symbol has Function type
+  - Different return types resolved correctly (int, str, float, bool)
+- 7 call type inference tests in `test_call_type_inference.rs`:
+  - Call to function with int/str/float return
+  - Call to function without return type
+  - Assignment from function call
+  - Built-in functions: `len()`, `str()`, `print()`
+
+**Total Test Count**: **609 tests** (126 lexer + 264 parser + 8 types + 211 semantic)
+- 13 tests ignored (3 analyzer limitations + 10 binary ops pending investigation)
+- Semantic breakdown: 28 analyzer + 8 AnnAssign + 7 call inference + 4 function types + 31 binary ops + 14 forward refs + 44 name resolution + 17 symbol table + 6 parameter defaults + 24 decorators/bases + 28 type inference = 211
+
+**Limitations**:
+- Method calls return Unknown (e.g., `obj.method()`)
+- Lambda calls return Unknown
+- Built-in functions like `abs()`, `min()`, `max()` return Unknown (need argument type analysis for precision)
+- Collection types (`list`, `dict`, etc.) not yet represented in type system
+
+**Next Steps**:
+- Implement type checking (validate that assigned types match inferred types)
+- Add parameter type checking
+- Implement collection type inference
+
+---
+
 ### ✏️ Annotated Assignment (AnnAssign) - December 11, 2025
 
 **Implemented parser and semantic analysis support for annotated assignments** (`x: int = 10`).
