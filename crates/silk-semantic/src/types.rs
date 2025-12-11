@@ -19,8 +19,10 @@ pub enum Type {
     Any,
     /// Unknown type - type hasn't been inferred yet
     Unknown,
-    /// Function type with return type
+    /// Function type with parameter and return types
     Function {
+        /// Parameter types (name, type) - None means no parameters stored yet
+        params: Option<Vec<(String, Type)>>,
         /// Return type of the function
         return_type: Box<Type>,
     },
@@ -66,7 +68,7 @@ impl Type {
         }
 
         // Functions are compatible if their return types are compatible
-        if let (Type::Function { return_type: rt1 }, Type::Function { return_type: rt2 }) = (self, other) {
+        if let (Type::Function { return_type: rt1, .. }, Type::Function { return_type: rt2, .. }) = (self, other) {
             return rt1.is_compatible_with(rt2);
         }
 
@@ -235,8 +237,8 @@ impl Type {
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Type::Function { return_type } => {
-                write!(f, "function -> {}", return_type)
+            Type::Function { return_type, .. } => {
+                write!(f, "function() -> {}", return_type)
             }
             Type::List(element_type) => {
                 write!(f, "list[{}]", element_type)

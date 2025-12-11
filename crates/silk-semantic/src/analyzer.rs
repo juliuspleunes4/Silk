@@ -53,16 +53,29 @@ impl SemanticAnalyzer {
     fn collect_forward_declarations(&mut self, program: &Program) {
         for statement in &program.statements {
             match &statement.kind {
-                StatementKind::FunctionDef { name, returns, .. } => {
+                StatementKind::FunctionDef { name, params, returns, .. } => {
+                    // Collect parameter types
+                    let mut param_types = Vec::new();
+                    for param in &params.args {
+                        let param_type = if let Some(ann) = &param.annotation {
+                            self.resolve_type_annotation(ann)
+                        } else {
+                            crate::types::Type::Unknown
+                        };
+                        param_types.push((param.name.clone(), param_type));
+                    }
+                    
                     // Resolve return type annotation if present
                     let func_type = if let Some(return_type_ann) = returns {
                         let return_type = self.resolve_type_annotation(return_type_ann);
                         crate::types::Type::Function {
+                            params: Some(param_types),
                             return_type: Box::new(return_type),
                         }
                     } else {
                         // No return type annotation means Unknown
                         crate::types::Type::Function {
+                            params: Some(param_types),
                             return_type: Box::new(crate::types::Type::Unknown),
                         }
                     };
@@ -177,7 +190,7 @@ impl SemanticAnalyzer {
             }
 
             // Function definition: already declared in pre-pass, now analyze body
-            StatementKind::FunctionDef { params, body, decorator_list, .. } => {
+            StatementKind::FunctionDef { name: _, params, body, decorator_list, .. } => {
                 // Analyze decorators BEFORE entering scope (evaluated in outer scope)
                 for decorator in decorator_list {
                     self.analyze_expression(decorator);
@@ -194,6 +207,9 @@ impl SemanticAnalyzer {
                         self.analyze_expression(default_expr);
                     }
                 }
+                
+                // Parameter types were already collected in pre-pass
+                // No need to update symbol again
                 
                 // Enter function scope
                 self.symbol_table.enter_scope(ScopeKind::Function);
@@ -522,6 +538,8 @@ impl SemanticAnalyzer {
                 for keyword in keywords {
                     self.analyze_expression(&keyword.value);
                 }
+                // Infer type to trigger function call type checking
+                self.infer_type(expr);
             }
 
             // Attribute access
@@ -673,7 +691,7 @@ impl SemanticAnalyzer {
     /// 
     /// Returns the inferred type based on the expression kind.
     /// For now, this handles simple cases like literals.
-    fn infer_type(&self, expr: &Expression) -> crate::types::Type {
+    fn infer_type(&mut self, expr: &Expression) -> crate::types::Type {
         use crate::types::Type;
         
         match &expr.kind {
@@ -737,7 +755,7 @@ impl SemanticAnalyzer {
     }
     
     /// Infer type for binary arithmetic operations
-    fn infer_binary_op_type(&self, left: &Expression, op: silk_ast::BinaryOperator, right: &Expression) -> crate::types::Type {
+    fn infer_binary_op_type(&mut self, left: &Expression, op: silk_ast::BinaryOperator, right: &Expression) -> crate::types::Type {
         use crate::types::Type;
         use silk_ast::BinaryOperator;
         
@@ -785,7 +803,7 @@ impl SemanticAnalyzer {
     }
     
     /// Infer type for logical operations
-    fn infer_logical_op_type(&self, left: &Expression, op: silk_ast::LogicalOperator, right: &Expression) -> crate::types::Type {
+    fn infer_logical_op_type(&mut self, left: &Expression, op: silk_ast::LogicalOperator, right: &Expression) -> crate::types::Type {
         use crate::types::Type;
         
         // In Python, 'and' and 'or' return one of the operands, not necessarily Bool
@@ -796,7 +814,7 @@ impl SemanticAnalyzer {
     }
     
     /// Infer type for unary operations
-    fn infer_unary_op_type(&self, op: silk_ast::UnaryOperator, operand: &Expression) -> crate::types::Type {
+    fn infer_unary_op_type(&mut self, op: silk_ast::UnaryOperator, operand: &Expression) -> crate::types::Type {
         use crate::types::Type;
         use silk_ast::UnaryOperator;
         
@@ -849,26 +867,40 @@ impl SemanticAnalyzer {
     ///    - `min([int])` → int, `max([str])` → str
     /// 5. Add collection type support (generics): `list[int]`, `dict[str, int]`
     /// 6. Implement callable objects (classes with `__call__` method)
-    fn infer_call_type(&self, func: &Expression, _args: &[Expression], _keywords: &[silk_ast::CallKeyword]) -> crate::types::Type {
+    fn infer_call_type(&mut self, func: &Expression, args: &[Expression], _keywords: &[silk_ast::CallKeyword]) -> crate::types::Type {
         use crate::types::Type;
         
         // Get the function expression type
         match &func.kind {
             ExpressionKind::Identifier(func_name) => {
-                // Look up function in symbol table
-                if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
-                    return match &symbol.ty {
-                        Type::Function { return_type } => {
-                            // TODO: Validate argument count and types against function signature
-                            // Currently just returns the declared return type without validation
-                            return_type.as_ref().clone()
+                // Look up function in symbol table and extract params/return_type
+                let (params_opt, return_type) = if let Some(symbol) = self.symbol_table.resolve_symbol(func_name) {
+                    match &symbol.ty {
+                        Type::Function { params, return_type } => {
+                            (params.clone(), return_type.as_ref().clone())
                         }
                         _ => {
                             // Not a function (e.g., calling an integer or string)
-                            // TODO: Check for __call__ method on objects
-                            Type::Unknown
+                            return Type::Unknown;
                         }
-                    };
+                    }
+                } else {
+                    // Not found in symbol table, might be built-in
+                    (None, Type::Unknown)
+                };
+
+                // If we got function info, validate the call
+                if let Some(param_list) = params_opt {
+                    if let Err(err) = self.check_function_call_types(func_name, &param_list, args, func) {
+                        self.errors.push(err);
+                    }
+                    return return_type;
+                } else {
+                    // Params not available - might be untyped function or built-in
+                    // For user functions without type annotations, allow any args
+                    if return_type != Type::Unknown {
+                        return return_type;
+                    }
                 }
                 
                 // Check if it's a built-in function
@@ -971,7 +1003,7 @@ impl SemanticAnalyzer {
     /// - Add union type support for heterogeneous lists: `[1, "a"]` → `list[int | str]`
     /// - Add type widening: int → float when mixed
     /// - Consider context/annotation: `x: list[float] = [1, 2]` should validate
-    fn infer_list_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_list_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
         
         // Empty list: cannot infer element type
@@ -1021,7 +1053,7 @@ impl SemanticAnalyzer {
     /// **TODO: Future Improvements**:
     /// - Add union type support for heterogeneous dicts
     /// - Type widening for numeric keys/values
-    fn infer_dict_type(&self, keys: &[silk_ast::Expression], values: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_dict_type(&mut self, keys: &[silk_ast::Expression], values: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
         
         // Empty dict: cannot infer types
@@ -1073,7 +1105,7 @@ impl SemanticAnalyzer {
     /// - `{1, "a"}` → `set[Unknown]` (heterogeneous)
     /// 
     /// **Note**: Python doesn't have empty set literal syntax. `{}` is empty dict, `set()` is a call.
-    fn infer_set_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_set_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
         
         // Sets always have at least one element (parser creates Set only for non-empty)
@@ -1115,7 +1147,7 @@ impl SemanticAnalyzer {
     /// - `(1, 2, 3)` → `tuple[int, int, int]`
     /// - `(1, "a", 3.0)` → `tuple[int, str, float]` (heterogeneous is normal)
     /// - `((1, 2), (3, 4))` → `tuple[tuple[int, int], tuple[int, int]]`
-    fn infer_tuple_type(&self, elements: &[silk_ast::Expression]) -> crate::types::Type {
+    fn infer_tuple_type(&mut self, elements: &[silk_ast::Expression]) -> crate::types::Type {
         use crate::types::Type;
         
         // Infer type of each element independently
@@ -1192,6 +1224,52 @@ impl SemanticAnalyzer {
 
         Ok(())
     }
+
+    /// Check function call argument types and count
+    /// 
+    /// Validates that:
+    /// 1. Argument count matches parameter count
+    /// 2. Each argument type is compatible with its corresponding parameter type
+    /// 
+    /// Returns Ok(()) if valid, Err(SemanticError) if not.
+    fn check_function_call_types(
+        &mut self,
+        func_name: &str,
+        params: &[(String, crate::types::Type)],
+        args: &[Expression],
+        func_expr: &Expression,
+    ) -> Result<(), SemanticError> {
+        // Check argument count
+        if args.len() != params.len() {
+            return Err(SemanticError::ArgumentCountMismatch {
+                function_name: func_name.to_string(),
+                expected: params.len(),
+                actual: args.len(),
+                line: func_expr.span.line,
+                column: func_expr.span.column,
+                span: func_expr.span.clone(),
+            });
+        }
+
+        // Check each argument type
+        for (i, (arg, (param_name, param_type))) in args.iter().zip(params.iter()).enumerate() {
+            let arg_type = self.infer_type(arg);
+            
+            if !arg_type.is_compatible_with(param_type) {
+                return Err(SemanticError::ArgumentTypeMismatch {
+                    param_name: param_name.clone(),
+                    arg_index: i + 1,
+                    expected_type: param_type.to_string(),
+                    actual_type: arg_type.to_string(),
+                    line: arg.span.line,
+                    column: arg.span.column,
+                    span: arg.span.clone(),
+                });
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for SemanticAnalyzer {
@@ -1199,3 +1277,4 @@ impl Default for SemanticAnalyzer {
         Self::new()
     }
 }
+

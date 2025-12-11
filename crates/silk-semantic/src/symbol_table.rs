@@ -147,6 +147,24 @@ impl SymbolTable {
         }
     }
 
+    /// Resolve a symbol mutably by searching current scope and parent scopes
+    pub fn resolve_symbol_mut(&mut self, name: &str) -> Option<&mut Symbol> {
+        let mut current = self.current_scope;
+
+        loop {
+            // Check current scope
+            if self.scopes[current].lookup_local(name).is_some() {
+                return self.scopes[current].lookup_local_mut(name);
+            }
+
+            // Move to parent scope
+            match self.scopes[current].parent() {
+                Some(parent) => current = parent,
+                None => return None, // Reached global scope, symbol not found
+            }
+        }
+    }
+
     /// Get the current scope kind
     pub fn current_scope_kind(&self) -> ScopeKind {
         self.scopes[self.current_scope].kind

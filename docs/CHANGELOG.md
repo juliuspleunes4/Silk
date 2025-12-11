@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🎯 Function Call Type Checking - December 11, 2025
+
+**Implemented type checking for function call arguments (Phase 3, Steps 8-11 of Type Checking feature)**.
+
+**Type System Enhancements**:
+- **Extended `Type::Function` variant**:
+  - Added `params` field: `Option<Vec<(String, Type)>>`
+  - Stores parameter names and their types
+  - `None` indicates no type annotations (gradual typing)
+- **Updated all `Type::Function` pattern matches** across codebase to use `..` wildcard for params field
+
+**Symbol Table Enhancements**:
+- **New method `resolve_symbol_mut()`**: Returns mutable reference to symbol across scope hierarchy
+- **New method `lookup_local_mut()` in Scope**: Enables mutable access to symbols in single scope
+- Supports updating function symbols after initial definition
+
+**Semantic Analyzer Improvements**:
+- **Enhanced `collect_forward_declarations()`**:
+  - Now collects parameter names and types during pre-pass
+  - Stores params in symbol table for forward reference support
+  - Handles both annotated and unannotated parameters
+- **Refactored all `infer_*` methods**: Changed from `&self` to `&mut self` for error collection during type inference
+- **New method `check_function_call_types()`** (~40 lines):
+  - Validates argument count matches parameter count
+  - Checks each argument type compatible with corresponding parameter type
+  - Returns `ArgumentCountMismatch` or `ArgumentTypeMismatch` errors
+- **Updated `infer_call_type()`**:
+  - Extracts params and return_type from Function symbol
+  - Calls validation if params available
+  - Integrates error collection into type inference flow
+- **Fixed `analyze_expression()` for Call expressions**: Added `self.infer_type(expr)` call to trigger type checking for standalone function calls
+
+**Testing**:
+- **New test file `test_function_call_type_checking.rs`** with 20 comprehensive tests:
+  - **Valid calls** (6 tests): single/multiple params, mixed types, int→float widening, no params, unannotated
+  - **Argument count mismatch** (4 tests): too few, too many, zero args
+  - **Argument type mismatch** (4 tests): wrong type on various params, narrowing rejection
+  - **Expression arguments** (2 tests): arithmetic expressions, wrong expression type
+  - **Nested calls** (2 tests): valid nesting, wrong nested return type
+  - **Multiple errors** (1 test)
+  - **Forward references** (2 tests): call before definition with correct/wrong types
+- **Updated `test_function_types.rs`**: Fixed pattern matches to include `..` for params field (5 matches updated)
+- **Total tests**: 752 (increased from 732, +20 new tests)
+
+**Architecture Notes**:
+- Params collected in pre-pass (not main pass) to support forward references
+- Validation integrated into type inference phase for consistency
+- Gradual typing preserved: functions without type annotations accept any arguments
+- Critical fix ensures all function calls (standalone or nested) are validated
+
 ### 🔍 Assignment Type Checking - December 11, 2025
 
 **Implemented type checking for annotated assignments (Phase 2, Steps 4-7 of Type Checking feature)**.

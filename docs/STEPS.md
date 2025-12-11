@@ -23,7 +23,7 @@ Add new error types for type mismatches
 ### Phase 2: Assignment Type Checking (Steps 4-7) ✅ COMPLETE
 Validate annotated assignments receive compatible values
 
-### Phase 3: Function Call Type Checking (Steps 8-11)
+### Phase 3: Function Call Type Checking (Steps 8-11) ✅ COMPLETE
 Validate function arguments match parameter types
 
 ### Phase 4: Return Type Checking (Steps 12-14)
@@ -111,59 +111,69 @@ Advanced tests, full validation, documentation updates
 - **Status**: Phase 2 complete ✅
 
 ---
-  - Invalid: `x: dict[str, int] = {"a": "b"}` ✗
-  - Unknown assignments (should pass - no type annotation)
-  - Multiple assignments with errors
-  - Nested collection types
-  - Assignment to Unknown variable (should warn/allow)
 
-#### Step 7: Verify Assignment Type Checking
-- **Action**: Run all tests
-- **Verify**: New tests pass, existing 677 tests still pass
-- **Debug**: Fix any issues
+### **Phase 3: Function Call Type Checking** ✅ COMPLETE
 
----
+#### Step 8: Analyze Function Parameter Type Storage ✅
+- **Files**: `crates/silk-semantic/src/types.rs`, `crates/silk-semantic/src/symbol_table.rs`
+- **Action**: Extended Type::Function to store parameter types
+- **Changes**:
+  - Added `params: Option<Vec<(String, Type)>>` field to Type::Function
+  - Updated all Type::Function pattern matches to use `..` wildcard
+  - Added `resolve_symbol_mut()` to SymbolTable for mutable access
+  - Added `lookup_local_mut()` to Scope for mutable symbol access
+- **Status**: Type system extension complete ✅
 
-### **Phase 3: Function Call Type Checking**
-
-#### Step 8: Analyze Function Parameter Type Storage
+#### Step 9: Implement Parameter Type Collection in Pre-Pass ✅
 - **File**: `crates/silk-semantic/src/analyzer.rs`
-- **Action**: Review how function parameter types are stored
-- **Current**: Parameters defined in pre-pass or function body
-- **Plan**: Ensure parameter types are accessible during call validation
-
-#### Step 9: Implement Parameter Type Storage in Function Symbols
-- **File**: `crates/silk-semantic/src/symbol_table.rs`
-- **Action**: Extend Function symbol to store parameter types
-- **Add**: `param_types: Vec<(String, Type)>` to function symbols
-- **Update**: Pre-pass to store parameter types from annotations
-
-#### Step 10: Implement Function Call Argument Type Validation
-- **File**: `crates/silk-semantic/src/analyzer.rs`
-- **Action**: Add type checking for function calls
+- **Action**: Enhanced `collect_forward_declarations()` to collect params
 - **Logic**:
-  - When analyzing Call expression, check if callee is a function
-  - Compare argument types with parameter types
-  - Check argument count matches
-  - Add error for mismatches
-- **Method**: Add `check_function_call_types()` helper (~50 lines)
+  - Iterate through function parameters
+  - Extract type from annotation or use Type::Unknown
+  - Store as `(param_name, param_type)` tuples
+  - Create Function symbol with params and return_type
+- **Additional Changes**:
+  - Made all `infer_*` methods `&mut self` for error collection
+  - Fixed `analyze_expression` for Call to trigger type inference
+- **Status**: Parameter collection complete ✅
 
-#### Step 11: Add Function Call Type Checking Tests
+#### Step 10: Implement Function Call Argument Type Validation ✅
+- **File**: `crates/silk-semantic/src/analyzer.rs`
+- **Action**: Added type checking for function calls
+- **Methods Added**:
+  - `check_function_call_types()` (~40 lines):
+    - Validates argument count matches parameter count
+    - Checks each argument type compatible with parameter type
+    - Returns ArgumentCountMismatch or ArgumentTypeMismatch errors
+- **Updates to `infer_call_type()`**:
+  - Extracts params and return_type from Function symbol
+  - Calls validation if params available
+  - Integrates error collection into type inference
+- **Critical Fix**: Added `self.infer_type(expr)` in Call expression handler
+- **Status**: Validation implementation complete ✅
+
+#### Step 11: Add Function Call Type Checking Tests ✅
 - **File**: `crates/silk-semantic/tests/test_function_call_type_checking.rs`
-- **Action**: Create comprehensive test file
-- **Tests** (15 tests):
-  - Valid: `def f(x: int): ...` called with `f(42)` ✓
-  - Invalid: `def f(x: int): ...` called with `f("hello")` ✗
-  - Valid: `def f(x: int, y: str): ...` called with `f(1, "a")` ✓
-  - Invalid: `def f(x: int, y: str): ...` called with `f("a", 1)` ✗
-  - Too many arguments
-  - Too few arguments
-  - Mixed valid and invalid arguments
-  - Function with no type annotations (should pass)
-  - Nested function calls
-  - Built-in function calls (type checking for built-ins)
-  - Call with Unknown arguments (should pass)
-  - Multiple errors in single call
+- **Action**: Created comprehensive test file with 20 tests
+- **Tests**:
+  - Valid calls (6 tests): single/multiple params, mixed types, int→float, no params, unannotated
+  - Argument count mismatch (4 tests): too few, too many, zero args
+  - Argument type mismatch (4 tests): wrong type on various params, narrowing rejected
+  - Expression arguments (2 tests): arithmetic expressions, wrong expression type
+  - Nested calls (2 tests): valid nesting, wrong nested return type
+  - Multiple errors (1 test)
+  - Forward references (2 tests): call before definition with correct/wrong types
+- **Additional**: Updated `test_function_types.rs` with 5 pattern match fixes
+- **Status**: All 20 tests passing ✅
+
+#### Step 12: Verify Function Call Type Checking ✅
+- **Action**: Run full test suite
+- **Type System Changes**:
+  - Extended Type::Function with params field
+  - Added mutable symbol access methods
+  - Made infer methods mutable for error collection
+- **Result**: **752 tests passing** (was 732, +20 new tests)
+- **Status**: Phase 3 complete ✅
 
 ---
 
@@ -337,8 +347,17 @@ Advanced tests, full validation, documentation updates
   - [x] Step 1: Add Type Error Variants ✅ (10 tests passing)
   - [x] Step 2: Create Test File ✅ (combined with Step 1)
   - [x] Step 3: Add Type Compatibility Helpers ✅ (23 tests passing)
-- [ ] Phase 2: Assignment Type Checking (Steps 4-7)
-- [ ] Phase 3: Function Call Type Checking (Steps 8-11)
+- [x] Phase 2: Assignment Type Checking (Steps 4-7) ✅ COMPLETE
+  - [x] Step 4: Analyze Current Assignment Handling ✅
+  - [x] Step 5: Implement check_assignment_type Helper ✅
+  - [x] Step 6: Create test_assignment_type_checking.rs ✅ (22 tests passing)
+  - [x] Step 7: Verify All Tests Pass ✅ (732 tests total, +22 from baseline)
+- [x] Phase 3: Function Call Type Checking (Steps 8-11) ✅ COMPLETE
+  - [x] Step 8: Analyze Function Parameter Type Storage ✅
+  - [x] Step 9: Implement Parameter Type Collection in Pre-Pass ✅
+  - [x] Step 10: Implement Function Call Argument Type Validation ✅
+  - [x] Step 11: Add Function Call Type Checking Tests ✅ (20 tests passing)
+  - [x] Step 12: Verify Function Call Type Checking ✅ (752 tests total, +20 from baseline)
 - [ ] Phase 4: Return Type Checking (Steps 12-14)
 - [ ] Phase 5: Binary Operation Validation (Steps 15-17)
 - [ ] Phase 6: Collection Operations (Steps 18-20)

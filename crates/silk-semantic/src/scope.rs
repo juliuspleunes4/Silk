@@ -47,6 +47,11 @@ impl Scope {
         self.symbols.get(name)
     }
 
+    /// Look up a symbol mutably in this scope only (does not search parent scopes)
+    pub fn lookup_local_mut(&mut self, name: &str) -> Option<&mut Symbol> {
+        self.symbols.get_mut(name)
+    }
+
     /// Get parent scope index
     pub fn parent(&self) -> Option<usize> {
         self.parent

@@ -43,7 +43,7 @@ def bar():
     
     // Check that it's a Function type with Unknown return type
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Unknown);
         }
         _ => panic!("Expected Function type, got {:?}", symbol.ty),
@@ -100,7 +100,7 @@ def get_bool() -> bool:
     // Check get_int
     let symbol = symbol_table.resolve_symbol("get_int").expect("get_int not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Int);
         }
         _ => panic!("Expected Function type"),
@@ -109,7 +109,7 @@ def get_bool() -> bool:
     // Check get_str
     let symbol = symbol_table.resolve_symbol("get_str").expect("get_str not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Str);
         }
         _ => panic!("Expected Function type"),
@@ -118,7 +118,7 @@ def get_bool() -> bool:
     // Check get_float
     let symbol = symbol_table.resolve_symbol("get_float").expect("get_float not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Float);
         }
         _ => panic!("Expected Function type"),
@@ -127,7 +127,7 @@ def get_bool() -> bool:
     // Check get_bool
     let symbol = symbol_table.resolve_symbol("get_bool").expect("get_bool not found");
     match &symbol.ty {
-        Type::Function { return_type } => {
+        Type::Function { return_type, .. } => {
             assert_eq!(**return_type, Type::Bool);
         }
         _ => panic!("Expected Function type"),
