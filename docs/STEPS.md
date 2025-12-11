@@ -337,9 +337,9 @@ Track whether function returns on all paths:
 
 ---
 
-### Step 13: Handle Complex Return Patterns
+### ✅ Step 13: Handle Complex Return Patterns
 **File**: `crates/silk-semantic/src/control_flow.rs`
-**Estimated Tests**: 8-10
+**Tests**: 14
 
 Handle edge cases:
 - Return in try/except/finally
@@ -348,14 +348,23 @@ Handle edge cases:
 - Multiple return statements
 
 **Testing**:
-- `test_return_in_try_block`
-- `test_return_in_except_handler`
-- `test_return_in_finally_overrides`
-- `test_return_in_loop_not_sufficient`
-- `test_return_after_infinite_loop`
-- `test_multiple_return_points`
-- `test_conditional_return_with_raise`
-- `test_nested_try_return`
+- ✅ test_return_in_try_block_only - Detects missing return in except
+- ✅ test_return_in_all_try_except_branches - All branches return is OK
+- ✅ test_return_in_except_handler_only - Detects missing return in try
+- ✅ test_return_in_finally_overrides - Finally with return covers all
+- ✅ test_return_in_loop_not_sufficient - Loop return needs fallback
+- ✅ test_return_in_loop_with_return_after - Loop + fallback is OK
+- ✅ test_return_in_for_loop_not_sufficient - For loop needs fallback
+- ✅ test_return_after_infinite_loop_unreachable - Infinite loop without return
+- ✅ test_return_in_infinite_loop_sufficient - Infinite loop with return OK
+- ✅ test_multiple_return_points - Multiple returns OK
+- ✅ test_conditional_return_with_raise - Return or raise OK
+- ✅ test_nested_try_return - Nested try/except all returning OK
+- ✅ test_try_with_else_return - Try/else/except all returning OK
+- ✅ test_return_in_loop_else_not_sufficient - Loop else only not enough
+
+**Checkpoint**: 976 tests total (962 + 14 new)
+**Status**: ✅ All tests passing
 
 ---
 

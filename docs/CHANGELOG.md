@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔄 Control Flow Analysis - Phase 4, Step 13 - December 12, 2025
+
+**Implemented Complex Return Pattern Validation** — The control flow analyzer now correctly handles edge cases for return path tracking including try/except/finally blocks, loops, and raise statements.
+
+**Implementation**:
+- **Try/Except/Finally Return Handling**:
+  - Return in try block alone: Insufficient (exception path missing)
+  - Return in all try/except branches: Valid
+  - Return in finally block: Overrides all paths (finally always executes)
+  - Return in try+else+except: All paths covered
+- **Loop Return Handling**:
+  - Return inside loop: Insufficient (loop might not execute)
+  - Return inside infinite loop: Valid (loop always executes)
+  - Return after loop: Valid (covers case where loop doesn't execute)
+- **Raise Statement Interaction**:
+  - Return or raise in all branches: Valid (all paths terminate)
+  - Code after raise is already marked unreachable
+
+**Testing** (14 comprehensive tests in test_complex_return_patterns.rs):
+- test_return_in_try_block_only - Detects missing return in except
+- test_return_in_all_try_except_branches - All branches return is OK
+- test_return_in_except_handler_only - Detects missing return in try
+- test_return_in_finally_overrides - Finally with return covers all paths
+- test_return_in_loop_not_sufficient - While loop with return needs fallback
+- test_return_in_loop_with_return_after - Loop + fallback return is OK
+- test_return_in_for_loop_not_sufficient - For loop with return needs fallback
+- test_return_after_infinite_loop_unreachable - Infinite loop without return errors
+- test_return_in_infinite_loop_sufficient - Infinite loop with return is OK
+- test_multiple_return_points - Multiple returns in if/elif/else is OK
+- test_conditional_return_with_raise - Return or raise in all branches is OK
+- test_nested_try_return - Nested try/except with all returns is OK
+- test_try_with_else_return - Try/else/except all returning is OK
+- test_return_in_loop_else_not_sufficient - Loop else only not enough
+
+**Impact**:
+- **Total Tests**: 976 (962 → 976, +14)
+- **Files Modified**: 1
+  - crates/silk-semantic/tests/test_complex_return_patterns.rs: New test file
+- **Phase 4 Status**: In Progress (Steps 12-13 complete, Step 14 remaining)
+- **Implementation Note**: No code changes needed - existing logic already handles all cases correctly
+
 ### 🔄 Control Flow Analysis - Phase 4, Step 12 - December 12, 2025
 
 **Implemented Return Path Tracking** — The control flow analyzer now tracks whether all paths through a function return a value, detecting missing return statements.
