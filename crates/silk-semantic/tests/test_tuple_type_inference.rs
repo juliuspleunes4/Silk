@@ -6,7 +6,7 @@ fn test_empty_tuple() {
     let source = "x = ()";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -19,7 +19,7 @@ fn test_single_element_tuple() {
     let source = "x = (42,)";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -32,7 +32,7 @@ fn test_homogeneous_tuple() {
     let source = "x = (1, 2, 3)";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -48,7 +48,7 @@ fn test_heterogeneous_tuple() {
     let source = r#"x = (1, "a", 3.0)"#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -65,7 +65,7 @@ fn test_tuple_two_elements() {
     let source = r#"x = (42, "hello")"#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -78,7 +78,7 @@ fn test_nested_tuple() {
     let source = "x = ((1, 2), (3, 4))";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -104,7 +104,7 @@ x = (a, b, 3.14)
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -119,7 +119,7 @@ fn test_tuple_with_expressions() {
     let source = "x = (1 + 1, 2 * 3, 5 - 1)";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -134,7 +134,7 @@ fn test_tuple_mixed_collections() {
     let source = "x = ([1, 2], (3, 4))";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -161,7 +161,7 @@ x = (get_num(), get_str())
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -173,7 +173,7 @@ fn test_tuple_bool_and_none() {
     let source = "x = (True, False, None)";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();

@@ -11,7 +11,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError};
 fn analyze_code(source: &str) -> Result<(), Vec<SemanticError>> {
     let program = Parser::parse(source).expect("Parser should succeed");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program)
 }
 

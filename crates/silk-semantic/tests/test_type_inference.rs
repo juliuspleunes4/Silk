@@ -8,7 +8,7 @@ fn test_integer_literal_type() {
     let source = "x = 42";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -20,7 +20,7 @@ fn test_float_literal_type() {
     let source = "pi = 3.14";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("pi").unwrap();
@@ -32,7 +32,7 @@ fn test_string_literal_type() {
     let source = "name = 'hello'";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("name").unwrap();
@@ -44,7 +44,7 @@ fn test_raw_string_literal_type() {
     let source = r#"pattern = r'\d+'"#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("pattern").unwrap();
@@ -57,7 +57,7 @@ fn test_fstring_literal_type() {
 msg = f'hello {name}'"#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("msg").unwrap();
@@ -69,7 +69,7 @@ fn test_boolean_true_type() {
     let source = "flag = True";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("flag").unwrap();
@@ -81,7 +81,7 @@ fn test_boolean_false_type() {
     let source = "flag = False";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("flag").unwrap();
@@ -93,7 +93,7 @@ fn test_none_literal_type() {
     let source = "result = None";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -111,7 +111,7 @@ empty = None
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     assert_eq!(
@@ -142,7 +142,7 @@ fn test_walrus_operator_type_inference() {
     pass";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -155,7 +155,7 @@ fn test_walrus_operator_string_type() {
     pass";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("name").unwrap();
@@ -170,7 +170,7 @@ y = x
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let x_symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -184,7 +184,7 @@ fn test_negative_integer_type() {
     let source = "x = -42";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Negative numbers are parsed as UnaryOp with USub
@@ -198,7 +198,7 @@ fn test_zero_integer_type() {
     let source = "x = 0";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -210,7 +210,7 @@ fn test_large_integer_type() {
     let source = "x = 999999999999";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -222,7 +222,7 @@ fn test_scientific_notation_float_type() {
     let source = "x = 1.5e10";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -234,7 +234,7 @@ fn test_empty_string_type() {
     let source = "x = ''";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("x").unwrap();
@@ -248,7 +248,7 @@ y = x
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     // Should error because x is undefined
@@ -271,7 +271,7 @@ z = x + y
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // x + y is a binary operation with type inference
@@ -290,7 +290,7 @@ result = foo()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Function without return type annotation returns Unknown
@@ -303,7 +303,7 @@ fn test_list_literal_gets_list_type() {
     let source = "x = [1, 2, 3]";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // List literals now infer to list[ElementType]
@@ -316,7 +316,7 @@ fn test_dict_literal_gets_dict_type() {
     let source = "x = {'key': 'value'}";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Dict literals now infer to dict[KeyType, ValueType]
@@ -335,7 +335,7 @@ fn test_tuple_literal_gets_tuple_type() {
     let source = "x = (1, 2, 3)";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Tuple literals now infer to tuple[Type1, Type2, ...]
@@ -354,7 +354,7 @@ x = 'hello'
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // After reassignment, x should have the new type
@@ -372,7 +372,7 @@ else:
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // x is defined in both branches, should have the type from the last definition
@@ -387,7 +387,7 @@ x = 42 if True else 3.14
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Ternary expressions aren't literals, should be Unknown for now
@@ -400,7 +400,7 @@ fn test_lambda_gets_unknown_type() {
     let source = "f = lambda x: x + 1";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Lambda expressions should be Unknown for now
@@ -413,7 +413,7 @@ fn test_comprehension_gets_unknown_type() {
     let source = "squares = [x*x for x in range(10)]";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let _ = analyzer.analyze(&program); // May error on undefined 'range'
 
     // List comprehensions should be Unknown for now
