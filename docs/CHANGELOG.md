@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Control Flow Analysis - Bare Raise Divergence - December 12, 2025
+
+**Task 1/3 Complete: Bare raise statements now correctly tracked as diverging control flow** — Implemented tracking of bare `raise` and exception-based control flow divergence, part of resolving KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **Bare raise divergence**: Code after `raise` statements is correctly marked as unreachable
+- **Try/except reachability**: If try block can complete normally, code after try/except is reachable regardless of whether except handlers raise
+- **Multiple except handlers**: All handlers with raise statements are tracked, but code after is still reachable if try can succeed
+- **Finally blocks**: Code after try/except/finally maintains correct reachability based on try block normal completion
+
+**Test Coverage**: 8 new tests in `test_bare_raise_divergence.rs`
+- Module-level raise making subsequent code unreachable
+- Raise with expression in function
+- Try/except combinations with raise statements
+- Try/except/finally reachability
+- All except handlers raising
+- Return path analysis through exceptions
+
+**Implementation Details**:
+- `StatementKind::Raise` already set `is_reachable = false` (working correctly)
+- Try/except logic correctly computes `after_except_reachable = try_reachable || handlers_reachable`
+- This ensures if try can complete normally (no exception), code after is reachable even if all except handlers raise
+
+**Bug Fixes**:
+- Fixed test helper `analyze_control_flow()` to properly return errors from `analyze()` instead of re-checking empty error vector
+
+**Remaining Work**: Tasks 2 and 3 of Control Flow Exception Edge Cases
+- Task 2: Try/except return path analysis (6-8 tests)
+- Task 3: All-paths-return in conditionals with exceptions (5-7 tests)
+
+**Test Count**: 1175 → 1183 tests (+8)
+
 ### ✨ Type Inference - Comprehension Type Inference - December 12, 2025
 
 **Implemented Type Inference for List/Set/Dict Comprehensions** — Comprehensions now correctly infer types based on element expressions and iterable types, resolving KNOWN_LIMITATIONS #1.

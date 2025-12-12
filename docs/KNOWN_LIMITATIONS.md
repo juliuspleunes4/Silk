@@ -90,11 +90,126 @@ This is a major Phase 7+ effort requiring:
 
 ### 4. Control Flow Analysis - Exception Handling Edge Cases
 
-**Status**: ⚠️ Known behavior limitations
+**Status**: 🔄 **IN PROGRESS** (December 12, 2025)
 
 **Description**: Control flow analysis has several edge cases related to exception handling that are not fully tracked, leading to code being marked as reachable when it might not be.
 
-**Sub-limitations**:
+**Implementation Plan**:
+
+This is divided into 3 incremental tasks, each with comprehensive testing:
+
+#### Task 1: Track Bare `raise` as Diverging Control Flow ✅ **COMPLETE**
+**Difficulty**: Easy-Medium  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 8 tests in `test_bare_raise_divergence.rs`  
+**Completed**: December 12, 2025
+
+**Previous Behavior**: Bare `raise` statements (re-raising exceptions) didn't mark subsequent code as unreachable.
+
+**Implementation**:
+- Verified `StatementKind::Raise` correctly sets `is_reachable = false`
+- Verified try/except reachability logic: `after_except_reachable = try_reachable || handlers_reachable`
+- Key insight: If try can complete normally (no exception), code after try/except is reachable even if all except handlers raise
+
+**Test Coverage**:
+- ✅ Bare raise in except handler → code after unreachable
+- ✅ Bare raise with finally block → code after reachable if try succeeds
+- ✅ Bare raise vs `raise Exception()` (with expression)
+- ✅ Try returns + all except handlers raise → code after unreachable
+- ✅ Try raises + except raises → code after unreachable
+- ✅ Module-level raise → code after unreachable
+- ✅ All except handlers raise but try can succeed → code after reachable
+- ✅ Single except without raise → code after reachable
+
+**Bug Fixes**:
+- Fixed test helper to properly capture errors from `analyze()` method
+
+---
+
+#### Task 2: Improve Try/Except Return Path Analysis  
+**Difficulty**: Medium  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 6-8 tests
+
+**Current Behavior**: When try block returns but except doesn't, code after try/except is incorrectly marked as reachable.
+
+**Implementation Steps**:
+1. Track whether try block always diverges (returns/raises/breaks/continues)
+2. Track whether ALL except handlers diverge
+3. Track whether else clause (if present) diverges
+4. Code after try/except/else/finally is reachable only if:
+   - Try block doesn't always diverge, OR
+   - At least one except handler doesn't diverge
+5. Finally block always runs (doesn't affect reachability after)
+
+**Algorithm**:
+```rust
+let try_diverges = analyze_try_block();
+let mut all_excepts_diverge = true;
+for except in excepts {
+    if !analyze_except(except) {
+        all_excepts_diverge = false;
+    }
+}
+let else_diverges = analyze_else_clause();
+
+// Code after is unreachable if:
+// - Try diverges AND (no else OR else diverges) AND all excepts diverge
+let unreachable_after = try_diverges && 
+                        (!has_else || else_diverges) && 
+                        all_excepts_diverge;
+```
+
+**Test Cases**:
+- Try returns, except doesn't → code after reachable
+- Try returns, all excepts return → code after unreachable
+- Try returns, some excepts return → code after reachable
+- Try doesn't return, except returns → code after reachable
+- Try with else: try returns, else returns, excepts return → unreachable
+- Try with finally: various combinations
+- Nested try/except with returns
+- Multiple except handlers with mixed return behavior
+
+**Success Criteria**: Return path analysis correctly determines reachability after try/except blocks
+
+---
+
+#### Task 3: Track All-Paths-Return Across Try/Except in Conditionals
+**Difficulty**: Medium-Hard  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 5-7 tests
+
+**Current Behavior**: When try/except blocks are inside conditionals, analyzer doesn't track whether all code paths return across the try blocks.
+
+**Implementation Steps**:
+1. When analyzing if/else statements, track whether each branch returns
+2. For branches containing try/except: consider the branch returns if try/except analysis says unreachable after
+3. Function returns on all paths if all top-level branches return
+4. Handle nested conditionals within try/except blocks
+
+**Test Cases**:
+- If with try/except that always returns in try/except → branch returns
+- If/else where both branches have try/except that return → function returns all paths
+- Try/except in if, regular return in else → mixed behavior
+- Nested if within try block
+- Try/except in while loop condition branch
+
+**Success Criteria**: All-paths-return correctly tracked through conditional branches containing try/except
+
+---
+
+**Overall Test Count**: 16-22 new tests total
+
+---
+
+**Current Status Summary**:
+- ⏳ Task 1: Bare `raise` divergence - Not started
+- ⏳ Task 2: Try/except return path analysis - Not started  
+- ⏳ Task 3: All-paths-return in conditionals - Not started
+
+---
+
+**Original Sub-limitations (for reference)**:
 
 #### 4.1 Bare `raise` Statements Not Tracked as Diverging
 
