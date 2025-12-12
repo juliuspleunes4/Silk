@@ -480,7 +480,6 @@ print(y)
 }
 
 #[test]
-#[test]
 fn test_decorator_with_control_flow() {
     // Decorated function with control flow
     // Decorator function is now tracked as being used
