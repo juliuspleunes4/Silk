@@ -3,8 +3,9 @@
 //! Performs single-pass semantic analysis with a lightweight pre-pass:
 //! 1. Pre-pass: Collect function and class names for forward references
 //! 2. Main pass: Define symbols and validate references in one traversal
+//! 3. Control flow analysis: Check for unreachable code, uninitialized variables, etc.
 
-use crate::{ScopeKind, SemanticError, Symbol, SymbolKind, SymbolTable};
+use crate::{ControlFlowAnalyzer, ScopeKind, SemanticError, Symbol, SymbolKind, SymbolTable};
 use silk_ast::{Expression, ExpressionKind, PatternKind, Program, Statement, StatementKind};
 
 /// Semantic analyzer for single-pass analysis
@@ -15,6 +16,8 @@ pub struct SemanticAnalyzer {
     errors: Vec<SemanticError>,
     /// Current function's return type (for return statement validation)
     current_function_return_type: Option<crate::types::Type>,
+    /// Whether to run control flow analysis (default: true)
+    enable_control_flow: bool,
 }
 
 impl SemanticAnalyzer {
@@ -24,7 +27,23 @@ impl SemanticAnalyzer {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
             current_function_return_type: None,
+            enable_control_flow: true, // Enabled by default
         }
+    }
+
+    /// Create a new semantic analyzer with control flow analysis disabled
+    pub fn new_without_control_flow() -> Self {
+        Self {
+            symbol_table: SymbolTable::new(),
+            errors: Vec::new(),
+            current_function_return_type: None,
+            enable_control_flow: false,
+        }
+    }
+
+    /// Set whether control flow analysis should be enabled
+    pub fn set_control_flow_enabled(&mut self, enabled: bool) {
+        self.enable_control_flow = enabled;
     }
 
     /// Analyze a program and return errors if any
@@ -35,6 +54,15 @@ impl SemanticAnalyzer {
         // Main pass: Analyze statements (define variables, validate references)
         for statement in &program.statements {
             self.analyze_statement(statement);
+        }
+
+        // Control flow analysis: Check for unreachable code, uninitialized variables, etc.
+        if self.enable_control_flow {
+            let mut control_flow = ControlFlowAnalyzer::new();
+            if let Err(control_flow_errors) = control_flow.analyze(program) {
+                // Merge control flow errors with existing errors
+                self.errors.extend(control_flow_errors);
+            }
         }
 
         // Return errors if any

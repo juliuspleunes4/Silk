@@ -8,7 +8,7 @@ fn test_ann_assign_creates_symbol() {
     let source = "x: int = 10";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify symbol exists
@@ -21,7 +21,7 @@ fn test_ann_assign_symbol_has_correct_type() {
     let source = "x: int = 10";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify symbol has correct type from annotation
@@ -34,7 +34,7 @@ fn test_ann_assign_without_value_creates_symbol() {
     let source = "x: int";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify symbol exists even without value
@@ -47,7 +47,7 @@ fn test_ann_assign_without_value_has_correct_type() {
     let source = "y: str";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify type from annotation
@@ -60,7 +60,7 @@ fn test_ann_assign_with_value_symbol_type() {
     let source = "pi: float = 3.14";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify type comes from annotation, not value inference
@@ -77,7 +77,7 @@ def my_func():
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     // Symbol should exist in function scope, not global
     // We can verify no errors occurred by unwrap()
     analyzer.analyze(&program).unwrap();
@@ -92,7 +92,7 @@ z: float
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Verify all symbols exist with correct types
@@ -111,7 +111,7 @@ fn test_ann_assign_bool_type() {
     let source = "flag: bool = True";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("flag").unwrap();
@@ -125,7 +125,7 @@ fn test_ann_assign_generic_type() {
     let source = "items: list[int] = []";
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("items").unwrap();

@@ -9,7 +9,7 @@ use silk_semantic::{SemanticAnalyzer, SemanticError, Type};
 fn test_int_add_int() {
     let source = "result = 5 + 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -20,7 +20,7 @@ fn test_int_add_int() {
 fn test_int_subtract_int() {
     let source = "result = 10 - 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -31,7 +31,7 @@ fn test_int_subtract_int() {
 fn test_int_multiply_int() {
     let source = "result = 4 * 5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -42,7 +42,7 @@ fn test_int_multiply_int() {
 fn test_int_divide_int() {
     let source = "result = 10 / 2";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -53,7 +53,7 @@ fn test_int_divide_int() {
 fn test_int_floordiv_int() {
     let source = "result = 10 // 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -64,7 +64,7 @@ fn test_int_floordiv_int() {
 fn test_int_mod_int() {
     let source = "result = 10 % 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -75,7 +75,7 @@ fn test_int_mod_int() {
 fn test_int_pow_int() {
     let source = "result = 2 ** 8";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -88,7 +88,7 @@ fn test_int_pow_int() {
 fn test_float_add_float() {
     let source = "result = 5.0 + 3.0";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -99,7 +99,7 @@ fn test_float_add_float() {
 fn test_float_multiply_float() {
     let source = "result = 2.5 * 4.0";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -112,7 +112,7 @@ fn test_float_multiply_float() {
 fn test_int_add_float() {
     let source = "result = 5 + 3.0";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -123,7 +123,7 @@ fn test_int_add_float() {
 fn test_float_add_int() {
     let source = "result = 3.0 + 5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -134,7 +134,7 @@ fn test_float_add_int() {
 fn test_int_multiply_float() {
     let source = "result = 2 * 3.5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -145,7 +145,7 @@ fn test_int_multiply_float() {
 fn test_float_subtract_int() {
     let source = "result = 10.5 - 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -158,7 +158,7 @@ fn test_float_subtract_int() {
 fn test_string_concat() {
     let source = r#"result = "hello" + "world""#;
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -173,7 +173,7 @@ second = "world"
 result = first + second
 "#;
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -186,7 +186,7 @@ result = first + second
 fn test_int_bitor_int() {
     let source = "result = 5 | 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -197,7 +197,7 @@ fn test_int_bitor_int() {
 fn test_int_bitand_int() {
     let source = "result = 5 & 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -208,7 +208,7 @@ fn test_int_bitand_int() {
 fn test_int_bitxor_int() {
     let source = "result = 5 ^ 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -219,7 +219,7 @@ fn test_int_bitxor_int() {
 fn test_int_lshift_int() {
     let source = "result = 5 << 2";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -230,7 +230,7 @@ fn test_int_lshift_int() {
 fn test_int_rshift_int() {
     let source = "result = 20 >> 2";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -243,7 +243,7 @@ fn test_int_rshift_int() {
 fn test_comparison_equal() {
     let source = "result = 5 == 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -254,7 +254,7 @@ fn test_comparison_equal() {
 fn test_comparison_not_equal() {
     let source = "result = 5 != 3";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -265,7 +265,7 @@ fn test_comparison_not_equal() {
 fn test_comparison_less_than() {
     let source = "result = 5 < 10";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -276,7 +276,7 @@ fn test_comparison_less_than() {
 fn test_comparison_greater_than() {
     let source = "result = 10 > 5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -287,7 +287,7 @@ fn test_comparison_greater_than() {
 fn test_comparison_less_equal() {
     let source = "result = 5 <= 10";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -298,7 +298,7 @@ fn test_comparison_less_equal() {
 fn test_comparison_greater_equal() {
     let source = "result = 10 >= 5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -309,7 +309,7 @@ fn test_comparison_greater_equal() {
 fn test_comparison_is() {
     let source = "result = x is None";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let _ = analyzer.analyze(&program); // Will have error for undefined x, but that's ok
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -320,7 +320,7 @@ fn test_comparison_is() {
 fn test_comparison_in() {
     let source = "result = 5 in [1, 2, 3]";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -331,7 +331,7 @@ fn test_comparison_in() {
 fn test_comparison_chained() {
     let source = "result = 1 < 5 < 10";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -344,7 +344,7 @@ fn test_comparison_chained() {
 fn test_unary_not() {
     let source = "result = not True";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -355,7 +355,7 @@ fn test_unary_not() {
 fn test_unary_minus_int() {
     let source = "result = -42";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -366,7 +366,7 @@ fn test_unary_minus_int() {
 fn test_unary_minus_float() {
     let source = "result = -3.14";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -377,7 +377,7 @@ fn test_unary_minus_float() {
 fn test_unary_plus_int() {
     let source = "result = +42";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -388,7 +388,7 @@ fn test_unary_plus_int() {
 fn test_unary_invert() {
     let source = "result = ~5";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -401,7 +401,7 @@ fn test_unary_invert() {
 fn test_nested_arithmetic() {
     let source = "result = (5 + 3) * 2";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -412,7 +412,7 @@ fn test_nested_arithmetic() {
 fn test_mixed_float_propagation() {
     let source = "result = 1 + 2 + 3.0";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -431,7 +431,7 @@ y = 5
 result = x + y
 "#;
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -445,7 +445,7 @@ fn test_string_multiply_unsupported() {
     // String * Int is not supported and should produce a validation error
     let source = r#"result = "hello" * 3"#;
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     // Should have a binary operation error
@@ -463,7 +463,7 @@ fn test_bitwise_on_float_unsupported() {
     // Bitwise operations on floats should be rejected
     let source = "result = 5.0 | 3.0";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     // Should produce InvalidBinaryOperation error
@@ -481,7 +481,7 @@ fn test_logical_and_returns_unknown() {
     // We simplify to Unknown for now
     let source = "result = True and False";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();
@@ -496,7 +496,7 @@ fn test_logical_and_returns_unknown() {
 fn test_logical_or_returns_unknown() {
     let source = "result = True or False";
     let program = Parser::parse(source).unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     let symbol = analyzer.symbol_table().resolve_symbol("result").unwrap();

@@ -11,7 +11,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -29,7 +29,7 @@ def f() -> str:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -47,7 +47,7 @@ def f() -> float:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -65,7 +65,7 @@ def f() -> bool:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -84,7 +84,7 @@ def f() -> float:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -106,7 +106,7 @@ def g():
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -126,7 +126,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -157,7 +157,7 @@ def f() -> str:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -180,7 +180,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -202,7 +202,7 @@ def f() -> bool:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -226,7 +226,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -257,7 +257,7 @@ def f():
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -277,7 +277,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -296,7 +296,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -322,7 +322,7 @@ def f(x: int) -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -342,7 +342,7 @@ def f(x: int) -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -367,7 +367,7 @@ def outer() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -386,7 +386,7 @@ def outer() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -412,7 +412,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -432,7 +432,7 @@ def f() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(

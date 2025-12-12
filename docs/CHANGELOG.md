@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ Control Flow Analysis - Phase 6, Steps 18-20 - December 12, 2025
+
+**Integrated Control Flow Analysis with Semantic Analyzer** — Control flow analysis now runs automatically as part of semantic analysis, providing comprehensive error detection in a single pass.
+
+**Implementation Details**:
+- **Automatic Integration**: Control flow analysis runs after semantic analysis completes
+- **Error Merging**: Errors from both analyses combined into single result
+- **Configuration**: Control flow can be enabled/disabled via flag
+  - Default: Enabled (provides comprehensive analysis)
+  - Can disable for tests that only check type/semantic errors
+- **API**:
+  - `SemanticAnalyzer::new()` - Default constructor with control flow enabled
+  - `SemanticAnalyzer::new_without_control_flow()` - Constructor with control flow disabled
+  - `set_control_flow_enabled(bool)` - Toggle control flow analysis
+
+**Test Coverage**:
+- **20 comprehensive integration tests** in `test_control_flow_integration.rs`:
+  - ✅ Basic integration (10 tests): CF runs by default, error merging, disabled flag, etc.
+  - ✅ Real-world patterns (10 tests): Realistic functions, data pipelines, error handling, recursion, classes, decorators, comprehensions, context managers, nested structures, state machines
+  
+**Test Count**: 1040 → 1060 passing tests (+20)
+
+**Breaking Changes**: None - control flow is opt-in for existing tests
+
+**Error Detection**:
+Control flow analysis now detects:
+- ✅ Unreachable code after return/break/continue/raise
+- ✅ Uninitialized variable usage
+- ✅ Missing return statements in typed functions
+- ✅ Unused variables and functions
+- ✅ Dead code patterns
+
+**Examples**:
+```python
+# Unreachable code detection
+def foo() -> int:
+    return 1
+    x = 5  # Error: unreachable code
+
+# Uninitialized variable detection
+def bar():
+    print(x)  # Error: x is uninitialized
+    x = 5
+
+# Missing return detection
+def baz() -> int:
+    if condition:
+        return 1
+    # Error: missing return on else path
+
+# Unused variable/function detection
+def unused():  # Warning: function never called
+    temp = 5   # Warning: variable never used
+    return 1
+```
+
+---
+
 ### ✅ Control Flow Analysis - Phase 5, Step 17.5 - December 12, 2025
 
 **Implemented Comprehension Scope Support** — Added proper control flow analysis for list/dict/set comprehensions and generator expressions with isolated scoping.

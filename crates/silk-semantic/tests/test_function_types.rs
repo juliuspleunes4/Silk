@@ -14,7 +14,7 @@ def foo() -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).expect("Analysis failed");
 
     let symbol_table = analyzer.symbol_table();
@@ -33,7 +33,7 @@ def bar():
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).expect("Analysis failed");
 
     let symbol_table = analyzer.symbol_table();
@@ -59,7 +59,7 @@ def add(x: int, y: int) -> int:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).expect("Analysis failed");
 
     let symbol_table = analyzer.symbol_table();
@@ -92,7 +92,7 @@ def get_bool() -> bool:
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).expect("Analysis failed");
 
     let symbol_table = analyzer.symbol_table();
