@@ -986,8 +986,20 @@ impl ControlFlowAnalyzer {
                 // No control flow impact
             }
 
-            StatementKind::Global { .. } | StatementKind::Nonlocal { .. } => {
-                // No control flow impact
+            StatementKind::Global { names } => {
+                // Global statement declares that variables refer to global scope
+                // Mark these variables as initialized since they reference outer scope
+                for name in names {
+                    self.mark_initialized(name);
+                }
+            }
+
+            StatementKind::Nonlocal { names } => {
+                // Nonlocal statement declares that variables refer to enclosing scope
+                // Mark these variables as initialized since they reference outer scope
+                for name in names {
+                    self.mark_initialized(name);
+                }
             }
 
             StatementKind::Expr(expression) => {

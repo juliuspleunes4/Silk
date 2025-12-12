@@ -762,6 +762,32 @@ This is a major Phase 7+ effort requiring:
 
 ---
 
+## Resolved Limitations
+
+### ✅ Global/Nonlocal Statement Support (Resolved December 12, 2025)
+
+**Previous Issue**: Variables declared with `global` or `nonlocal` statements were not marked as initialized, causing false "uninitialized variable" errors in control flow analysis.
+
+**Solution**: Implemented handling in `control_flow.rs` to mark variables as initialized when they appear in `global` or `nonlocal` statements.
+
+**Impact**: Eliminates false positives for legitimate closure and global variable patterns common in Python code.
+
+**Implementation**:
+- Modified `analyze_statement()` in `ControlFlowAnalyzer`
+- Added cases for `StatementKind::Global` and `StatementKind::Nonlocal`
+- Mark all listed variables as initialized
+
+**Tests Added**: 18 comprehensive tests in `test_global_nonlocal.rs`
+- Basic global/nonlocal functionality
+- Multiple variables in single statement
+- Nested function contexts
+- Combined usage patterns
+- Edge cases
+
+**See**: CHANGELOG.md for full details
+
+---
+
 ## Summary
 
 | # | Limitation | Priority | Difficulty | Status |

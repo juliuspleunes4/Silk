@@ -7,7 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 📋 Documentation - December 12, 2025
+### � Control Flow - Global/Nonlocal Support - December 12, 2025
+
+**Added Global and Nonlocal Statement Support** — Variables declared with `global` or `nonlocal` are now correctly marked as initialized.
+
+**Features**:
+- **Global Statement Handling**: Variables declared global reference outer scope and are marked as initialized
+- **Nonlocal Statement Handling**: Variables declared nonlocal reference enclosing scope and are marked as initialized
+- **Multiple Variables**: Supports declaring multiple variables in single statement (`global x, y, z`)
+- **Nested Functions**: Works correctly in deeply nested function contexts
+- **No False Positives**: Eliminates "uninitialized variable" warnings for legitimate global/nonlocal usage
+
+**Examples**:
+```python
+counter = 0
+
+def increment():
+    global counter  # counter is marked as initialized
+    counter = counter + 1  # No "uninitialized variable" error
+
+def outer():
+    value = 10
+    def inner():
+        nonlocal value  # value is marked as initialized  
+        value = value * 2  # No "uninitialized variable" error
+```
+
+**Testing**: Added 18 comprehensive tests covering:
+- Basic global/nonlocal declaration
+- Multiple variables in single statement
+- Nested function contexts
+- Combined global/nonlocal usage
+- Conditional assignments with global/nonlocal
+- Edge cases and module-level usage
+
+**Impact**: Resolves Known Limitation #5 from `KNOWN_LIMITATIONS.md`
+
+**Test Count**: 1078 passing tests (was 1026, +18 global/nonlocal tests, +34 from semantic test suite)
+
+---
+
+### �📋 Documentation - December 12, 2025
 
 **Added KNOWN_LIMITATIONS.md** — Created comprehensive documentation of known limitations with implementation plans.
 
