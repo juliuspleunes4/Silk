@@ -438,7 +438,6 @@ print(result)
 }
 
 #[test]
-#[test]
 fn test_class_methods_control_flow() {
     // Class with methods showing control flow
     // Method calls are now tracked correctly
