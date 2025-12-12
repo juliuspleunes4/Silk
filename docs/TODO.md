@@ -2066,29 +2066,30 @@ def func(pos_only, /, both, *, kw_only):
 
 ## 22. Roadmap Phases
 
-### Phase 1: Foundation (Months 1-3) - IN PROGRESS ⏳ (~82% complete)
-- [x] Project structure setup (Cargo workspace with 5 crates) ✅
-- [x] Basic lexer (tokens, source location) ✅ COMPLETE (100%)
-  - [x] 67 token types (keywords, operators, literals, delimiters)
+### Phase 1: Foundation (Months 1-3) - ✅ **COMPLETE**
+- [x] Project structure setup (Cargo workspace with 6 crates) ✅
+- [x] Basic lexer (tokens, source location) ✅ **COMPLETE (100%)**
+  - [x] 69 token types (keywords, operators, literals, delimiters)
   - [x] Source location tracking (line, column, span)
   - [x] Unicode support
-  - [x] String literals (single, double, triple-quoted, escape sequences)
-  - [x] Number literals (int, float, scientific notation)
-  - [x] Comment handling
+  - [x] String literals (single, double, triple-quoted, escape sequences, f-strings, raw, byte strings)
+  - [x] Number literals (int, float, scientific notation, binary/octal/hex, underscores)
+  - [x] Comment handling (single-line, inline)
   - [x] Indentation tracking (INDENT/DEDENT tokens) ✅
-  - [x] 7 error types with proper reporting
-  - [x] 75 comprehensive tests (all passing)
-- [x] Basic parser (expressions, statements) 🟡 PARTIAL (~78%)
+  - [x] 8 error types with proper reporting
+  - [x] 145 comprehensive tests (all passing)
+- [x] Parser (expressions, statements) ✅ **COMPLETE (100%)**
   - [x] All statement types implemented ✅
-  - [x] Basic expressions (literals, operators, calls, subscripts, attributes, lists) ✅
-  - [ ] Advanced expressions (dict/set, comprehensions, lambda, slices, ternary) ❌
-- [x] Complete AST definitions (67 node variants) ✅
+  - [x] All expressions (literals, operators, calls, subscripts, attributes, lists, dicts, sets, tuples, comprehensions, lambda, slices, ternary, walrus) ✅
+- [x] Complete AST definitions (74 node variants) ✅
 - [x] Error handling foundation (LexError, ParseError with thiserror) ✅
-- [ ] Hello world compilation (via LLVM) - Phase 2
+- [ ] Hello world compilation (via LLVM) - Future (Phase 5+)
 - [x] Basic CLI structure (4 subcommands: build, run, check, lex) ✅
 - [x] Initial test infrastructure (Cargo test, pretty_assertions) ✅
 
-### Phase 2: Core Compiler (Months 4-6) - ✅ **COMPLETE**
+### Phase 2: Semantic Analysis (Months 4-9) - ✅ **COMPLETE**
+(Note: Originally planned as "Core Compiler" but expanded to include full semantic analysis, type system, and control flow analysis)
+
 - [x] Complete lexer (all Python tokens) ✅ **DONE** (December 2025)
 - [x] Complete parser (full Python grammar) ✅ **DONE** (December 2025)
 - [x] Type system foundation (primitives, basic inference) ✅ **DONE** (December 2025)
@@ -2097,31 +2098,50 @@ def func(pos_only, /, both, *, kw_only):
   - [x] Scope management ✅
   - [x] Name resolution ✅
   - [x] Context validation ✅
-- [ ] HIR and MIR design
-- [ ] LLVM backend integration
-- [ ] Basic compilation working (functions, control flow)
+  - [x] Forward reference handling ✅
+- [x] **Type System (originally Phase 3)** ✅ **COMPLETE**
+  - [x] Type inference (comprehensive implementation) ✅
+  - [x] Advanced type checking (union types, optionals) ✅
+  - [x] Gradual typing support ✅
+  - [x] Error messages with suggestions ✅
+  - [ ] Generic type constraints (parsing done, not enforced - see KNOWN_LIMITATIONS.md)
+  - [ ] Type narrowing via control flow (partial - see KNOWN_LIMITATIONS.md)
+  - [ ] Method resolution order (MRO)
+- [x] **Control Flow Analysis** ✅ **COMPLETE**
+  - [x] Unreachable code detection ✅
+  - [x] Variable initialization tracking ✅
+  - [x] Return path validation ✅
+  - [x] Unused variable/function warnings ✅
+  - [x] Decorator and method call tracking ✅
+- [ ] HIR and MIR design (Future - Phase 5+)
+- [ ] LLVM backend integration (Future - Phase 5+)
+- [ ] Basic compilation working (functions, control flow) (Future - Phase 5+)
 - [x] Comprehensive test suites for each component ✅ **1176 tests passing**
 
-### Phase 3: Type System (Months 7-9) - ✅ **MOSTLY COMPLETE**
-- [x] Type inference (comprehensive implementation) ✅ **DONE** (December 2025)
-- [ ] Generic types support (parsing done, constraints not enforced - see KNOWN_LIMITATIONS.md)
-- [x] Advanced type checking (union types, optionals) ✅ **DONE** (December 2025)
-- [x] Gradual typing support ✅ **DONE**
-- [x] Error messages with suggestions ✅ **DONE**
-- [ ] Type narrowing via control flow (future enhancement - see KNOWN_LIMITATIONS.md)
-- [ ] Method resolution order (MRO)
+### Phase 3: Advanced Language Features (Months 10-12) - ✅ **PARSING COMPLETE**
+(Note: Parsing for these features completed as part of Phase 1-2; semantic analysis varies by feature)
 
-### Phase 4: Advanced Language Features (Months 10-12) - ✅ **PARSING COMPLETE**
 - [x] Classes and inheritance ✅ **Parsing done**
 - [x] Magic methods (operator overloading) ✅ **Parsing done**
 - [x] Decorators ✅ **Parsing and tracking done**
-- [x] Generators and iterators ✅ **Parsing done**
+- [x] Generators and iterators ✅ **Parsing done** (semantic analysis TODO)
 - [x] Context managers ✅ **Parsing done**
 - [x] Exception handling ✅ **Parsing and control flow done**
-- [x] Pattern matching (match statement) ✅ **Parsing done**
-- [ ] Async/await support (parsing TODO)
+- [x] Pattern matching (match statement) ✅ **Parsing done** (semantic analysis TODO)
+- [ ] Async/await support (tokens + AST fields exist, parsing TODO)
+- [ ] Full semantic analysis for generators, iterators, pattern matching
 
-### Phase 5: Optimization (Months 13-15)
+### Phase 4: Code Generation & Runtime (Months 13-18) - ❌ **NOT STARTED**
+(Note: Originally "Optimization" - renumbered since Phases 2-3 merged)
+
+- [ ] HIR (High-level IR) design
+- [ ] MIR (Mid-level IR) design
+- [ ] LLVM backend integration
+- [ ] Basic code generation (functions, control flow)
+- [ ] Runtime library basics
+- [ ] Hello world compilation working
+
+### Phase 5: Optimization (Months 19-21) - ❌ **NOT STARTED**
 - [ ] Optimization passes (DCE, constant folding, etc.)
 - [ ] Performance tuning
 - [ ] Memory optimization
@@ -2130,7 +2150,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Benchmarking suite
 - [ ] Performance comparison with Python/C
 
-### Phase 6: Tools - Editor Support (Months 16-18)
+### Phase 6: Tools - Editor Support (Months 22-24) - ❌ **NOT STARTED**
 - [ ] LSP implementation (core features)
 - [ ] VS Code extension
 - [ ] Syntax highlighting (TextMate grammar)
@@ -2140,7 +2160,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Hover information
 - [ ] Error diagnostics in editor
 
-### Phase 7: Tools - Development Experience (Months 19-21)
+### Phase 7: Tools - Development Experience (Months 25-27) - ❌ **NOT STARTED**
 - [ ] Debugger (DAP implementation)
 - [ ] Code formatter
 - [ ] Linter
@@ -2149,7 +2169,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Documentation generator
 - [ ] Migration tools (Python → Silk)
 
-### Phase 8: Standard Library - Core (Months 22-24)
+### Phase 8: Standard Library - Core (Months 28-30) - ❌ **NOT STARTED**
 - [ ] Built-in functions (len, print, range, etc.)
 - [ ] Built-in types (int, float, str, list, dict, set, tuple)
 - [ ] Core modules (sys, os, io, math)
@@ -2157,7 +2177,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Basic collections
 - [ ] C FFI foundation
 
-### Phase 9: Standard Library - Extended (Months 25-27)
+### Phase 9: Standard Library - Extended (Months 31-33) - ❌ **NOT STARTED**
 - [ ] json, re, time, datetime
 - [ ] pathlib, argparse, logging
 - [ ] threading, asyncio
@@ -2166,7 +2186,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] unittest, dataclasses, typing
 - [ ] Additional modules as needed
 
-### Phase 10: Platform Support (Months 28-30)
+### Phase 10: Platform Support (Months 34-36) - ❌ **NOT STARTED**
 - [ ] Windows support (x86_64, ARM64)
 - [ ] Linux support (multiple distros)
 - [ ] macOS support (Intel, Apple Silicon)
@@ -2174,7 +2194,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] WASM target
 - [ ] Platform-specific optimizations
 
-### Phase 11: Ecosystem and Tooling (Months 31-33)
+### Phase 11: Ecosystem and Tooling (Months 37-39) - ❌ **NOT STARTED**
 - [ ] Package registry
 - [ ] Online playground
 - [ ] IDE plugins (JetBrains, Vim, Emacs)
@@ -2182,7 +2202,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Docker images
 - [ ] Installation packages for all platforms
 
-### Phase 12: Polish and Documentation (Months 34-36)
+### Phase 12: Polish and Documentation (Months 40-42) - ❌ **NOT STARTED**
 - [ ] Complete user documentation
 - [ ] Complete developer documentation
 - [ ] Tutorial series
@@ -2193,7 +2213,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Bug fixes
 - [ ] Security audit
 
-### Phase 13: Beta Testing (Months 37-39)
+### Phase 13: Beta Testing (Months 43-45) - ❌ **NOT STARTED**
 - [ ] Public beta release
 - [ ] Community feedback integration
 - [ ] Real-world application testing
@@ -2201,7 +2221,7 @@ def func(pos_only, /, both, *, kw_only):
 - [ ] Performance tuning based on feedback
 - [ ] Documentation improvements
 
-### Phase 14: Release 1.0 (Month 40+)
+### Phase 14: Release 1.0 (Month 46+) - ❌ **NOT STARTED**
 - [ ] Public release
 - [ ] Marketing and outreach
 - [ ] Community building
