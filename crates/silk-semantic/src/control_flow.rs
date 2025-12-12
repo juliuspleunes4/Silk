@@ -558,8 +558,9 @@ impl ControlFlowAnalyzer {
                     let is_none_return = matches!(&return_type.kind, silk_ast::TypeKind::None) 
                         || matches!(&return_type.kind, silk_ast::TypeKind::Name(n) if n == "None");
                     
-                    // If function has non-None return type and end is reachable, report error
-                    if !is_none_return && self.is_reachable {
+                    // If function has non-None return type and end is reachable OR no returns were encountered, report error
+                    // The second condition catches infinite loops without returns
+                    if !is_none_return && (self.is_reachable || !self.current_function_returns) {
                         self.errors.push(SemanticError::MissingReturn {
                             function_name: name.clone(),
                             line: stmt.span.line,

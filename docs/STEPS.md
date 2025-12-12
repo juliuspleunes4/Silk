@@ -544,24 +544,78 @@ Implemented proper scope tracking for nested functions:
 
 ---
 
-### Step 17: Optimize Dead Code Reporting
+### Step 17: Optimize Dead Code Reporting ⚠️ DEFERRED
 **File**: `crates/silk-semantic/src/control_flow.rs`
 **Estimated Tests**: 6-8
+**Status**: DEFERRED - Requires two-pass analysis (see findings below)
 
-Refine dead code detection:
-- Don't report unreachable code in unreachable functions
+**Original Goals**:
+- Don't report unreachable code in unused functions
 - Distinguish errors vs warnings
 - Add configuration for strictness level
 
-**Testing**:
-- `test_unreachable_in_unused_function_single_warning`
-- `test_error_vs_warning_classification`
-- `test_dead_code_after_return_error`
-- `test_unused_import_warning`
-- `test_suppress_warnings_in_dead_code`
-- `test_cascading_unreachability`
+**Findings from Implementation Attempt (December 12, 2025)**:
 
-**Checkpoint**: 108-139 tests total (20-26 new)
+**ISSUE #1: Forward-Referencing Problem**
+- Attempted to suppress unreachable code warnings in unused functions
+- Problem: Functions are analyzed in declaration order, but calls happen later
+- Example:
+  ```python
+  def foo():        # Step 1: Analyze foo() body
+      return 1      #   - Check if foo is unused (it is!)
+      print("x")    #   - Suppress unreachable warning
+  
+  x = foo()         # Step 2: Track that foo() is called (too late!)
+  ```
+- When analyzing foo's body, we don't yet know if it will be called
+- By the time we see `x = foo()`, we already decided to suppress the error
+
+**ISSUE #2: Test Infrastructure Issues**
+- Parser doesn't support expression statements (can't do `foo()` standalone)
+- Must use `x = foo()` or `print(foo())` to call functions
+- Many existing tests use functions that aren't called (implicitly testing all functions)
+- Making functions "used" breaks existing test isolation
+
+**ISSUE #3: Bug Discovered and Fixed**
+- **CRITICAL BUG FOUND**: Infinite loops without returns were not reporting MissingReturn
+- Root cause: `is_reachable` conflated "code is reachable" with "function returned"
+- Fixed by checking `!current_function_returns` in addition to `is_reachable`
+- This fix should be kept even if Step 17 is deferred
+
+**Solution Approaches Considered**:
+
+1. **Two-Pass Analysis** (RECOMMENDED for future)
+   - Pass 1: Collect all function definitions and call sites
+   - Pass 2: Analyze control flow with full knowledge of what's used
+   - Pros: Clean, correct solution
+   - Cons: Requires significant refactoring
+
+2. **Lazy Analysis** 
+   - Defer unreachable code checking until end of program
+   - Store potential errors, filter at the end
+   - Pros: Simpler than two-pass
+   - Cons: Complicates error collection logic
+
+3. **Conservative Approach** (CURRENT)
+   - Always report unreachable code, even in unused functions
+   - Cascading suppression already works (only report first unreachable)
+   - Pros: Simple, correct (no false negatives)
+   - Cons: More verbose warnings
+
+**Recommendation**:
+- DEFER this step until Phase 6 (Integration & Optimization)
+- Current cascading suppression is sufficient for now
+- Focus on completing remaining control flow features first
+- Revisit with two-pass analysis when refactoring for performance
+
+**Tests Attempted**:
+- `test_unreachable_in_unused_function_single_warning` - requires two-pass
+- `test_unreachable_in_used_function_reports_error` - works with current impl
+- `test_suppress_cascading_unreachable_warnings` - already works!
+- `test_main_function_always_checked` - works
+- `test_decorated_function_always_checked` - works
+
+**Checkpoint**: 1026 tests total (no change, step deferred)
 **Run**: `cargo test --package silk-semantic`
 
 ---
