@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔧 Control Flow - Decorator Usage Tracking - December 12, 2025
+
+**Implemented Decorator Function Tracking** — Decorators applied to functions and classes are now correctly tracked as being used, eliminating false "unused function" warnings.
+
+**Implementation**:
+- Added `track_decorator_usage()` method to control flow analyzer
+- Tracks simple decorators: `@decorator`
+- Tracks decorators with arguments: `@decorator(arg1, arg2)`
+- Tracks decorator chains: multiple decorators on one function/class
+- Tracks class decorators in addition to function decorators
+- Handles complex decorator expressions and attribute access
+
+**Decorator Patterns Supported**:
+```python
+# Simple decorator
+@my_decorator
+def func(): pass
+
+# Decorator with arguments (factory pattern)
+@parametrized_decorator("arg")
+def func(): pass
+
+# Multiple decorators
+@decorator1
+@decorator2
+@decorator3
+def func(): pass
+
+# Class decorator
+@class_decorator
+class MyClass: pass
+
+# Decorator with variable/expression arguments
+@configurable_decorator(config_value)
+@decorator(x * 2 + 5)
+def func(): pass
+```
+
+**Test Coverage** (10 tests):
+- Simple decorators without arguments
+- Decorators with positional arguments
+- Decorators with keyword arguments
+- Decorator chains (multiple decorators)
+- Class decorators
+- Decorators with variable arguments
+- Decorators with complex expressions
+- Nested decorator functions
+- Unused decorator detection (negative test)
+
+**Impact**: Eliminates false positives for decorator functions, improving code quality analysis accuracy
+
 ### � Semantic Analysis - Lambda Default Parameters - December 12, 2025
 
 **Completed Semantic Analysis for Lambda Defaults** — Implemented and validated complete semantic analysis for lambda parameter defaults, ensuring type safety and proper scope handling.

@@ -99,6 +99,61 @@ def increment():
 
 ---
 
+### ✅ Decorator Functions Not Tracked as Used (Resolved December 12, 2025)
+
+**Previous Status**: ⚠️ Known limitation, documented
+
+**Previous Issue**: When a function was used as a decorator (e.g., `@decorator`), the decorator function itself was not tracked as being called/used, resulting in false "unused function" warnings.
+
+**Example of Previously Broken Code**:
+```python
+def my_decorator(func):  # Would be marked as unused
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+@my_decorator  # This usage was not tracked
+def greet(name):
+    return f"Hello, {name}"
+
+greet("World")  # Only this call was tracked
+```
+
+**Solution**: Enhanced control flow analyzer to track decorator usage for both function and class decorators.
+
+**Implementation**:
+- Added `track_decorator_usage()` method in `crates/silk-semantic/src/control_flow.rs`
+- Integrated into `FunctionDef` and `ClassDef` statement handling
+- Handles simple decorators, decorators with arguments, and decorator chains
+- Processes decorator arguments for variable usage
+
+**Decorator Patterns Now Supported**:
+- Simple decorators: `@decorator`
+- Decorators with arguments: `@decorator(arg1, arg2)`
+- Decorator chains: `@dec1 @dec2 @dec3`
+- Class decorators: `@class_decorator class MyClass: pass`
+- Decorators with variables: `@decorator(config_value)`
+- Decorators with expressions: `@decorator(x * 2 + 5)`
+- Decorator attribute access: `@module.decorator` (partially)
+
+**Impact**: Eliminates false "unused function" warnings for decorator functions
+
+**Tests Added**: 10 comprehensive tests in `test_decorator_tracking.rs`
+- Simple decorator usage
+- Decorators with positional/keyword arguments
+- Multiple decorators (chains)
+- Class decorators
+- Variable and expression arguments
+- Nested decorator factories
+- Unused decorator detection (negative test)
+
+**Modified Tests**: Updated `test_decorator_with_control_flow` in `test_control_flow_integration.rs`
+
+**See**: CHANGELOG.md for full details
+
+---
+
 ## Parser Limitations
 
 ### 1. Type Inference for Complex Comprehensions
@@ -509,9 +564,9 @@ Expression::Call { func, .. } => {
 
 ---
 
-### 4. Decorator Functions Not Tracked as Used
+### ✅ Decorator Functions Not Tracked as Used (Resolved December 12, 2025)
 
-**Status**: ⚠️ Known limitation, documented
+**Previous Status**: ⚠️ Known limitation, documented
 
 **Description**: When a function is used as a decorator (e.g., `@decorator`), the decorator function itself is not tracked as being called/used. However, the decorated function is correctly marked as used.
 

@@ -133,6 +133,44 @@ impl ControlFlowAnalyzer {
         self.called_functions.insert(name.to_string());
     }
 
+    /// Track decorator usage - marks decorator functions as being called
+    fn track_decorator_usage(&mut self, decorator: &Expression) {
+        match &decorator.kind {
+            // Simple decorator: @decorator_name
+            ExpressionKind::Identifier(id) => {
+                self.track_function_call(id);
+            }
+            
+            // Decorator with arguments: @decorator(arg1, arg2)
+            ExpressionKind::Call { func, args, keywords } => {
+                // Mark the decorator function as used
+                if let ExpressionKind::Identifier(id) = &func.kind {
+                    self.track_function_call(id);
+                }
+                
+                // Also check arguments for any variable usage
+                for arg in args {
+                    self.check_expression(arg);
+                }
+                for keyword in keywords {
+                    self.check_expression(&keyword.value);
+                }
+            }
+            
+            // Decorator from module: @module.decorator
+            // We don't track this as a function call since it's an attribute access
+            ExpressionKind::Attribute { value, .. } => {
+                // Just check the base expression for variable usage
+                self.check_expression(value);
+            }
+            
+            // Any other complex decorator expression
+            _ => {
+                self.check_expression(decorator);
+            }
+        }
+    }
+
     /// Get a reference to the collected errors (for testing)
     pub fn errors(&self) -> &[SemanticError] {
         &self.errors
@@ -561,6 +599,11 @@ impl ControlFlowAnalyzer {
                 // Track function definition (for unused function detection)
                 self.track_function_definition(name, &stmt.span);
                 
+                // Track decorator usage - decorators are applied to the function
+                for decorator in decorator_list {
+                    self.track_decorator_usage(decorator);
+                }
+                
                 // Decorated functions are considered "used" (called by the decorator)
                 if !decorator_list.is_empty() {
                     self.track_function_call(name);
@@ -647,7 +690,12 @@ impl ControlFlowAnalyzer {
             }
 
             // Class definition
-            StatementKind::ClassDef { body, .. } => {
+            StatementKind::ClassDef { body, decorator_list, .. } => {
+                // Track decorator usage - decorators are applied to the class
+                for decorator in decorator_list {
+                    self.track_decorator_usage(decorator);
+                }
+                
                 // Analyze class body
                 for stmt in body {
                     self.analyze_statement(stmt);

@@ -474,9 +474,10 @@ print(y)
 }
 
 #[test]
+#[test]
 fn test_decorator_with_control_flow() {
     // Decorated function with control flow
-    // Note: Decorator function itself will appear unused (not tracked as being called)
+    // Decorator function is now tracked as being used
     let source = r#"
 def logger(func):
     print(func)
@@ -496,13 +497,19 @@ print(result)
     let mut analyzer = SemanticAnalyzer::new();
     let result = analyzer.analyze(&program);
 
-    // Decorator function appears unused (limitation: decorators not tracked as function calls)
-    assert!(result.is_err());
-    let errors = result.err().unwrap();
-    assert!(
-        errors.iter().all(|e| matches!(e, SemanticError::UnusedFunction { name, .. } if name == "logger")),
-        "Should only warn about unused logger function, got: {:?}", errors
-    );
+    // Now that decorator tracking is implemented, only unused variable should be reported
+    match result {
+        Ok(()) => {
+            // Great! No errors at all
+        }
+        Err(errors) => {
+            // Should only have unused variable warnings, not unused function
+            assert!(
+                errors.iter().all(|e| matches!(e, SemanticError::UnusedVariable { .. })),
+                "Should only have unused variable warnings, got: {:?}", errors
+            );
+        }
+    }
 }
 
 #[test]
