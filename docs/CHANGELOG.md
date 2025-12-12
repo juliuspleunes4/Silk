@@ -205,7 +205,7 @@ def func(): pass
 - Type checking of default expressions
 - All standard semantic validation applies to defaults
 
-### �🔧 Parser - Lambda Default Parameters - December 12, 2025
+### 🔧 Parser - Lambda Default Parameters - December 12, 2025
 
 **Added Default Parameter Support for Lambda Expressions** — Lambda expressions now support default parameter values, bringing them to feature parity with regular function definitions.
 
