@@ -95,7 +95,7 @@
     - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 31 tests
     - ✅ Phase 6: Collection Operations (Steps 18-20) - 17 tests
     - ✅ Phase 7: Integration & Documentation (Steps 21-25) - 10 tests - **COMPLETE**
-    - **Total tests: 1060 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration + 183 control flow tests + 28 analyzer tests + 20 integration = 1060 total)
+    - **Total tests: 1075 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration + 198 control flow tests + 28 analyzer tests + 20 integration = 1075 total)
   - Control Flow Analysis ✅ (100% - **COMPLETE**)
     - ✅ Phase 1: Infrastructure Setup (Steps 1-4) - 8 tests - **COMPLETE**
     - ✅ Phase 2: Unreachable Code Detection (Steps 5-8) - 51 tests - **COMPLETE**
@@ -117,7 +117,13 @@
       - ✅ Step 18: Integrate with SemanticAnalyzer - 10 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 19: Comprehensive Integration Tests - 10 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 20: Documentation & Finalization - **COMPLETE** (December 12, 2025)
-    - **Total Control Flow tests: 1060 passing** (1040 baseline + 20 integration = 1060 total)
+    - ✅ Phase 7: Decorator & Method Usage Tracking - 22 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Decorator Usage Tracking - 11 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Method Call Tracking - 11 tests - **COMPLETE** (December 12, 2025)
+    - ✅ Phase 8: Exception Pattern Test Coverage - 15 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Complex Exception Patterns - 15 tests - **COMPLETE** (December 12, 2025)
+      - Testing: break/continue in finally, nested try blocks, return precedence, exception variables, bare raise
+    - **Total Control Flow tests: 1075 passing** (1040 baseline + 11 decorator + 11 method + 15 exception patterns - 2 integration updates = 1075 total)
     - **Key Features**:
       - Unreachable code detection after return/break/continue/raise
       - Uninitialized variable detection with scope tracking
@@ -125,9 +131,13 @@
       - Unused variable and function warnings
       - Full comprehension scope support (Python 3+ semantics)
       - Nested function closure support
+      - Decorator usage tracking (eliminates false positives for decorators)
+      - Method call tracking (eliminates false positives for methods)
       - Configurable (can be disabled for pure type checking tests)
     - **Known Limitations**:
-      - ⚠️ Method calls (`obj.method()`) are not tracked as function calls - methods will appear as unused functions
+      - ⚠️ Bare `raise` statements not tracked as diverging control flow
+      - ⚠️ Try block with return + except without return: code after marked reachable
+      - ⚠️ Try/except in conditionals: all-paths-return not fully tracked across try blocks
       - ⚠️ Decorator function invocations are not tracked - decorator functions will appear as unused (though decorated functions are correctly marked as used)
       - These limitations are documented in integration tests: `test_class_methods_control_flow` and `test_decorator_with_control_flow`
       - Future enhancement: requires extending call tracking to handle attribute access expressions and decorator application

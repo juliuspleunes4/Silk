@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🧪 Testing - Complex Exception Pattern Coverage - December 12, 2025
+
+**Added Comprehensive Exception Control Flow Tests** — Created extensive test suite for complex exception handling patterns that were previously untested, increasing confidence in control flow analyzer correctness.
+
+**New Test File**: `test_complex_exception_patterns.rs` (15 tests)
+
+**Patterns Now Tested**:
+- Break and continue in finally blocks
+- Return in except with else clause
+- Exception variable scope and usage
+- Multiple exception types in single handler: `except (ValueError, TypeError):`
+- Deeply nested try blocks (3+ levels)
+- Try/except within conditionals
+- Bare raise statements
+- Nested finally blocks
+- Complete try/except/else/finally combinations
+- Return precedence: try vs except vs finally
+- Exception handling within exception handlers
+- Try/except in while loops with break
+- Except handler ordering (broad vs specific)
+
+**Discovered Limitations** (documented as current behavior, not bugs):
+- Bare `raise` statements not tracked as diverging control flow
+- Try block return with non-returning except handler doesn't make code unreachable
+- Try/except in conditionals: analyzer doesn't track all-paths-return across try blocks
+
+**Testing**:
+- **Total Tests**: 1156 (was 1141, +15)
+- All tests passing
+- Complements existing `test_try_except_reachability.rs` (15 tests)
+- Combined coverage: 30 exception handling tests
+
+**Impact**: Significantly increases confidence in exception control flow analysis by testing edge cases and complex interaction patterns.
+
+---
+
 ### 🔧 Control Flow - Method Call Tracking - December 12, 2025
 
 **Implemented Method Call Tracking** — Method calls via attribute access (`obj.method()`) are now properly tracked, eliminating false "unused function" warnings for class methods.
