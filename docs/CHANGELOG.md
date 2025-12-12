@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔧 Control Flow - Method Call Tracking - December 12, 2025
+
+**Implemented Method Call Tracking** — Method calls via attribute access (`obj.method()`) are now properly tracked, eliminating false "unused function" warnings for class methods.
+
+**Implementation**:
+- Added `track_all_calls_in_expression()` method to control flow analyzer
+- Recursively tracks all function/method calls in expressions
+- Handles direct calls, method calls via attribute access, and chained method calls
+- Does not check initialization to avoid false positives for class names
+- Integrated into `Expression::Call` handling in `check_expression()`
+
+**Method Call Patterns Supported**:
+```python
+# Direct method call
+obj.method()
+
+# Chained method calls
+obj.method1().method2().method3()
+
+# Method calls in conditionals
+if obj.validate():
+    obj.process()
+
+# Method calls in loops
+for item in items:
+    item.method()
+```
+
+**Testing**:
+- Added 10 comprehensive tests in `test_method_call_tracking.rs`
+- Updated integration test `test_class_methods_control_flow`
+- **Total Tests**: 1141 (was 1130, +11)
+
+**Technical Details**:
+- Recursive traversal through `Expression::Identifier`, `Expression::Attribute`, and nested `Expression::Call`
+- Separates usage tracking from initialization checking
+- Properly handles chained calls by recursing into the function expression of each call
+
+---
+
 ### 🔧 Control Flow - Decorator Usage Tracking - December 12, 2025
 
 **Implemented Decorator Function Tracking** — Decorators applied to functions and classes are now correctly tracked as being used, eliminating false "unused function" warnings.

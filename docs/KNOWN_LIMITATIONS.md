@@ -156,161 +156,13 @@ greet("World")  # Only this call was tracked
 
 ## Parser Limitations
 
-### 1. Type Inference for Complex Comprehensions
-
-**Status**: ⚠️ Partial support
-
-**Description**: The parser does not currently support default parameter values in lambda expressions, though the semantic analyzer is prepared to handle them.
-
-**Impact**: 
-- Code like `lambda x=10: x * 2` will fail to parse
-- Regular functions with defaults work fine: `def f(x=10): return x * 2`
-
-**Current Workaround**: Use regular function definitions instead of lambdas when default parameters are needed.
-
-**Implementation Plan**:
-
-#### Step 1: Extend AST for Lambda Defaults
-**File**: `crates/silk-ast/src/expr.rs`
-- Modify `Lambda` variant to include parameter defaults
-- Current structure:
-  ```rust
-  Lambda {
-      parameters: Vec<Parameter>,
-      body: Box<Expression>,
-      span: Span,
-  }
-  ```
-- Target structure:
-  ```rust
-  Lambda {
-      parameters: Vec<Parameter>,  // Already supports defaults in Parameter struct
-      body: Box<Expression>,
-      span: Span,
-  }
-  ```
-- Note: `Parameter` struct already has `default: Option<Box<Expression>>` field
-
-#### Step 2: Update Parser to Handle Lambda Defaults
-**File**: `crates/silk-parser/src/expr.rs`
-- Locate `parse_lambda()` function
-- Add logic to parse optional `= <expr>` after each parameter name
-- Handle edge cases:
-  - Parameters with defaults must come after parameters without defaults
-  - Type annotations with defaults: `lambda x: int = 10: x * 2`
-  - Multiple defaults: `lambda x=1, y=2: x + y`
-
-**Pseudocode**:
-```rust
-fn parse_lambda_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {
-    let mut params = Vec::new();
-    let mut seen_default = false;
-    
-    loop {
-        let name = self.expect_identifier()?;
-        let annotation = self.parse_optional_type_annotation()?;
-        
-        let default = if self.match_token(TokenKind::Equal) {
-            seen_default = true;
-            Some(Box::new(self.parse_expression()?))
-        } else {
-            if seen_default {
-                return Err(ParserError::NonDefaultAfterDefault { ... });
-            }
-            None
-        };
-        
-        params.push(Parameter { name, annotation, default, ... });
-        
-        if !self.match_token(TokenKind::Comma) {
-            break;
-        }
-    }
-    
-    Ok(params)
-}
-```
-
-#### Step 3: Add Parser Tests
-**File**: `crates/silk-parser/tests/test_lambda_defaults.rs` (new file)
-
-**Test Cases**:
-1. **Single parameter with default**
-   ```python
-   lambda x=10: x * 2
-   ```
-
-2. **Multiple parameters with mixed defaults**
-   ```python
-   lambda x, y=5: x + y
-   ```
-
-3. **All parameters with defaults**
-   ```python
-   lambda x=1, y=2, z=3: x + y + z
-   ```
-
-4. **Type annotations with defaults**
-   ```python
-   lambda x: int = 10: x * 2
-   ```
-
-5. **Complex default expressions**
-   ```python
-   lambda x=[1, 2, 3]: len(x)
-   lambda f=lambda y: y*2: f(10)
-   ```
-
-6. **Error: Non-default after default**
-   ```python
-   lambda x=10, y: x + y  # Should fail
-   ```
-
-**Test Count**: 6 tests minimum
-
-#### Step 4: Update Semantic Analyzer (if needed)
-**File**: `crates/silk-semantic/src/analyzer.rs`
-- Verify that lambda parameter defaults are analyzed correctly
-- The semantic analyzer should already handle this since `Parameter` defaults are processed
-
-#### Step 5: Add Semantic Tests
-**File**: `crates/silk-semantic/tests/test_lambda_defaults.rs` (new file)
-
-**Test Cases**:
-1. **Default value type checking**
-   ```python
-   lambda x: int = "string": x  # Type error
-   ```
-
-2. **Default value must be constant or analyzable**
-   ```python
-   lambda x=undefined_var: x  # Error: undefined
-   ```
-
-3. **Lambda with defaults in function call**
-   ```python
-   f = lambda x=10: x * 2
-   result = f()  # Should work, x defaults to 10
-   ```
-
-**Test Count**: 3+ tests
-
-**Total Estimated Tests**: 9-10 new tests
-
-**Completion Criteria**:
-- [ ] AST updated (if needed)
-- [ ] Parser handles lambda defaults
-- [ ] All parser tests pass
-- [ ] Semantic analyzer validates defaults
-- [ ] All semantic tests pass
-- [ ] Update CHANGELOG.md
-- [ ] Update TODO.md
+Currently no known parser limitations. All planned parser features have been implemented.
 
 ---
 
 ## Semantic Analysis Limitations
 
-### 2. Type Inference for Complex Comprehensions
+### 1. Type Inference for Complex Comprehensions
 
 **Status**: ⚠️ Partial support
 
@@ -335,25 +187,36 @@ evens = [x for x in numbers if x % 2 == 0]  # Type might be List[Unknown]
 
 ## Control Flow Analysis Limitations
 
-### 3. Method Calls Not Tracked as Function Usage
+### 2. Method Calls Not Tracked as Function Usage
 
-**Status**: ⚠️ Known limitation, documented
+**Status**: ✅ **RESOLVED** (December 12, 2025)
 
-**Description**: Method calls using attribute access syntax (`obj.method()`) are not tracked as function calls in control flow analysis. This causes instance methods to be incorrectly reported as unused functions.
+**Previous Issue**: Method calls using attribute access syntax (`obj.method()`) were not tracked as function calls in control flow analysis. This caused instance methods to be incorrectly reported as unused functions.
 
-**Impact**:
-- Class methods will be flagged as `UnusedFunction` even when called as `obj.method()`
-- Only direct function calls (not through attribute access) are tracked
-- Affects code quality warnings, not correctness
+**Solution**: Implemented `track_all_calls_in_expression()` method in `control_flow.rs` that recursively tracks all function/method calls in expressions.
 
-**Example**:
+**Implementation Details**:
+- Handles `Expression::Identifier` for direct calls
+- Handles `Expression::Attribute` for method calls via attribute access
+- Recursively processes `Expression::Call` to handle chained method calls
+- Does not check initialization to avoid false positives for class names
+- Integrated into `Expression::Call` handling
+
+**Testing**: Covered by 10 comprehensive tests in `test_method_call_tracking.rs` including:
+- Simple method calls
+- Multiple methods on same object
+- Chained method calls (`obj.m1().m2()`)
+- Method calls in conditionals and loops
+- Proper unused function detection when methods are truly unused
+
+**Example Now Working**:
 ```python
 class Calculator:
-    def add(self, a, b):  # Will be marked as unused
+    def add(self, a, b):  # No longer marked as unused
         return a + b
 
 calc = Calculator()
-result = calc.add(5, 3)  # This call is not tracked
+result = calc.add(5, 3)  # This call is now tracked
 ```
 
 **Current Documentation**: 
@@ -811,7 +674,7 @@ All three decorators (`decorator1`, `decorator2`, `decorator3`) should be marked
 
 ## Type System Limitations
 
-### 5. Generic Type Constraints Not Enforced
+### 3. Generic Type Constraints Not Enforced
 
 **Status**: ⚠️ Future enhancement
 
@@ -832,7 +695,7 @@ numbers.append("string")  # Should error, but doesn't
 
 ---
 
-### 6. Type Narrowing Not Supported
+### 4. Type Narrowing Not Supported
 
 **Status**: ⚠️ Future enhancement
 
@@ -858,7 +721,7 @@ def process(value: Optional[str]) -> str:
 
 ## Code Generation Limitations
 
-### 7. No Code Generation Yet
+### 5. No Code Generation Yet
 
 **Status**: ⚠️ Not implemented
 
@@ -885,7 +748,7 @@ This is a major Phase 7+ effort requiring:
 
 ## Testing Limitations
 
-### 8. Some Complex Control Flow Patterns Not Tested
+### 6. Some Complex Control Flow Patterns Not Tested
 
 **Status**: ⚠️ Test coverage gaps
 

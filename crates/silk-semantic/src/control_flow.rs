@@ -171,6 +171,29 @@ impl ControlFlowAnalyzer {
         }
     }
 
+    /// Track all function/method calls in an expression tree (for chained calls)
+    /// This recursively finds all calls without checking for variable initialization
+    fn track_all_calls_in_expression(&mut self, expr: &Expression) {
+        match &expr.kind {
+            // Direct function call: func()
+            ExpressionKind::Identifier(name) => {
+                self.track_function_call(name);
+            }
+            // Method call: obj.method()
+            ExpressionKind::Attribute { value, attr } => {
+                self.track_function_call(attr);
+                // Recursively track calls in the value (for chained calls)
+                self.track_all_calls_in_expression(value);
+            }
+            // Nested call expression (for chained calls like obj.method1().method2())
+            ExpressionKind::Call { func, .. } => {
+                self.track_all_calls_in_expression(func);
+            }
+            // For other expressions, don't recurse
+            _ => {}
+        }
+    }
+
     /// Get a reference to the collected errors (for testing)
     pub fn errors(&self) -> &[SemanticError] {
         &self.errors
@@ -312,14 +335,10 @@ impl ControlFlowAnalyzer {
                 }
             }
             ExpressionKind::Call { func, args, keywords } => {
-                // Track function call if calling a named function
-                if let ExpressionKind::Identifier(name) = &func.kind {
-                    self.track_function_call(name);
-                }
+                // Track function/method calls recursively to handle chained calls
+                self.track_all_calls_in_expression(func);
                 
-                // Track usage of function variable (for lambdas, variables holding functions)
-                // but don't require initialization (to allow built-in functions)
-                self.track_expression_usage(func);
+                // Check arguments for initialization
                 for arg in args {
                     self.check_expression(arg);
                 }
