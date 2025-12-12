@@ -260,12 +260,12 @@ lambda f=lambda y: y*2: f(10)
 - Preserves line/column tracking for accurate error reporting
 
 **Examples**:
-``python
+```python
 x = 10  # this is now valid
 
 def func():  # inline comments work everywhere
     return x + 1  # even after code
-``
+```
 
 **Testing**: Added 19 comprehensive tests covering:
 - Inline comments after various statement types (assignments, function defs, returns, etc.)
