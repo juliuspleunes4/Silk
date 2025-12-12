@@ -134,9 +134,6 @@
       - Method call tracking (eliminates false positives for methods)
       - Configurable (can be disabled for pure type checking tests)
     - **Known Limitations**: See `docs/KNOWN_LIMITATIONS.md` for comprehensive documentation
-      - ⚠️ Bare `raise` statements not tracked as diverging control flow
-      - ⚠️ Try block with return + except without return: code after marked reachable
-      - ⚠️ Try/except in conditionals: all-paths-return not fully tracked across try blocks
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 

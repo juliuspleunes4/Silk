@@ -88,6 +88,83 @@ This is a major Phase 7+ effort requiring:
 
 ---
 
+### 4. Control Flow Analysis - Exception Handling Edge Cases
+
+**Status**: ⚠️ Known behavior limitations
+
+**Description**: Control flow analysis has several edge cases related to exception handling that are not fully tracked, leading to code being marked as reachable when it might not be.
+
+**Sub-limitations**:
+
+#### 4.1 Bare `raise` Statements Not Tracked as Diverging
+
+**Impact**: Code after a bare `raise` statement (re-raising the current exception) is marked as reachable instead of unreachable.
+
+**Example**:
+```python
+def foo():
+    try:
+        operation()
+    except Exception as e:
+        log(e)
+        raise  # Re-raises the exception
+    print("marked as reachable")  # Should be unreachable
+```
+
+**Workaround**: None currently. Bare `raise` is valid Python but not tracked as diverging control flow.
+
+**Test**: See `test_except_with_bare_raise` in `test_complex_exception_patterns.rs`
+
+#### 4.2 Try Block with Return + Except Without Return
+
+**Impact**: When a try block returns but the except handler doesn't, code after the try/except/finally is incorrectly marked as reachable.
+
+**Example**:
+```python
+def foo():
+    try:
+        return "success"
+    except Exception:
+        handle()  # Doesn't return
+    finally:
+        cleanup()
+    print("marked as reachable")  # Might be unreachable if no exception
+```
+
+**Workaround**: Ensure all exception handlers also return if the try block returns.
+
+**Test**: See `test_return_in_try_with_finally_no_return` in `test_complex_exception_patterns.rs`
+
+#### 4.3 Try/Except in Conditionals - All-Paths-Return Not Tracked
+
+**Impact**: When try/except blocks are inside conditionals, the analyzer doesn't fully track whether all code paths return across the try blocks.
+
+**Example**:
+```python
+def foo(flag):
+    if flag:
+        try:
+            operation()
+        except Exception:
+            return "error"
+    else:
+        return "skipped"
+    print("marked as reachable")  # Might be reachable if try completes normally
+```
+
+**Workaround**: Explicitly handle all return paths in try/except blocks.
+
+**Test**: See `test_try_except_in_conditional` in `test_complex_exception_patterns.rs`
+
+**Implementation Plan**: These are edge cases in control flow analysis that would require more sophisticated exception path tracking. Future enhancement to track:
+- Bare raise as diverging control flow
+- Exception handler return path analysis
+- Cross-block all-paths-return tracking
+
+**Effort**: Medium to Hard
+
+---
+
 ## Summary
 
 | # | Limitation | Priority | Difficulty | Status |
@@ -95,6 +172,7 @@ This is a major Phase 7+ effort requiring:
 | 1 | Generic type constraints | Low | Hard | Future enhancement |
 | 2 | Type narrowing | Low | Hard | Future enhancement |
 | 3 | Code generation | High | Very Hard | Phase 7+ |
+| 4 | Control flow - exception edge cases | Low | Medium-Hard | Known behavior |
 
 ---
 
