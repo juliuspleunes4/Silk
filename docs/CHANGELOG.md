@@ -281,7 +281,7 @@ def func():  # inline comments work everywhere
 
 ---
 
-### � Control Flow - Global/Nonlocal Support - December 12, 2025
+### 🔧 Control Flow - Global/Nonlocal Support - December 12, 2025
 
 **Added Global and Nonlocal Statement Support** — Variables declared with `global` or `nonlocal` are now correctly marked as initialized.
 
@@ -321,7 +321,7 @@ def outer():
 
 ---
 
-### �📋 Documentation - December 12, 2025
+### 📋 Documentation - December 12, 2025
 
 **Added KNOWN_LIMITATIONS.md** — Created comprehensive documentation of known limitations with implementation plans.
 
