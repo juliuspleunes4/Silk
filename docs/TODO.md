@@ -14,7 +14,7 @@
   - Comment handling (single-line)
   - Source location tracking (line, column, span)
   - 8 error types with comprehensive error reporting
-  - **115 tests passing** (11 unit + 104 integration tests)
+  - **145 tests passing** (breakdown varies by test module)
   - ✅ **INDENTATION TRACKING COMPLETE**: INDENT/DEDENT tokens now generated
     - `indent_stack` fully implemented with state tracking
     - Generates INDENT when indentation increases
@@ -45,7 +45,7 @@
     - Pattern matching (match/case with patterns and guards) ✅
     - global, nonlocal, assert, del, raise statements ✅
   - ParseError types with 8 error variants ✅
-  - **255 tests passing** covering all implemented features ✅
+  - **283 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
   - Function parameter parsing with type annotations, defaults, *args, **kwargs ✅
   - Type annotation parsing (simple types and generics, None keyword support) ✅
@@ -958,7 +958,7 @@ def func(pos_only, /, both, *, kw_only):
   - [x] Name binding analysis ✅
   - [ ] Closure capture detection (nested function calls TODO)
   - [x] Import resolution ✅
-  - [ ] Forward reference handling
+  - [x] Forward reference handling ✅
 
 - [x] **Type Checking** ✅ **COMPLETE** (December 11, 2025)
   - [x] Type inference implementation ✅
