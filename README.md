@@ -172,9 +172,23 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detai
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [TODO List](docs/TODO.md)
-- [Changelog](docs/CHANGELOG.md)
+- [Architecture Overview](docs/ARCHITECTURE.md) — Compiler design and implementation details
+- [Development Steps](docs/STEPS.md) — Detailed implementation roadmap
+- [Known Limitations](docs/KNOWN_LIMITATIONS.md) — Current limitations with resolution plans
+- [TODO List](docs/TODO.md) — Upcoming features and tasks
+- [Changelog](docs/CHANGELOG.md) — History of changes and releases
+
+## Known Limitations
+
+Silk is under active development. Some known limitations include:
+
+- **Lambda parameter defaults** — Not yet supported by parser (semantic analyzer ready)
+- **Method call tracking** — Method calls (`obj.method()`) not tracked in control flow analysis
+- **Decorator tracking** — Decorator functions not marked as used in control flow analysis
+- **Generic type constraints** — `List[int]` parsed but constraints not enforced
+- **Code generation** — Not yet implemented (analysis-only currently)
+
+For detailed information and implementation plans, see [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
 ## License
 

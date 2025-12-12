@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📋 Documentation - December 12, 2025
+
+**Added KNOWN_LIMITATIONS.md** — Created comprehensive documentation of known limitations with implementation plans.
+
+**Documented Limitations**:
+1. **Lambda parameter defaults not supported by parser** (semantic analyzer ready)
+   - Step-by-step parser implementation plan
+   - 9-10 new tests planned
+   
+2. **Method calls not tracked as function usage** (control flow limitation)
+   - Detailed tracking implementation plan
+   - 6-10 new tests planned
+   - Currently documented in integration tests
+   
+3. **Decorator functions not tracked as used** (control flow limitation)
+   - Decorator usage tracking implementation plan  
+   - 7-10 new tests planned
+   - Currently documented in integration tests
+   
+4. **Additional limitations documented**: Complex comprehension type inference, generic type constraints, type narrowing, code generation status, test coverage gaps
+
+**Format**: Similar to STEPS.md with:
+- Clear problem description with examples
+- Step-by-step implementation plans
+- Required test cases
+- Completion criteria
+- Effort estimates
+
+**Reference**: See `docs/KNOWN_LIMITATIONS.md` for full details
+
 ### ✅ Control Flow Analysis - Phase 6, Steps 18-20 - December 12, 2025
 
 **Integrated Control Flow Analysis with Semantic Analyzer** — Control flow analysis now runs automatically as part of semantic analysis, providing comprehensive error detection in a single pass.
