@@ -182,10 +182,8 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detai
 
 Silk is under active development. Some known limitations include:
 
-- **Lambda parameter defaults** — Not yet supported by parser (semantic analyzer ready)
-- **Method call tracking** — Method calls (`obj.method()`) not tracked in control flow analysis
-- **Decorator tracking** — Decorator functions not marked as used in control flow analysis
 - **Generic type constraints** — `List[int]` parsed but constraints not enforced
+- **Type narrowing** — Not yet supported (e.g., `isinstance` checks don't narrow types)
 - **Code generation** — Not yet implemented (analysis-only currently)
 
 For detailed information and implementation plans, see [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
