@@ -7,6 +7,350 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Type Inference - Comprehension Type Inference - December 12, 2025
+
+**Implemented Type Inference for List/Set/Dict Comprehensions** — Comprehensions now correctly infer types based on element expressions and iterable types, resolving KNOWN_LIMITATIONS #1.
+
+**Features**:
+- **List Comprehensions**: `[expr for x in iterable]` → `List[expr_type]`
+- **Set Comprehensions**: `{expr for x in iterable}` → `Set[expr_type]`
+- **Dict Comprehensions**: `{k: v for x in iterable}` → `Dict[k_type, v_type]`
+- **Generator Variable Typing**: Infers `x` type from `iterable` element type
+  - `for x in List[int]` → `x` is `int`
+  - `for x in Set[str]` → `x` is `str`
+  - `for (k, v) in Dict[str, int]` → `k` is `str`, `v` is `int`
+- **Scope Management**: Comprehensions create their own scopes (Python 3 semantics)
+
+**Implementation Details**:
+- Added comprehension type inference in `analyzer.rs::infer_type()`
+- Added `extract_iterable_element_type()` helper to map container types to element types
+- Generator variables are defined with inferred types before element expression type inference
+- Each comprehension enters scope, defines generators, infers element type, then exits scope
+
+**Bug Fixes**:
+- Fixed case sensitivity in type annotation resolution (`List[int]` vs `list[int]`)
+- Updated `test_comprehension_gets_unknown_type` to reflect new inference behavior
+
+**New Test File**: `test_comprehension_type_inference.rs` (19 tests)
+- 7 list comprehension tests
+- 4 set comprehension tests  
+- 4 dict comprehension tests
+- 4 edge case tests (empty literals, unknown iterables, nested comprehensions)
+
+**Testing**:
+- **Total Tests**: 1175 (was 1156, +19)
+- All tests passing
+- Comprehensive coverage of comprehension type inference scenarios
+
+**Documentation**:
+- Updated KNOWN_LIMITATIONS #1 status: "Partial support" → "RESOLVED"
+- Documented implementation tasks and completion in KNOWN_LIMITATIONS.md
+
+**Impact**: Major improvement in type inference accuracy. Comprehensions now provide proper type information for downstream analysis, enabling better type checking and error detection.
+
+---
+
+### 🧪 Testing - Complex Exception Pattern Coverage - December 12, 2025
+
+**Added Comprehensive Exception Control Flow Tests** — Created extensive test suite for complex exception handling patterns that were previously untested, increasing confidence in control flow analyzer correctness.
+
+**New Test File**: `test_complex_exception_patterns.rs` (15 tests)
+
+**Patterns Now Tested**:
+- Break and continue in finally blocks
+- Return in except with else clause
+- Exception variable scope and usage
+- Multiple exception types in single handler: `except (ValueError, TypeError):`
+- Deeply nested try blocks (3+ levels)
+- Try/except within conditionals
+- Bare raise statements
+- Nested finally blocks
+- Complete try/except/else/finally combinations
+- Return precedence: try vs except vs finally
+- Exception handling within exception handlers
+- Try/except in while loops with break
+- Except handler ordering (broad vs specific)
+
+**Discovered Limitations** (documented as current behavior, not bugs):
+- Bare `raise` statements not tracked as diverging control flow
+- Try block return with non-returning except handler doesn't make code unreachable
+- Try/except in conditionals: analyzer doesn't track all-paths-return across try blocks
+
+**Testing**:
+- **Total Tests**: 1156 (was 1141, +15)
+- All tests passing
+- Complements existing `test_try_except_reachability.rs` (15 tests)
+- Combined coverage: 30 exception handling tests
+
+**Impact**: Significantly increases confidence in exception control flow analysis by testing edge cases and complex interaction patterns.
+
+---
+
+### 🔧 Control Flow - Method Call Tracking - December 12, 2025
+
+**Implemented Method Call Tracking** — Method calls via attribute access (`obj.method()`) are now properly tracked, eliminating false "unused function" warnings for class methods.
+
+**Implementation**:
+- Added `track_all_calls_in_expression()` method to control flow analyzer
+- Recursively tracks all function/method calls in expressions
+- Handles direct calls, method calls via attribute access, and chained method calls
+- Does not check initialization to avoid false positives for class names
+- Integrated into `Expression::Call` handling in `check_expression()`
+
+**Method Call Patterns Supported**:
+```python
+# Direct method call
+obj.method()
+
+# Chained method calls
+obj.method1().method2().method3()
+
+# Method calls in conditionals
+if obj.validate():
+    obj.process()
+
+# Method calls in loops
+for item in items:
+    item.method()
+```
+
+**Testing**:
+- Added 10 comprehensive tests in `test_method_call_tracking.rs`
+- Updated integration test `test_class_methods_control_flow`
+- **Total Tests**: 1141 (was 1130, +11)
+
+**Technical Details**:
+- Recursive traversal through `Expression::Identifier`, `Expression::Attribute`, and nested `Expression::Call`
+- Separates usage tracking from initialization checking
+- Properly handles chained calls by recursing into the function expression of each call
+
+---
+
+### 🔧 Control Flow - Decorator Usage Tracking - December 12, 2025
+
+**Implemented Decorator Function Tracking** — Decorators applied to functions and classes are now correctly tracked as being used, eliminating false "unused function" warnings.
+
+**Implementation**:
+- Added `track_decorator_usage()` method to control flow analyzer
+- Tracks simple decorators: `@decorator`
+- Tracks decorators with arguments: `@decorator(arg1, arg2)`
+- Tracks decorator chains: multiple decorators on one function/class
+- Tracks class decorators in addition to function decorators
+- Handles complex decorator expressions and attribute access
+
+**Decorator Patterns Supported**:
+```python
+# Simple decorator
+@my_decorator
+def func(): pass
+
+# Decorator with arguments (factory pattern)
+@parametrized_decorator("arg")
+def func(): pass
+
+# Multiple decorators
+@decorator1
+@decorator2
+@decorator3
+def func(): pass
+
+# Class decorator
+@class_decorator
+class MyClass: pass
+
+# Decorator with variable/expression arguments
+@configurable_decorator(config_value)
+@decorator(x * 2 + 5)
+def func(): pass
+```
+
+**Test Coverage** (10 tests):
+- Simple decorators without arguments
+- Decorators with positional arguments
+- Decorators with keyword arguments
+- Decorator chains (multiple decorators)
+- Class decorators
+- Decorators with variable arguments
+- Decorators with complex expressions
+- Nested decorator functions
+- Unused decorator detection (negative test)
+
+**Impact**: Eliminates false positives for decorator functions, improving code quality analysis accuracy
+
+### 🔧 Semantic Analysis - Lambda Default Parameters - December 12, 2025
+
+**Completed Semantic Analysis for Lambda Defaults** — Implemented and validated complete semantic analysis for lambda parameter defaults, ensuring type safety and proper scope handling.
+
+**Implementation**:
+- Verified semantic analyzer correctly analyzes defaults in outer scope before entering lambda scope
+- Fixed control flow analyzer to check default expressions for variable initialization
+- Added filtering helper to separate control flow warnings from semantic errors
+- Comprehensive test coverage for all edge cases
+
+**Test Coverage** (11 tests):
+- Basic type checking with literal defaults
+- Undefined variable detection in defaults
+- Outer scope variable access in defaults
+- Function call expressions as defaults
+- Complex expressions (arithmetic, function calls)
+- List and other collection literals as defaults
+- Nested lambda expressions with defaults
+- Multiple parameters with mixed defaults
+- Parameter cannot reference itself in default
+- Default evaluation in outer scope (not lambda body)
+
+**Error Detection**:
+- Undefined variables in default expressions
+- Invalid references to lambda parameters in their own defaults
+- Type checking of default expressions
+- All standard semantic validation applies to defaults
+
+### 🔧 Parser - Lambda Default Parameters - December 12, 2025
+
+**Added Default Parameter Support for Lambda Expressions** — Lambda expressions now support default parameter values, bringing them to feature parity with regular function definitions.
+
+**Implementation**:
+- Modified lambda parameter parsing to handle `=` followed by default value expressions
+- Enforces Python's rule: non-default parameters cannot follow default parameters
+- Handles trailing commas in parameter lists
+- Default values can be any expression (literals, variables, function calls, etc.)
+
+**Examples**:
+```python
+# Single default
+lambda x=10: x * 2
+
+# Mixed defaults
+lambda x, y=5: x + y
+
+# All defaults
+lambda x=1, y=2, z=3: x + y + z
+
+# Complex defaults
+lambda items=[1, 2, 3]: len(items)
+lambda f=lambda y: y*2: f(10)
+```
+
+**Parser Tests**: Added 11 comprehensive tests covering:
+- Single and multiple default parameters
+- Mixed default/non-default parameters
+- Complex default expressions (lists, nested lambdas, booleans)
+- Error handling for non-default after default
+- Trailing commas
+
+**Semantic Tests**: Added 4 tests for semantic analysis:
+- Undefined variables in defaults
+- Valid literal defaults
+- Closure over outer scope variables
+
+**Impact**: Resolves major known limitation - lambdas can now be used anywhere functions with defaults are needed
+
+**Test Count**: 1112 passing tests (was 1097, +15 new tests)
+
+---
+
+### 🔧 Lexer - Inline Comment Support - December 12, 2025
+
+**Added Inline Comment Support** — The lexer now properly handles inline comments (comments after code on the same line).
+
+**Implementation**:
+- Modified `skip_whitespace_inline()` to skip inline comments as whitespace
+- Inline comments are consumed but not tokenized (Python-like behavior)
+- Standalone comments on their own lines still generate `Comment` tokens
+- Preserves line/column tracking for accurate error reporting
+
+**Examples**:
+```python
+x = 10  # this is now valid
+
+def func():  # inline comments work everywhere
+    return x + 1  # even after code
+```
+
+**Testing**: Added 19 comprehensive tests covering:
+- Inline comments after various statement types (assignments, function defs, returns, etc.)
+- Comments with special characters
+- Hash symbols inside strings vs. actual comments
+- Comments at end of file (with/without newline)
+- Line number preservation
+- Multiple inline comments in same file
+
+**Impact**: Resolves major parser limitation - inline comments were previously not supported
+
+**Test Count**: 1097 passing tests (was 1078, +19 new tests)
+
+---
+
+### 🔧 Control Flow - Global/Nonlocal Support - December 12, 2025
+
+**Added Global and Nonlocal Statement Support** — Variables declared with `global` or `nonlocal` are now correctly marked as initialized.
+
+**Features**:
+- **Global Statement Handling**: Variables declared global reference outer scope and are marked as initialized
+- **Nonlocal Statement Handling**: Variables declared nonlocal reference enclosing scope and are marked as initialized
+- **Multiple Variables**: Supports declaring multiple variables in single statement (`global x, y, z`)
+- **Nested Functions**: Works correctly in deeply nested function contexts
+- **No False Positives**: Eliminates "uninitialized variable" warnings for legitimate global/nonlocal usage
+
+**Examples**:
+```python
+counter = 0
+
+def increment():
+    global counter  # counter is marked as initialized
+    counter = counter + 1  # No "uninitialized variable" error
+
+def outer():
+    value = 10
+    def inner():
+        nonlocal value  # value is marked as initialized  
+        value = value * 2  # No "uninitialized variable" error
+```
+
+**Testing**: Added 18 comprehensive tests covering:
+- Basic global/nonlocal declaration
+- Multiple variables in single statement
+- Nested function contexts
+- Combined global/nonlocal usage
+- Conditional assignments with global/nonlocal
+- Edge cases and module-level usage
+
+**Impact**: Resolves Known Limitation #5 from `KNOWN_LIMITATIONS.md`
+
+**Test Count**: 1078 passing tests (was 1026, +18 global/nonlocal tests, +34 from semantic test suite)
+
+---
+
+### 📋 Documentation - December 12, 2025
+
+**Added KNOWN_LIMITATIONS.md** — Created comprehensive documentation of known limitations with implementation plans.
+
+**Documented Limitations**:
+1. **Lambda parameter defaults not supported by parser** (semantic analyzer ready)
+   - Step-by-step parser implementation plan
+   - 9-10 new tests planned
+   
+2. **Method calls not tracked as function usage** (control flow limitation)
+   - Detailed tracking implementation plan
+   - 6-10 new tests planned
+   - Currently documented in integration tests
+   
+3. **Decorator functions not tracked as used** (control flow limitation)
+   - Decorator usage tracking implementation plan  
+   - 7-10 new tests planned
+   - Currently documented in integration tests
+   
+4. **Additional limitations documented**: Complex comprehension type inference, generic type constraints, type narrowing, code generation status, test coverage gaps
+
+**Format**: Similar to STEPS.md with:
+- Clear problem description with examples
+- Step-by-step implementation plans
+- Required test cases
+- Completion criteria
+- Effort estimates
+
+**Reference**: See `docs/KNOWN_LIMITATIONS.md` for full details
+
 ### ✅ Control Flow Analysis - Phase 6, Steps 18-20 - December 12, 2025
 
 **Integrated Control Flow Analysis with Semantic Analyzer** — Control flow analysis now runs automatically as part of semantic analysis, providing comprehensive error detection in a single pass.
@@ -158,7 +502,7 @@ def foo() -> int:
 
 ---
 
-### � Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
+### 🔧 Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
 
 **Fixed Nested Scope Variable Visibility (CRITICAL)** — Implemented proper Python closure semantics so inner functions can access outer scope variables.
 
@@ -198,7 +542,7 @@ def foo() -> int:
 
 ---
 
-### �🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
+### 🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
 
 **Implemented Unused Variable Detection** — Added ability to detect variables that are assigned but never used, following Python convention of ignoring underscore-prefixed variables.
 
@@ -695,7 +1039,7 @@ All tests validate that the existing implementation correctly handles:
 
 **Test Count**: 863 tests passing (+10 new unreachable code tests)
 
-### � Control Flow Analysis - December 11, 2025
+### 🔧 Control Flow Analysis - December 11, 2025
 
 **Phase 1: Infrastructure Setup - COMPLETE** (Steps 1-4)
 
@@ -766,7 +1110,7 @@ All tests validate that the existing implementation correctly handles:
 
 **Note**: Parser bug discovered during testing has been fixed separately (see above)
 
-### �🐛 Code Review Fixes - December 11, 2025
+### 🐛 Code Review Fixes - December 11, 2025
 
 **Critical bug fix, documentation correction, and performance improvements**.
 

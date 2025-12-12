@@ -133,6 +133,67 @@ impl ControlFlowAnalyzer {
         self.called_functions.insert(name.to_string());
     }
 
+    /// Track decorator usage - marks decorator functions as being called
+    fn track_decorator_usage(&mut self, decorator: &Expression) {
+        match &decorator.kind {
+            // Simple decorator: @decorator_name
+            ExpressionKind::Identifier(id) => {
+                self.track_function_call(id);
+            }
+            
+            // Decorator with arguments: @decorator(arg1, arg2)
+            ExpressionKind::Call { func, args, keywords } => {
+                // Mark the decorator function as used
+                if let ExpressionKind::Identifier(id) = &func.kind {
+                    self.track_function_call(id);
+                }
+                
+                // Also check arguments for any variable usage
+                for arg in args {
+                    self.check_expression(arg);
+                }
+                for keyword in keywords {
+                    self.check_expression(&keyword.value);
+                }
+            }
+            
+            // Decorator from module: @module.decorator
+            // We don't track this as a function call since it's an attribute access
+            ExpressionKind::Attribute { value, .. } => {
+                // Just check the base expression for variable usage
+                self.check_expression(value);
+            }
+            
+            // Any other complex decorator expression
+            _ => {
+                self.check_expression(decorator);
+            }
+        }
+    }
+
+    /// Track all function/method calls in an expression tree (for chained calls)
+    /// This recursively finds all calls without checking for variable initialization
+    fn track_all_calls_in_expression(&mut self, expr: &Expression) {
+        match &expr.kind {
+            // Direct function call: func()
+            ExpressionKind::Identifier(name) => {
+                self.track_function_call(name);
+            }
+            // Method call: obj.method()
+            ExpressionKind::Attribute { value, attr } => {
+                self.track_function_call(attr);
+                // Recursively track calls in the value (for chained calls)
+                self.track_all_calls_in_expression(value);
+            }
+            // Nested call expression (for chained calls like obj.method1().method2())
+            ExpressionKind::Call { func, .. } => {
+                self.track_all_calls_in_expression(func);
+            }
+            // For other expressions, don't recurse
+            _ => {}
+        }
+    }
+
     /// Get a reference to the collected errors (for testing)
     pub fn errors(&self) -> &[SemanticError] {
         &self.errors
@@ -274,14 +335,10 @@ impl ControlFlowAnalyzer {
                 }
             }
             ExpressionKind::Call { func, args, keywords } => {
-                // Track function call if calling a named function
-                if let ExpressionKind::Identifier(name) = &func.kind {
-                    self.track_function_call(name);
-                }
+                // Track function/method calls recursively to handle chained calls
+                self.track_all_calls_in_expression(func);
                 
-                // Track usage of function variable (for lambdas, variables holding functions)
-                // but don't require initialization (to allow built-in functions)
-                self.track_expression_usage(func);
+                // Check arguments for initialization
                 for arg in args {
                     self.check_expression(arg);
                 }
@@ -319,6 +376,13 @@ impl ControlFlowAnalyzer {
                 self.check_expression(orelse);
             }
             ExpressionKind::Lambda { params, body } => {
+                // Analyze default parameter values FIRST (in outer scope)
+                for param in params {
+                    if let Some(default_expr) = &param.default {
+                        self.check_expression(default_expr);
+                    }
+                }
+                
                 // Lambda parameters are initialized within the lambda body scope
                 // Push new scope for lambda
                 self.push_scope();
@@ -554,6 +618,11 @@ impl ControlFlowAnalyzer {
                 // Track function definition (for unused function detection)
                 self.track_function_definition(name, &stmt.span);
                 
+                // Track decorator usage - decorators are applied to the function
+                for decorator in decorator_list {
+                    self.track_decorator_usage(decorator);
+                }
+                
                 // Decorated functions are considered "used" (called by the decorator)
                 if !decorator_list.is_empty() {
                     self.track_function_call(name);
@@ -640,7 +709,12 @@ impl ControlFlowAnalyzer {
             }
 
             // Class definition
-            StatementKind::ClassDef { body, .. } => {
+            StatementKind::ClassDef { body, decorator_list, .. } => {
+                // Track decorator usage - decorators are applied to the class
+                for decorator in decorator_list {
+                    self.track_decorator_usage(decorator);
+                }
+                
                 // Analyze class body
                 for stmt in body {
                     self.analyze_statement(stmt);
@@ -986,8 +1060,20 @@ impl ControlFlowAnalyzer {
                 // No control flow impact
             }
 
-            StatementKind::Global { .. } | StatementKind::Nonlocal { .. } => {
-                // No control flow impact
+            StatementKind::Global { names } => {
+                // Global statement declares that variables refer to global scope
+                // Mark these variables as initialized since they reference outer scope
+                for name in names {
+                    self.mark_initialized(name);
+                }
+            }
+
+            StatementKind::Nonlocal { names } => {
+                // Nonlocal statement declares that variables refer to enclosing scope
+                // Mark these variables as initialized since they reference outer scope
+                for name in names {
+                    self.mark_initialized(name);
+                }
             }
 
             StatementKind::Expr(expression) => {

@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-1026%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-1175%20passing-brightgreen.svg)](#testing)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
 > A compiled programming language with Python-compatible syntax and C-level performance
@@ -172,9 +172,21 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detai
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [TODO List](docs/TODO.md)
-- [Changelog](docs/CHANGELOG.md)
+- [Architecture Overview](docs/ARCHITECTURE.md) — Compiler design and implementation details
+- [Development Steps](docs/STEPS.md) — Detailed implementation roadmap
+- [Known Limitations](docs/KNOWN_LIMITATIONS.md) — Current limitations with resolution plans
+- [TODO List](docs/TODO.md) — Upcoming features and tasks
+- [Changelog](docs/CHANGELOG.md) — History of changes and releases
+
+## Known Limitations
+
+Silk is under active development. Some known limitations include:
+
+- **Generic type constraints** — `List[int]` parsed but constraints not enforced
+- **Type narrowing** — Not yet supported (e.g., `isinstance` checks don't narrow types)
+- **Code generation** — Not yet implemented (analysis-only currently)
+
+For detailed information and implementation plans, see [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
 ## License
 

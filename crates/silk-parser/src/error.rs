@@ -33,4 +33,7 @@ pub enum ParseError {
 
     #[error("Invalid pattern at line {0}, column {1}")]
     InvalidPattern(usize, usize),
+
+    #[error("Non-default parameter follows default parameter at line {0}, column {1}")]
+    NonDefaultParamAfterDefault(usize, usize),
 }
