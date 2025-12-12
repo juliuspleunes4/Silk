@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ Control Flow Analysis - Phase 5, Step 17.5 - December 12, 2025
+
+**Implemented Comprehension Scope Support** — Added proper control flow analysis for list/dict/set comprehensions and generator expressions with isolated scoping.
+
+**Implementation Details**:
+- **Scope Isolation**: Comprehensions create isolated scopes where target variables don't leak to outer scope (Python 3+ semantics)
+- **Variable Tracking**:
+  - Iterator expressions checked in outer scope
+  - Target variables marked as initialized within comprehension scope
+  - Filter conditions (`if` clauses) can use target variables
+  - Element/key/value expressions can use all target variables
+- **Supported Comprehensions**:
+  - List comprehensions: `[x for x in items]`
+  - Dict comprehensions: `{k: v for k, v in pairs}`
+  - Set comprehensions: `{x for x in items}`
+  - Generator expressions: `(x for x in items)`
+
+**New Methods**:
+- `check_comprehension()` - Handles list/set/generator comprehensions with isolated scope
+- Updated `check_expression()` - Added cases for all comprehension types
+
+**Test Coverage**:
+- **14 comprehensive tests** in `test_comprehension_control_flow.rs`:
+  - ✅ Outer variable usage, variable isolation (no leaking)
+  - ✅ Nested comprehensions, filters, dict/set/generator expressions
+  - ✅ Multiple generators, undefined outer variables
+  - ✅ Outer variable access, iterator validation, usage tracking
+
+**Test Count**: 1026 → 1040 passing tests (+14)
+
+**Technical Impact**:
+- Completes Python 3 comprehension semantics
+- Prevents false "uninitialized variable" errors for comprehension variables
+- Enables accurate unused variable detection
+
+---
+
+### 🐛 Control Flow Analysis - Infinite Loop Return Bug Fix - December 12, 2025
+
+**Fixed Critical Bug**: Functions with infinite loops and return type annotations were not reporting `MissingReturn` errors.
+
+**Root Cause**: The check `if !is_none_return && self.is_reachable` only validated reachability, missing infinite loops that never return.
+
+**Fix**: Changed condition to `if !is_none_return && (self.is_reachable || !self.current_function_returns)` to catch infinite loops without returns.
+
+**Example Fixed**:
+```python
+def foo() -> int:
+    while True:
+        pass  # ❌ Now correctly reports: Missing return statement
+```
+
+---
+
 ### ✅ Control Flow Analysis - Phase 5, Step 16 - December 13, 2025
 
 **Implemented Unused Function Detection** — Added tracking for functions that are defined but never called throughout the codebase.
@@ -45,7 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improves codebase maintainability
 
 ---
-
 
 ### � Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
 

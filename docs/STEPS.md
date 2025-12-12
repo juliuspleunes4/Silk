@@ -632,27 +632,50 @@ Implement proper control flow analysis for comprehensions:
 
 **Current Issue**: Comprehensions are currently skipped (line ~319-322), causing:
 - Variables used inside comprehensions not tracked as "used"
+---
+
+### Step 17.5: Implement Comprehension Scope Support ✅
+**Status**: COMPLETE (December 12, 2025)
+**File**: `crates/silk-semantic/src/control_flow.rs`
+**Tests**: 14 tests, all passing
+
+Implemented proper control flow analysis for comprehensions:
+- List comprehensions: `[x for x in items]`
+- Dict comprehensions: `{k: v for k, v in items}`
+- Set comprehensions: `{x for x in items}`
+- Generator expressions: `(x for x in items)`
+
+**Current Issue Solved**: Comprehensions were being skipped (lines ~369-372), causing:
+- Variables used inside comprehensions not tracked as "used"
 - Comprehension variables incorrectly leaking to outer scope
 
 **Implementation**:
-- Track variable usage inside comprehension expressions
-- Create isolated scope for comprehension variables (they don't leak in Python 3+)
-- Handle nested comprehensions with multiple `for` clauses
-- Support comprehension with filters (`if` conditions)
+- Created `check_comprehension()` method for list/set/generator expressions
+- Separate handling for dict comprehensions (check both key and value)
+- Scoped variable tracking: iterator checked in outer scope, target variable initialized in isolated scope
+- Filters (`if` conditions) checked after target is initialized
+- Element/key/value expressions can use all target variables
+- Scope properly popped - variables don't leak to outer scope (Python 3+ semantics)
 
-**Testing** (test_comprehension_control_flow.rs):
-- `test_comprehension_uses_outer_variable`
-- `test_comprehension_variable_doesnt_leak`
-- `test_nested_comprehensions`
-- `test_comprehension_with_filter`
-- `test_dict_comprehension_scope`
-- `test_generator_expression_scope`
-- `test_comprehension_in_function`
-- `test_walrus_in_comprehension`
-- `test_multiple_generators_in_comprehension`
+**Tests Implemented** (test_comprehension_control_flow.rs):
+- ✅ test_comprehension_uses_outer_variable - Outer variables accessible
+- ✅ test_comprehension_variable_doesnt_leak - Target variables isolated
+- ✅ test_nested_comprehensions - Multiple `for` clauses work
+- ✅ test_comprehension_with_filter - `if` filters supported
+- ✅ test_dict_comprehension_scope - Dict comprehensions work
+- ✅ test_dict_comprehension_variable_doesnt_leak - Dict variables isolated
+- ✅ test_set_comprehension_scope - Set comprehensions work
+- ✅ test_generator_expression_scope - Generator expressions work
+- ✅ test_comprehension_in_function - Comprehensions in functions
+- ✅ test_multiple_generators_in_comprehension - Cartesian products
+- ✅ test_comprehension_with_undefined_outer_variable - Iterator validation
+- ✅ test_nested_comprehension_outer_variable_access - Closures work
+- ✅ test_comprehension_iterator_checked_before_scope - Iterator order
+- ✅ test_comprehension_tracks_usage_of_outer_variables - Usage tracking
 
-**Checkpoint**: ~1023-1025 tests total (8-10 new)
-**Run**: `cargo test --package silk-semantic`
+**Checkpoint**: 1040 tests total (1026 + 14 new)
+**Status**: ✅ All tests passing
+**Phase 5**: 🔄 In Progress (17.5/20 steps complete, 87.5%)
 
 ---
 

@@ -365,12 +365,72 @@ impl ControlFlowAnalyzer {
             | ExpressionKind::YieldFrom { .. }
             | ExpressionKind::Await { .. } => {}
             
-            // Comprehensions, generators - skip for now (they have their own scope)
-            ExpressionKind::ListComp { .. }
-            | ExpressionKind::SetComp { .. }
-            | ExpressionKind::DictComp { .. }
-            | ExpressionKind::GeneratorExp { .. } => {}
+            // Comprehensions and generators - create isolated scope
+            ExpressionKind::ListComp { element, generators } => {
+                self.check_comprehension(element, generators);
+            }
+            ExpressionKind::SetComp { element, generators } => {
+                self.check_comprehension(element, generators);
+            }
+            ExpressionKind::DictComp { key, value, generators } => {
+                // For dict comprehensions, check both key and value
+                self.push_scope();
+                
+                // Process generators in order (each can reference previous)
+                for generator in generators {
+                    // Check iterator expression (uses outer scope)
+                    self.check_expression(&generator.iter);
+                    
+                    // Mark target variable as initialized in comprehension scope
+                    if let Some(var_name) = Self::extract_pattern_variable(&generator.target) {
+                        self.mark_initialized(&var_name);
+                    }
+                    
+                    // Check filter conditions (can use target variable)
+                    for if_expr in &generator.ifs {
+                        self.check_expression(if_expr);
+                    }
+                }
+                
+                // Check key and value expressions (can use all target variables)
+                self.check_expression(key);
+                self.check_expression(value);
+                
+                self.pop_scope();
+            }
+            ExpressionKind::GeneratorExp { element, generators } => {
+                self.check_comprehension(element, generators);
+            }
         }
+    }
+    
+    /// Check a comprehension expression (list/set/generator)
+    /// Comprehensions have isolated scope - variables don't leak
+    fn check_comprehension(&mut self, element: &silk_ast::Expression, generators: &[silk_ast::Comprehension]) {
+        // Create new scope for comprehension variables
+        self.push_scope();
+        
+        // Process generators in order (each can reference previous)
+        for generator in generators {
+            // Check iterator expression (uses outer scope)
+            self.check_expression(&generator.iter);
+            
+            // Mark target variable as initialized in comprehension scope
+            if let Some(var_name) = Self::extract_pattern_variable(&generator.target) {
+                self.mark_initialized(&var_name);
+            }
+            
+            // Check filter conditions (can use target variable)
+            for if_expr in &generator.ifs {
+                self.check_expression(if_expr);
+            }
+        }
+        
+        // Check element expression (can use all target variables)
+        self.check_expression(element);
+        
+        // Pop scope - comprehension variables don't leak
+        self.pop_scope();
     }
 
     /// Check if a while loop condition is always true (infinite loop)

@@ -107,11 +107,14 @@
       - ✅ Step 12: Track Return Paths - 12 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 13: Handle Complex Return Patterns - 14 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 14: Validate Return Types Match - 14 tests - **COMPLETE** (December 12, 2025)
-    - 🔄 Phase 5: Dead Code Detection (Steps 15-17) - 24 tests - **IN PROGRESS** (December 13, 2025)
+    - 🔄 Phase 5: Dead Code Detection (Steps 15-17.5) - 38 tests - **IN PROGRESS** (December 12, 2025)
       - ✅ Step 15: Detect Unused Variables - 13 tests - **COMPLETE** (December 12, 2025)
       - ✅ Step 15.5: Fix Nested Scope Variable Visibility - 12 tests - **COMPLETE** (December 12, 2025) - **CRITICAL FIX**
       - ✅ Step 16: Detect Unused Functions - 11 tests - **COMPLETE** (December 13, 2025)
       - ⚠️ Step 17: Optimize Dead Code Reporting - **DEFERRED** - Requires two-pass analysis (see STEPS.md for detailed findings)
+      - ✅ Step 17.5: Comprehension Scope Support - 14 tests - **COMPLETE** (December 12, 2025)
+    - ❌ Phase 6: Integration & Documentation (Steps 18-20) - **NOT STARTED**
+    - **Total Phase 5 tests: 1040 passing** (1026 baseline + 14 comprehension = 1040 total)
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 
