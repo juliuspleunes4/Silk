@@ -126,6 +126,11 @@
       - Full comprehension scope support (Python 3+ semantics)
       - Nested function closure support
       - Configurable (can be disabled for pure type checking tests)
+    - **Known Limitations**:
+      - ⚠️ Method calls (`obj.method()`) are not tracked as function calls - methods will appear as unused functions
+      - ⚠️ Decorator function invocations are not tracked - decorator functions will appear as unused (though decorated functions are correctly marked as used)
+      - These limitations are documented in integration tests: `test_class_methods_control_flow` and `test_decorator_with_control_flow`
+      - Future enhancement: requires extending call tracking to handle attribute access expressions and decorator application
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 
