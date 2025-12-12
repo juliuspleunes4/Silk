@@ -675,13 +675,18 @@ fn test_comments_single_line() {
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize().unwrap();
 
-    // Find tokens, comments should be present
+    // Inline comments are now skipped (not tokenized)
     assert_eq!(tokens[0].lexeme, "x");
     assert_eq!(tokens[1].kind, TokenKind::Assign);
-
-    // Check that comment token exists
+    
+    // Check that no Comment tokens exist for inline comments
     let has_comment = tokens.iter().any(|t| t.kind == TokenKind::Comment);
-    assert!(has_comment, "Should have comment tokens");
+    assert!(!has_comment, "Inline comments should not generate Comment tokens");
+    
+    // Check that we have the expected tokens: x, =, 5, newline, y, =, 10, eof
+    assert_eq!(tokens.len(), 8);
+    assert_eq!(tokens[0].kind, TokenKind::Identifier);
+    assert_eq!(tokens[4].kind, TokenKind::Identifier); // y
 }
 
 #[test]

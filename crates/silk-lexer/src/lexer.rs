@@ -101,10 +101,9 @@ impl Lexer {
             });
         }
 
-        // Handle comments
-        if ch == '#' {
-            return self.lex_comment();
-        }
+        // Comments are now handled by skip_whitespace_inline
+        // (inline comments are skipped as whitespace)
+        // Only standalone comments are lexed in handle_indentation
 
         // Handle identifiers and keywords
         if ch.is_alphabetic() || ch == '_' {
@@ -163,6 +162,12 @@ impl Lexer {
             let ch = self.current_char();
             if ch == ' ' || ch == '\t' || ch == '\r' {
                 self.advance();
+            } else if ch == '#' {
+                // Skip inline comment - read until end of line
+                while !self.is_at_end() && self.current_char() != '\n' {
+                    self.advance();
+                }
+                break; // Stop after comment (newline will be handled separately)
             } else {
                 break;
             }
@@ -1380,11 +1385,15 @@ mod tests {
         let mut lexer = Lexer::new(source);
         let tokens = lexer.tokenize().unwrap();
 
-        // Should have: x, =, 1, comment, newline, y, =, 2, eof
+        // Inline comments are now skipped (treated as whitespace)
+        // Should have: x, =, 1, newline, y, =, 2, eof
         assert_eq!(tokens[0].kind, TokenKind::Identifier);
         assert_eq!(tokens[1].kind, TokenKind::Assign);
         assert_eq!(tokens[2].kind, TokenKind::Integer(1));
-        assert_eq!(tokens[3].kind, TokenKind::Comment);
+        assert_eq!(tokens[3].kind, TokenKind::Newline);
+        assert_eq!(tokens[4].kind, TokenKind::Identifier);
+        assert_eq!(tokens[5].kind, TokenKind::Assign);
+        assert_eq!(tokens[6].kind, TokenKind::Integer(2));
     }
 
     #[test]

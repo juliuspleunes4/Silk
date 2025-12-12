@@ -764,6 +764,35 @@ This is a major Phase 7+ effort requiring:
 
 ## Resolved Limitations
 
+### ✅ Inline Comment Support (Resolved December 12, 2025)
+
+**Previous Issue**: The parser could not handle inline comments (comments after code on the same line). Comments had to be on their own lines.
+
+**Example of Previously Broken Code**:
+```python
+x = 10  # this would cause parser errors
+```
+
+**Solution**: Modified lexer to skip inline comments as whitespace rather than tokenizing them.
+
+**Implementation**:
+- Updated `skip_whitespace_inline()` in `lexer.rs`
+- Inline comments consumed up to end of line
+- Standalone comments still generate `Comment` tokens (for documentation tools)
+- Line/column tracking preserved
+
+**Impact**: Enables idiomatic Python code with inline documentation
+
+**Tests Added**: 19 comprehensive tests in `test_inline_comments.rs`
+- All statement types with inline comments
+- Edge cases (end of file, empty comments, etc.)
+- Hash symbols in strings vs. comments
+- Line number preservation
+
+**See**: CHANGELOG.md for full details
+
+---
+
 ### ✅ Global/Nonlocal Statement Support (Resolved December 12, 2025)
 
 **Previous Issue**: Variables declared with `global` or `nonlocal` statements were not marked as initialized, causing false "uninitialized variable" errors in control flow analysis.

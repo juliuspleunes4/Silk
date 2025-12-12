@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### 🔧 Lexer - Inline Comment Support - December 12, 2025
+
+**Added Inline Comment Support** — The lexer now properly handles inline comments (comments after code on the same line).
+
+**Implementation**:
+- Modified `skip_whitespace_inline()` to skip inline comments as whitespace
+- Inline comments are consumed but not tokenized (Python-like behavior)
+- Standalone comments on their own lines still generate `Comment` tokens
+- Preserves line/column tracking for accurate error reporting
+
+**Examples**:
+``python
+x = 10  # this is now valid
+
+def func():  # inline comments work everywhere
+    return x + 1  # even after code
+``
+
+**Testing**: Added 19 comprehensive tests covering:
+- Inline comments after various statement types (assignments, function defs, returns, etc.)
+- Comments with special characters
+- Hash symbols inside strings vs. actual comments
+- Comments at end of file (with/without newline)
+- Line number preservation
+- Multiple inline comments in same file
+
+**Impact**: Resolves major parser limitation - inline comments were previously not supported
+
+**Test Count**: 1097 passing tests (was 1078, +19 new tests)
+
+---
 ### � Control Flow - Global/Nonlocal Support - December 12, 2025
 
 **Added Global and Nonlocal Statement Support** — Variables declared with `global` or `nonlocal` are now correctly marked as initialized.
