@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### � Semantic Analysis - Lambda Default Parameters - December 12, 2025
+
+**Completed Semantic Analysis for Lambda Defaults** — Implemented and validated complete semantic analysis for lambda parameter defaults, ensuring type safety and proper scope handling.
+
+**Implementation**:
+- Verified semantic analyzer correctly analyzes defaults in outer scope before entering lambda scope
+- Fixed control flow analyzer to check default expressions for variable initialization
+- Added filtering helper to separate control flow warnings from semantic errors
+- Comprehensive test coverage for all edge cases
+
+**Test Coverage** (11 tests):
+- Basic type checking with literal defaults
+- Undefined variable detection in defaults
+- Outer scope variable access in defaults
+- Function call expressions as defaults
+- Complex expressions (arithmetic, function calls)
+- List and other collection literals as defaults
+- Nested lambda expressions with defaults
+- Multiple parameters with mixed defaults
+- Parameter cannot reference itself in default
+- Default evaluation in outer scope (not lambda body)
+
+**Error Detection**:
+- Undefined variables in default expressions
+- Invalid references to lambda parameters in their own defaults
+- Type checking of default expressions
+- All standard semantic validation applies to defaults
+
+### �🔧 Parser - Lambda Default Parameters - December 12, 2025
+
+**Added Default Parameter Support for Lambda Expressions** — Lambda expressions now support default parameter values, bringing them to feature parity with regular function definitions.
+
+**Implementation**:
+- Modified lambda parameter parsing to handle `=` followed by default value expressions
+- Enforces Python's rule: non-default parameters cannot follow default parameters
+- Handles trailing commas in parameter lists
+- Default values can be any expression (literals, variables, function calls, etc.)
+
+**Examples**:
+```python
+# Single default
+lambda x=10: x * 2
+
+# Mixed defaults
+lambda x, y=5: x + y
+
+# All defaults
+lambda x=1, y=2, z=3: x + y + z
+
+# Complex defaults
+lambda items=[1, 2, 3]: len(items)
+lambda f=lambda y: y*2: f(10)
+```
+
+**Parser Tests**: Added 11 comprehensive tests covering:
+- Single and multiple default parameters
+- Mixed default/non-default parameters
+- Complex default expressions (lists, nested lambdas, booleans)
+- Error handling for non-default after default
+- Trailing commas
+
+**Semantic Tests**: Added 4 tests for semantic analysis:
+- Undefined variables in defaults
+- Valid literal defaults
+- Closure over outer scope variables
+
+**Impact**: Resolves major known limitation - lambdas can now be used anywhere functions with defaults are needed
+
+**Test Count**: 1112 passing tests (was 1097, +15 new tests)
+
+---
 
 ### 🔧 Lexer - Inline Comment Support - December 12, 2025
 
@@ -39,6 +110,7 @@ def func():  # inline comments work everywhere
 **Test Count**: 1097 passing tests (was 1078, +19 new tests)
 
 ---
+
 ### � Control Flow - Global/Nonlocal Support - December 12, 2025
 
 **Added Global and Nonlocal Statement Support** — Variables declared with `global` or `nonlocal` are now correctly marked as initialized.

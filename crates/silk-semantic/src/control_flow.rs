@@ -319,6 +319,13 @@ impl ControlFlowAnalyzer {
                 self.check_expression(orelse);
             }
             ExpressionKind::Lambda { params, body } => {
+                // Analyze default parameter values FIRST (in outer scope)
+                for param in params {
+                    if let Some(default_expr) = &param.default {
+                        self.check_expression(default_expr);
+                    }
+                }
+                
                 // Lambda parameters are initialized within the lambda body scope
                 // Push new scope for lambda
                 self.push_scope();

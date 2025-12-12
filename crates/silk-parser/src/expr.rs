@@ -322,8 +322,9 @@ impl Parser {
                 self.advance(); // consume 'lambda'
 
                 let mut params = Vec::new();
+                let mut seen_default = false;
 
-                // Parse parameters (if any) - simple form without type annotations or defaults
+                // Parse parameters (if any) - now supports default values
                 if !self.check(TokenKind::Colon) {
                     loop {
                         let param_start = self.current_token().span;
@@ -331,15 +332,36 @@ impl Parser {
                             .expect(TokenKind::Identifier, "Expected parameter name in lambda")?
                             .lexeme;
 
+                        // Check for default value
+                        let default = if self.check(TokenKind::Assign) {
+                            self.advance(); // consume '='
+                            seen_default = true;
+                            // Parse the default value expression
+                            Some(self.parse_expression()?)
+                        } else {
+                            // If we've seen a default parameter, all subsequent params must have defaults
+                            if seen_default {
+                                return Err(ParseError::NonDefaultParamAfterDefault(
+                                    param_start.line,
+                                    param_start.column,
+                                ));
+                            }
+                            None
+                        };
+
                         params.push(silk_ast::Parameter {
                             name,
                             annotation: None, // Lambdas don't have type annotations
-                            default: None,    // Lambdas don't have default values in simple form
+                            default,
                             span: param_start,
                         });
 
                         if self.check(TokenKind::Comma) {
                             self.advance();
+                            // Check if colon follows comma (trailing comma case)
+                            if self.check(TokenKind::Colon) {
+                                break;
+                            }
                         } else {
                             break;
                         }

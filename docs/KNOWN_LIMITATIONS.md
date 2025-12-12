@@ -11,11 +11,99 @@ This document tracks known limitations in the Silk compiler, their impact, and s
 
 ---
 
+## Resolved Limitations
+
+### ✅ Lambda Parameter Defaults (Resolved December 12, 2025)
+
+**Previous Issue**: Lambda expressions did not support default parameter values, unlike regular function definitions.
+
+**Example of Previously Broken Code**:
+```python
+f = lambda x=10: x * 2  # Would fail to parse
+multiplier = lambda a, b=2: a * b  # Would fail
+```
+
+**Solution**: Extended lambda parameter parsing to handle default values with full Python semantics.
+
+**Implementation**:
+- Modified `parse_lambda()` in `crates/silk-parser/src/expr.rs`
+- Added support for `= <expr>` after parameter names
+- Enforces non-default after default rule (raises `NonDefaultParamAfterDefault` error)
+- Handles trailing commas correctly
+- Default values evaluated as expressions (any complexity supported)
+
+**Impact**: Lambda expressions now have feature parity with function definitions for parameters
+
+**Tests Added**: 
+- 11 parser tests in `test_lambda_defaults.rs`
+- 4 semantic tests for type/scope checking
+- Total: 15 new passing tests
+
+**See**: CHANGELOG.md for full details
+
+---
+
+### ✅ Inline Comment Support (Resolved December 12, 2025)
+
+**Previous Issue**: The parser could not handle inline comments (comments after code on the same line). Comments had to be on their own lines.
+
+**Example of Previously Broken Code**:
+```python
+x = 10  # this would cause parser errors
+```
+
+**Solution**: Modified lexer to skip inline comments as whitespace rather than tokenizing them.
+
+**Implementation**:
+- Updated `skip_whitespace_inline()` in `lexer.rs`
+- Inline comments consumed up to end of line
+- Standalone comments still generate `Comment` tokens (for documentation tools)
+- Line/column tracking preserved
+
+**Impact**: Enables idiomatic Python code with inline documentation
+
+**Tests Added**: 19 comprehensive tests in `test_inline_comments.rs`
+- All statement types with inline comments
+- Edge cases (end of file, empty comments, etc.)
+- Hash symbols in strings vs. comments
+- Line number preservation
+
+**See**: CHANGELOG.md for full details
+
+---
+
+### ✅ Global/Nonlocal Statement Support (Resolved December 12, 2025)
+
+**Previous Issue**: Variables declared with `global` or `nonlocal` were not marked as initialized in control flow analysis, causing false "uninitialized variable" warnings.
+
+**Example of Previously Broken Code**:
+```python
+counter = 0
+def increment():
+    global counter  # Would trigger false "uninitialized" warning
+    counter = counter + 1
+```
+
+**Solution**: Enhanced control flow analyzer to recognize global/nonlocal statements and mark referenced variables as initialized.
+
+**Implementation**:
+- Added handling in `control_flow.rs` for `StatementKind::Global` and `StatementKind::Nonlocal`
+- Variables in global/nonlocal statements automatically marked as initialized
+- Works with multiple variables and nested functions
+
+**Impact**: Eliminates false positive warnings for legitimate global/nonlocal usage
+
+**Tests Added**: 18 comprehensive tests in `test_global_nonlocal.rs`
+
+**See**: CHANGELOG.md for full details
+
+---
+
 ## Parser Limitations
 
-### 1. Lambda Parameter Defaults Not Supported
+### 1. Type Inference for Complex Comprehensions
 
-**Status**: ⚠️ Parser limitation, semantic analyzer ready
+**Status**: ⚠️ Partial support
 
 **Description**: The parser does not currently support default parameter values in lambda expressions, though the semantic analyzer is prepared to handle them.
 
