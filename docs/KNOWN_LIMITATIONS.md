@@ -126,51 +126,36 @@ This is divided into 3 incremental tasks, each with comprehensive testing:
 
 ---
 
-#### Task 2: Improve Try/Except Return Path Analysis  
+#### Task 2: Improve Try/Except Return Path Analysis ✅ **COMPLETE**
 **Difficulty**: Medium  
 **File**: `crates/silk-semantic/src/control_flow.rs`  
-**Tests**: 6-8 tests
+**Tests**: 12 tests in `test_try_except_return_paths.rs`
+**Completed**: December 12, 2025
 
-**Current Behavior**: When try block returns but except doesn't, code after try/except is incorrectly marked as reachable.
+**Previous Behavior**: When try block returns but except doesn't, code after try/except was incorrectly marked as reachable. Finally blocks didn't properly combine reachability.
 
-**Implementation Steps**:
-1. Track whether try block always diverges (returns/raises/breaks/continues)
-2. Track whether ALL except handlers diverge
-3. Track whether else clause (if present) diverges
-4. Code after try/except/else/finally is reachable only if:
-   - Try block doesn't always diverge, OR
-   - At least one except handler doesn't diverge
-5. Finally block always runs (doesn't affect reachability after)
+**Implementation**:
+- Fixed finally block reachability logic to combine both try/except/else AND finally reachability
+- Key change: `self.is_reachable = after_try_except_else_reachable && self.is_reachable;`
+- This ensures code after is unreachable if EITHER try/except/else OR finally always diverges
+- Existing try/except logic (`try_reachable || handlers_reachable`) was already correct
 
-**Algorithm**:
-```rust
-let try_diverges = analyze_try_block();
-let mut all_excepts_diverge = true;
-for except in excepts {
-    if !analyze_except(except) {
-        all_excepts_diverge = false;
-    }
-}
-let else_diverges = analyze_else_clause();
+**Test Coverage**:
+- ✅ Try returns, except doesn't → reachable after
+- ✅ Try returns, all excepts return → unreachable after
+- ✅ Try returns, some excepts return → reachable after
+- ✅ Try doesn't return, except returns → reachable after
+- ✅ Else clause: both except and else return → unreachable after
+- ✅ Try returns with else (else unreachable) → detected
+- ✅ Finally with cleanup (doesn't return) → preserves try/except reachability
+- ✅ Finally with return → overrides, makes unreachable after
+- ✅ Nested try/except with returns → all paths tracked
+- ✅ Multiple except handlers with mixed behavior → correctly handled
+- ✅ Bare except returning → catches everything, unreachable after
+- ✅ Try raises, except returns → unreachable after
 
-// Code after is unreachable if:
-// - Try diverges AND (no else OR else diverges) AND all excepts diverge
-let unreachable_after = try_diverges && 
-                        (!has_else || else_diverges) && 
-                        all_excepts_diverge;
-```
-
-**Test Cases**:
-- Try returns, except doesn't → code after reachable
-- Try returns, all excepts return → code after unreachable
-- Try returns, some excepts return → code after reachable
-- Try doesn't return, except returns → code after reachable
-- Try with else: try returns, else returns, excepts return → unreachable
-- Try with finally: various combinations
-- Nested try/except with returns
-- Multiple except handlers with mixed return behavior
-
-**Success Criteria**: Return path analysis correctly determines reachability after try/except blocks
+**Bug Fixes**:
+- Fixed finally block incorrectly making code reachable when try/except all returned
 
 ---
 

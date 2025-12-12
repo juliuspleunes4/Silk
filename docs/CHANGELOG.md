@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Control Flow Analysis - Try/Except Return Paths - December 12, 2025
+
+**Task 2/3 Complete: Improved return path analysis for try/except/else/finally blocks** — Control flow analysis now correctly determines reachability after try/except blocks when returns are involved, continuing work on KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **Try/except return tracking**: Correctly handles cases where try returns but not all except handlers return
+- **All handlers return**: Code after try/except is unreachable only if try diverges AND all except handlers diverge
+- **Else clause returns**: When both except and else return, code after is unreachable (one always runs)
+- **Finally block reachability**: Finally always runs, but code after is reachable only if both try/except/else AND finally don't always diverge
+- **Mixed return behaviors**: Properly handles cases where some but not all except handlers return
+
+**Test Coverage**: 12 new tests in `test_try_except_return_paths.rs`
+- Try returns, except doesn't → reachable after
+- Try returns, all excepts return → unreachable after
+- Try returns, some excepts return → reachable after
+- Try doesn't return, except returns → reachable after
+- Else clause with returns
+- Finally block with and without returns
+- Nested try/except with returns
+- Multiple except handlers with mixed behavior
+- Bare except catching all exceptions
+- Try raises, except returns
+
+**Implementation Details**:
+- Fixed finally block handling to combine reachability: `after_try_except_else_reachable && finally_reachable`
+- This ensures code after is unreachable if EITHER try/except/else OR finally always diverges
+- Preserves Python semantics where finally always runs but doesn't override previous divergence
+
+**Remaining Work**: Task 3 of Control Flow Exception Edge Cases
+- Task 3: All-paths-return in conditionals with exceptions (5-7 tests)
+
+**Test Count**: 1183 → 1195 tests (+12)
+
 ### ✨ Control Flow Analysis - Bare Raise Divergence - December 12, 2025
 
 **Task 1/3 Complete: Bare raise statements now correctly tracked as diverging control flow** — Implemented tracking of bare `raise` and exception-based control flow divergence, part of resolving KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
