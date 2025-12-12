@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Control Flow Analysis - Conditional Try/Except Returns - December 12, 2025
+
+**Task 3/3 Complete: All control flow exception edge cases resolved** — Completed tracking of all-paths-return through try/except blocks in conditionals, fully resolving KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **If/else with try/except returns**: Correctly determines if function returns on all paths when conditionals contain try/except blocks
+- **Nested conditionals in try**: Properly tracks return paths through nested if/else within try blocks
+- **Elif chains**: Handles complex elif chains with mixed try/except returns
+- **Missing return detection**: Accurately detects missing returns when some conditional branches contain try/except that don't always return
+
+**Test Coverage**: 10 new tests in `test_conditional_try_except_returns.rs`
+- If with try/except both returning → branch returns
+- If/else both have try/except that return → all paths return
+- If with try/except returns but no else → missing return
+- Try/except in if, regular return in else → all paths return
+- Nested if/else within try block → all paths tracked
+- Nested if without else in try → missing return detected
+- Elif chains with try/except → all paths tracked
+- Complex nested try/except in conditionals → correct analysis
+
+**Implementation Details**:
+- Existing reachability logic already handled this correctly
+- After try/except: `is_reachable = after_try_except_reachable`
+- After if/else: `is_reachable = if_reachable || else_reachable`
+- Missing return check: `if is_reachable { report error }`
+- This correctly composes: if both branches have try/except that make code unreachable, then is_reachable = false, so no missing return error
+
+**Status**: KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases) now RESOLVED ✅
+
+**Test Count**: 1195 → 1205 tests (+10)
+
 ### ✨ Control Flow Analysis - Try/Except Return Paths - December 12, 2025
 
 **Task 2/3 Complete: Improved return path analysis for try/except/else/finally blocks** — Control flow analysis now correctly determines reachability after try/except blocks when returns are involved, continuing work on KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).

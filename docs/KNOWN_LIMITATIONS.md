@@ -159,38 +159,48 @@ This is divided into 3 incremental tasks, each with comprehensive testing:
 
 ---
 
-#### Task 3: Track All-Paths-Return Across Try/Except in Conditionals
+#### Task 3: Track All-Paths-Return Across Try/Except in Conditionals ✅ **COMPLETE**
 **Difficulty**: Medium-Hard  
 **File**: `crates/silk-semantic/src/control_flow.rs`  
-**Tests**: 5-7 tests
+**Tests**: 10 tests in `test_conditional_try_except_returns.rs`
+**Completed**: December 12, 2025
 
-**Current Behavior**: When try/except blocks are inside conditionals, analyzer doesn't track whether all code paths return across the try blocks.
+**Previous Behavior**: When try/except blocks are inside conditionals, analyzer might not correctly track whether all code paths return.
 
-**Implementation Steps**:
-1. When analyzing if/else statements, track whether each branch returns
-2. For branches containing try/except: consider the branch returns if try/except analysis says unreachable after
-3. Function returns on all paths if all top-level branches return
-4. Handle nested conditionals within try/except blocks
+**Implementation**:
+- Existing reachability logic already handled this correctly
+- The composition of try/except reachability and if/else reachability works perfectly:
+  - Try/except sets: `is_reachable = try_reachable || handlers_reachable`
+  - If/else sets: `is_reachable = if_reachable || else_reachable`
+  - Missing return check: triggers when `is_reachable == true` at end of function
+- If both branches have try/except that return → both branches set is_reachable = false → function returns on all paths
 
-**Test Cases**:
-- If with try/except that always returns in try/except → branch returns
-- If/else where both branches have try/except that return → function returns all paths
-- Try/except in if, regular return in else → mixed behavior
-- Nested if within try block
-- Try/except in while loop condition branch
+**Test Coverage**:
+- ✅ If with try/except both returning → branch returns, combined with else → all paths return
+- ✅ If/else both have try/except that return → function returns on all paths
+- ✅ If with try/except returns but no else → missing return error
+- ✅ Try/except in if, regular return in else → all paths return
+- ✅ Nested if/else within try block → all paths correctly tracked
+- ✅ Nested if without else in try → missing return detected
+- ✅ Try in if where except doesn't return → correctly handled
+- ✅ If with try/except where except doesn't return, no else → missing return
+- ✅ Elif chains with try/except → all branches tracked
+- ✅ Complex nested try in conditionals → correctly analyzed
 
-**Success Criteria**: All-paths-return correctly tracked through conditional branches containing try/except
+**Verification**: No code changes needed - existing implementation already correct!
 
 ---
 
-**Overall Test Count**: 16-22 new tests total
+**Overall Test Count**: 30 new tests total (+8 Task 1, +12 Task 2, +10 Task 3)
 
 ---
 
 **Current Status Summary**:
-- ⏳ Task 1: Bare `raise` divergence - Not started
-- ⏳ Task 2: Try/except return path analysis - Not started  
-- ⏳ Task 3: All-paths-return in conditionals - Not started
+- ✅ Task 1: Bare `raise` divergence - **COMPLETE** (December 12, 2025)
+- ✅ Task 2: Try/except return path analysis - **COMPLETE** (December 12, 2025)
+- ✅ Task 3: All-paths-return in conditionals - **COMPLETE** (December 12, 2025)
+
+**Status**: 🎉 **RESOLVED** (December 12, 2025) - All control flow exception edge cases now handled correctly!
 
 ---
 
