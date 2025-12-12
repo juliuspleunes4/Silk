@@ -177,7 +177,7 @@ def func(): pass
 
 **Impact**: Eliminates false positives for decorator functions, improving code quality analysis accuracy
 
-### � Semantic Analysis - Lambda Default Parameters - December 12, 2025
+### 🔧 Semantic Analysis - Lambda Default Parameters - December 12, 2025
 
 **Completed Semantic Analysis for Lambda Defaults** — Implemented and validated complete semantic analysis for lambda parameter defaults, ensuring type safety and proper scope handling.
 
@@ -502,7 +502,7 @@ def foo() -> int:
 
 ---
 
-### � Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
+### 🔧 Control Flow Analysis - Phase 5, Step 15.5 - December 12, 2025
 
 **Fixed Nested Scope Variable Visibility (CRITICAL)** — Implemented proper Python closure semantics so inner functions can access outer scope variables.
 
@@ -542,7 +542,7 @@ def foo() -> int:
 
 ---
 
-### �🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
+### 🔄 Control Flow Analysis - Phase 5, Step 15 - December 12, 2025
 
 **Implemented Unused Variable Detection** — Added ability to detect variables that are assigned but never used, following Python convention of ignoring underscore-prefixed variables.
 
@@ -1039,7 +1039,7 @@ All tests validate that the existing implementation correctly handles:
 
 **Test Count**: 863 tests passing (+10 new unreachable code tests)
 
-### � Control Flow Analysis - December 11, 2025
+### 🔧 Control Flow Analysis - December 11, 2025
 
 **Phase 1: Infrastructure Setup - COMPLETE** (Steps 1-4)
 
@@ -1110,7 +1110,7 @@ All tests validate that the existing implementation correctly handles:
 
 **Note**: Parser bug discovered during testing has been fixed separately (see above)
 
-### �🐛 Code Review Fixes - December 11, 2025
+### 🐛 Code Review Fixes - December 11, 2025
 
 **Critical bug fix, documentation correction, and performance improvements**.
 
