@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Control Flow Analysis - Conditional Try/Except Returns - December 12, 2025
+
+**Task 3/3 Complete: All control flow exception edge cases resolved** — Completed tracking of all-paths-return through try/except blocks in conditionals, fully resolving KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **If/else with try/except returns**: Correctly determines if function returns on all paths when conditionals contain try/except blocks
+- **Nested conditionals in try**: Properly tracks return paths through nested if/else within try blocks
+- **Elif chains**: Handles complex elif chains with mixed try/except returns
+- **Missing return detection**: Accurately detects missing returns when some conditional branches contain try/except that don't always return
+
+**Test Coverage**: 10 new tests in `test_conditional_try_except_returns.rs`
+- If with try/except both returning → branch returns
+- If/else both have try/except that return → all paths return
+- If with try/except returns but no else → missing return
+- Try/except in if, regular return in else → all paths return
+- Nested if/else within try block → all paths tracked
+- Nested if without else in try → missing return detected
+- Elif chains with try/except → all paths tracked
+- Complex nested try/except in conditionals → correct analysis
+
+**Implementation Details**:
+- Existing reachability logic already handled this correctly
+- After try/except: `is_reachable = after_try_except_reachable`
+- After if/else: `is_reachable = if_reachable || else_reachable`
+- Missing return check: `if is_reachable { report error }`
+- This correctly composes: if both branches have try/except that make code unreachable, then is_reachable = false, so no missing return error
+
+**Status**: KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases) now RESOLVED ✅
+
+**Test Count**: 1195 → 1205 tests (+10)
+
+### ✨ Control Flow Analysis - Try/Except Return Paths - December 12, 2025
+
+**Task 2/3 Complete: Improved return path analysis for try/except/else/finally blocks** — Control flow analysis now correctly determines reachability after try/except blocks when returns are involved, continuing work on KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **Try/except return tracking**: Correctly handles cases where try returns but not all except handlers return
+- **All handlers return**: Code after try/except is unreachable only if try diverges AND all except handlers diverge
+- **Else clause returns**: When both except and else return, code after is unreachable (one always runs)
+- **Finally block reachability**: Finally always runs, but code after is reachable only if both try/except/else AND finally don't always diverge
+- **Mixed return behaviors**: Properly handles cases where some but not all except handlers return
+
+**Test Coverage**: 12 new tests in `test_try_except_return_paths.rs`
+- Try returns, except doesn't → reachable after
+- Try returns, all excepts return → unreachable after
+- Try returns, some excepts return → reachable after
+- Try doesn't return, except returns → reachable after
+- Else clause with returns
+- Finally block with and without returns
+- Nested try/except with returns
+- Multiple except handlers with mixed behavior
+- Bare except catching all exceptions
+- Try raises, except returns
+
+**Implementation Details**:
+- Fixed finally block handling to combine reachability: `after_try_except_else_reachable && finally_reachable`
+- This ensures code after is unreachable if EITHER try/except/else OR finally always diverges
+- Preserves Python semantics where finally always runs but doesn't override previous divergence
+
+**Remaining Work**: Task 3 of Control Flow Exception Edge Cases
+- Task 3: All-paths-return in conditionals with exceptions (5-7 tests)
+
+**Test Count**: 1183 → 1195 tests (+12)
+
+### ✨ Control Flow Analysis - Bare Raise Divergence - December 12, 2025
+
+**Task 1/3 Complete: Bare raise statements now correctly tracked as diverging control flow** — Implemented tracking of bare `raise` and exception-based control flow divergence, part of resolving KNOWN_LIMITATIONS #4 (Control Flow Exception Edge Cases).
+
+**Features**:
+- **Bare raise divergence**: Code after `raise` statements is correctly marked as unreachable
+- **Try/except reachability**: If try block can complete normally, code after try/except is reachable regardless of whether except handlers raise
+- **Multiple except handlers**: All handlers with raise statements are tracked, but code after is still reachable if try can succeed
+- **Finally blocks**: Code after try/except/finally maintains correct reachability based on try block normal completion
+
+**Test Coverage**: 8 new tests in `test_bare_raise_divergence.rs`
+- Module-level raise making subsequent code unreachable
+- Raise with expression in function
+- Try/except combinations with raise statements
+- Try/except/finally reachability
+- All except handlers raising
+- Return path analysis through exceptions
+
+**Implementation Details**:
+- `StatementKind::Raise` already set `is_reachable = false` (working correctly)
+- Try/except logic correctly computes `after_except_reachable = try_reachable || handlers_reachable`
+- This ensures if try can complete normally (no exception), code after is reachable even if all except handlers raise
+
+**Bug Fixes**:
+- Fixed test helper `analyze_control_flow()` to properly return errors from `analyze()` instead of re-checking empty error vector
+
+**Remaining Work**: Tasks 2 and 3 of Control Flow Exception Edge Cases
+- Task 2: Try/except return path analysis (6-8 tests)
+- Task 3: All-paths-return in conditionals with exceptions (5-7 tests)
+
+**Test Count**: 1175 → 1183 tests (+8)
+
 ### ✨ Type Inference - Comprehension Type Inference - December 12, 2025
 
 **Implemented Type Inference for List/Set/Dict Comprehensions** — Comprehensions now correctly infer types based on element expressions and iterable types, resolving KNOWN_LIMITATIONS #1.

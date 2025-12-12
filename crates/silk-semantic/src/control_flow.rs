@@ -961,6 +961,9 @@ impl ControlFlowAnalyzer {
                     // After else, we keep the reachability from else
                 }
 
+                // Save reachability after try/except/else before analyzing finally
+                let after_try_except_else_reachable = self.is_reachable;
+
                 // Analyze finally clause - ALWAYS reachable, even if try/except return
                 if !finalbody.is_empty() {
                     self.is_reachable = previous_reachable; // Finally always executes
@@ -968,7 +971,11 @@ impl ControlFlowAnalyzer {
                     for stmt in finalbody {
                         self.analyze_statement(stmt);
                     }
-                    // After finally, use finally's reachability (it may return/raise)
+                    // After finally, combine reachability:
+                    // Code after is reachable only if BOTH:
+                    // 1. try/except/else doesn't always diverge, AND
+                    // 2. finally doesn't diverge
+                    self.is_reachable = after_try_except_else_reachable && self.is_reachable;
                 } else {
                     // No finally clause, restore from try/except analysis
                     self.unreachable_reported = previous_unreachable_reported;

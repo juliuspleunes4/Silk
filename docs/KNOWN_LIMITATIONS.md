@@ -90,11 +90,121 @@ This is a major Phase 7+ effort requiring:
 
 ### 4. Control Flow Analysis - Exception Handling Edge Cases
 
-**Status**: ⚠️ Known behavior limitations
+**Status**: 🔄 **IN PROGRESS** (December 12, 2025)
 
 **Description**: Control flow analysis has several edge cases related to exception handling that are not fully tracked, leading to code being marked as reachable when it might not be.
 
-**Sub-limitations**:
+**Implementation Plan**:
+
+This is divided into 3 incremental tasks, each with comprehensive testing:
+
+#### Task 1: Track Bare `raise` as Diverging Control Flow ✅ **COMPLETE**
+**Difficulty**: Easy-Medium  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 8 tests in `test_bare_raise_divergence.rs`  
+**Completed**: December 12, 2025
+
+**Previous Behavior**: Bare `raise` statements (re-raising exceptions) didn't mark subsequent code as unreachable.
+
+**Implementation**:
+- Verified `StatementKind::Raise` correctly sets `is_reachable = false`
+- Verified try/except reachability logic: `after_except_reachable = try_reachable || handlers_reachable`
+- Key insight: If try can complete normally (no exception), code after try/except is reachable even if all except handlers raise
+
+**Test Coverage**:
+- ✅ Bare raise in except handler → code after unreachable
+- ✅ Bare raise with finally block → code after reachable if try succeeds
+- ✅ Bare raise vs `raise Exception()` (with expression)
+- ✅ Try returns + all except handlers raise → code after unreachable
+- ✅ Try raises + except raises → code after unreachable
+- ✅ Module-level raise → code after unreachable
+- ✅ All except handlers raise but try can succeed → code after reachable
+- ✅ Single except without raise → code after reachable
+
+**Bug Fixes**:
+- Fixed test helper to properly capture errors from `analyze()` method
+
+---
+
+#### Task 2: Improve Try/Except Return Path Analysis ✅ **COMPLETE**
+**Difficulty**: Medium  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 12 tests in `test_try_except_return_paths.rs`
+**Completed**: December 12, 2025
+
+**Previous Behavior**: When try block returns but except doesn't, code after try/except was incorrectly marked as reachable. Finally blocks didn't properly combine reachability.
+
+**Implementation**:
+- Fixed finally block reachability logic to combine both try/except/else AND finally reachability
+- Key change: `self.is_reachable = after_try_except_else_reachable && self.is_reachable;`
+- This ensures code after is unreachable if EITHER try/except/else OR finally always diverges
+- Existing try/except logic (`try_reachable || handlers_reachable`) was already correct
+
+**Test Coverage**:
+- ✅ Try returns, except doesn't → reachable after
+- ✅ Try returns, all excepts return → unreachable after
+- ✅ Try returns, some excepts return → reachable after
+- ✅ Try doesn't return, except returns → reachable after
+- ✅ Else clause: both except and else return → unreachable after
+- ✅ Try returns with else (else unreachable) → detected
+- ✅ Finally with cleanup (doesn't return) → preserves try/except reachability
+- ✅ Finally with return → overrides, makes unreachable after
+- ✅ Nested try/except with returns → all paths tracked
+- ✅ Multiple except handlers with mixed behavior → correctly handled
+- ✅ Bare except returning → catches everything, unreachable after
+- ✅ Try raises, except returns → unreachable after
+
+**Bug Fixes**:
+- Fixed finally block incorrectly making code reachable when try/except all returned
+
+---
+
+#### Task 3: Track All-Paths-Return Across Try/Except in Conditionals ✅ **COMPLETE**
+**Difficulty**: Medium-Hard  
+**File**: `crates/silk-semantic/src/control_flow.rs`  
+**Tests**: 10 tests in `test_conditional_try_except_returns.rs`
+**Completed**: December 12, 2025
+
+**Previous Behavior**: When try/except blocks are inside conditionals, analyzer might not correctly track whether all code paths return.
+
+**Implementation**:
+- Existing reachability logic already handled this correctly
+- The composition of try/except reachability and if/else reachability works perfectly:
+  - Try/except sets: `is_reachable = try_reachable || handlers_reachable`
+  - If/else sets: `is_reachable = if_reachable || else_reachable`
+  - Missing return check: triggers when `is_reachable == true` at end of function
+- If both branches have try/except that return → both branches set is_reachable = false → function returns on all paths
+
+**Test Coverage**:
+- ✅ If with try/except both returning → branch returns, combined with else → all paths return
+- ✅ If/else both have try/except that return → function returns on all paths
+- ✅ If with try/except returns but no else → missing return error
+- ✅ Try/except in if, regular return in else → all paths return
+- ✅ Nested if/else within try block → all paths correctly tracked
+- ✅ Nested if without else in try → missing return detected
+- ✅ Try in if where except doesn't return → correctly handled
+- ✅ If with try/except where except doesn't return, no else → missing return
+- ✅ Elif chains with try/except → all branches tracked
+- ✅ Complex nested try in conditionals → correctly analyzed
+
+**Verification**: No code changes needed - existing implementation already correct!
+
+---
+
+**Overall Test Count**: 30 new tests total (+8 Task 1, +12 Task 2, +10 Task 3)
+
+---
+
+**Current Status Summary**:
+- ✅ Task 1: Bare `raise` divergence - **COMPLETE** (December 12, 2025)
+- ✅ Task 2: Try/except return path analysis - **COMPLETE** (December 12, 2025)
+- ✅ Task 3: All-paths-return in conditionals - **COMPLETE** (December 12, 2025)
+
+**Status**: 🎉 **RESOLVED** (December 12, 2025) - All control flow exception edge cases now handled correctly!
+
+---
+
+**Original Sub-limitations (for reference)**:
 
 #### 4.1 Bare `raise` Statements Not Tracked as Diverging
 
