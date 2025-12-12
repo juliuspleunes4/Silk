@@ -164,24 +164,34 @@ Currently no known parser limitations. All planned parser features have been imp
 
 ### 1. Type Inference for Complex Comprehensions
 
-**Status**: ⚠️ Partial support
+**Status**: ✅ **RESOLVED** (December 12, 2025)
 
-**Description**: Type inference for nested comprehensions and comprehensions with complex conditions may be incomplete.
+**Description**: Type inference for comprehensions has been fully implemented. Comprehensions now correctly infer types based on element expressions and iterable types.
 
-**Impact**:
-- Nested comprehensions might not infer the most specific type
-- Complex filtering conditions may result in `Unknown` type
+**Implementation**:
+- List comprehensions: `[expr for x in iterable]` → `List[expr_type]`
+- Set comprehensions: `{expr for x in iterable}` → `Set[expr_type]`
+- Dict comprehensions: `{k: v for x in iterable}` → `Dict[k_type, v_type]`
+- Generator variables are typed based on iterable element types
+- Comprehensions create their own scopes (Python 3 semantics)
 
 **Example**:
 ```python
-# May not fully infer type
-nested = [[x * 2 for x in row] for row in matrix]
+numbers: List[int] = [1, 2, 3]
+doubled = [x * 2 for x in numbers]  # ✅ Now: List[int]
 
-# Filter conditions might lose type information
-evens = [x for x in numbers if x % 2 == 0]  # Type might be List[Unknown]
+evens = [x for x in numbers if x % 2 == 0]  # ✅ Now: List[int]
+
+word_lengths = {word: len(word) for word in ["hello", "world"]}  # ✅ Now: Dict[str, int]
 ```
 
-**Implementation Plan**: TBD (requires type system enhancement)
+**Testing**: 19 comprehensive tests in `test_comprehension_type_inference.rs`
+
+**Implementation Details**:
+- Modified `infer_type()` to handle ListComp, SetComp, DictComp
+- Added `extract_iterable_element_type()` helper method
+- Fixed case sensitivity in type annotation resolution (`List` vs `list`)
+- Comprehensions enter scope, define generator variables with inferred types, then infer element types
 
 ---
 

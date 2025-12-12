@@ -721,12 +721,17 @@ impl SemanticAnalyzer {
                 for gen in generators {
                     self.analyze_expression(&gen.iter);
 
-                    // Define generator variable
+                    // Define generator variable with inferred type from iterable
                     if let PatternKind::Name(name) = &gen.target.kind {
-                        let symbol = Symbol::new(
+                        // Infer the type of the iterable and extract element type
+                        let iter_type = self.infer_type(&gen.iter);
+                        let element_type = self.extract_iterable_element_type(& iter_type);
+                        
+                        let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
                             gen.target.span.clone(),
+                            element_type,
                         );
                         let _ = self.symbol_table.define_symbol(symbol);
                     }
@@ -751,11 +756,17 @@ impl SemanticAnalyzer {
                 for gen in generators {
                     self.analyze_expression(&gen.iter);
 
+                    // Define generator variable with inferred type from iterable
                     if let PatternKind::Name(name) = &gen.target.kind {
-                        let symbol = Symbol::new(
+                        // Infer the type of the iterable and extract element type
+                        let iter_type = self.infer_type(&gen.iter);
+                        let element_type = self.extract_iterable_element_type(&iter_type);
+                        
+                        let symbol = Symbol::with_type(
                             name.clone(),
                             SymbolKind::Variable,
                             gen.target.span.clone(),
+                            element_type,
                         );
                         let _ = self.symbol_table.define_symbol(symbol);
                     }
@@ -862,8 +873,90 @@ impl SemanticAnalyzer {
                 Type::Unknown
             }
 
+            // Comprehensions
+            ExpressionKind::ListComp { element, generators } => {
+                // Enter comprehension scope and define generator variables
+                self.symbol_table.enter_scope(ScopeKind::Local);
+                
+                for gen in generators {
+                    let iter_type = self.infer_type(&gen.iter);
+                    let element_type = self.extract_iterable_element_type(&iter_type);
+                    
+                    if let PatternKind::Name(name) = &gen.target.kind {
+                        let symbol = Symbol::with_type(
+                            name.clone(),
+                            SymbolKind::Variable,
+                            gen.target.span.clone(),
+                            element_type,
+                        );
+                        let _ = self.symbol_table.define_symbol(symbol);
+                    }
+                }
+                
+                // Now infer element type with generator variables in scope
+                let element_type = self.infer_type(element);
+                let _ = self.symbol_table.exit_scope();
+                
+                Type::List(Box::new(element_type))
+            }
+
+            ExpressionKind::SetComp { element, generators } => {
+                // Enter comprehension scope and define generator variables
+                self.symbol_table.enter_scope(ScopeKind::Local);
+                
+                for gen in generators {
+                    let iter_type = self.infer_type(&gen.iter);
+                    let element_type = self.extract_iterable_element_type(&iter_type);
+                    
+                    if let PatternKind::Name(name) = &gen.target.kind {
+                        let symbol = Symbol::with_type(
+                            name.clone(),
+                            SymbolKind::Variable,
+                            gen.target.span.clone(),
+                            element_type,
+                        );
+                        let _ = self.symbol_table.define_symbol(symbol);
+                    }
+                }
+                
+                // Now infer element type with generator variables in scope
+                let element_type = self.infer_type(element);
+                let _ = self.symbol_table.exit_scope();
+                
+                Type::Set(Box::new(element_type))
+            }
+
+            ExpressionKind::DictComp { key, value, generators } => {
+                // Enter comprehension scope and define generator variables
+                self.symbol_table.enter_scope(ScopeKind::Local);
+                
+                for gen in generators {
+                    let iter_type = self.infer_type(&gen.iter);
+                    let element_type = self.extract_iterable_element_type(&iter_type);
+                    
+                    if let PatternKind::Name(name) = &gen.target.kind {
+                        let symbol = Symbol::with_type(
+                            name.clone(),
+                            SymbolKind::Variable,
+                            gen.target.span.clone(),
+                            element_type,
+                        );
+                        let _ = self.symbol_table.define_symbol(symbol);
+                    }
+                }
+                
+                // Now infer key and value types with generator variables in scope
+                let key_type = self.infer_type(key);
+                let value_type = self.infer_type(value);
+                let _ = self.symbol_table.exit_scope();
+                
+                Type::Dict {
+                    key_type: Box::new(key_type),
+                    value_type: Box::new(value_type),
+                }
+            }
+
             // For now, other expressions return Unknown
-            // TODO: Infer types for comprehensions, etc.
             _ => Type::Unknown,
         }
     }
@@ -1378,7 +1471,9 @@ impl SemanticAnalyzer {
             silk_ast::TypeKind::Generic { base, args } => {
                 // Extract the base type name
                 if let silk_ast::TypeKind::Name(base_name) = &base.kind {
-                    match base_name.as_str() {
+                    // Handle both lowercase and capitalized versions
+                    let normalized = base_name.to_lowercase();
+                    match normalized.as_str() {
                         "list" => {
                             if args.len() == 1 {
                                 let element_type = self.resolve_type_annotation(&args[0]);
@@ -1694,6 +1789,34 @@ impl SemanticAnalyzer {
             Type::Unknown | Type::Any => Type::Unknown,
 
             // Everything else is Unknown (invalid subscript, but we'll catch that in validation)
+            _ => Type::Unknown,
+        }
+    }
+
+    /// Extract the element type from an iterable type
+    ///
+    /// Used in comprehensions to determine the type of generator variables.
+    /// For example, `List[int]` -> `int`, `Set[str]` -> `str`
+    fn extract_iterable_element_type(&self, iterable_type: &crate::types::Type) -> crate::types::Type {
+        use crate::types::Type;
+
+        match iterable_type {
+            // List[T] -> T
+            Type::List(element_type) => (**element_type).clone(),
+
+            // Set[T] -> T
+            Type::Set(element_type) => (**element_type).clone(),
+
+            // Tuple[T1, T2, ...] -> Unknown (tuples can have heterogeneous types)
+            Type::Tuple(_) => Type::Unknown,
+
+            // Dict[K, V] -> K (iterating over a dict yields keys)
+            Type::Dict { key_type, .. } => (**key_type).clone(),
+
+            // Str -> Str (iterating over string yields strings of length 1)
+            Type::Str => Type::Str,
+
+            // Unknown, Any, or other types -> Unknown
             _ => Type::Unknown,
         }
     }

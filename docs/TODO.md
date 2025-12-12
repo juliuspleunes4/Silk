@@ -387,9 +387,17 @@
       - ✅ 23 comprehensive tests
     - ✅ Collection Type Inference (December 11, 2025) - **COMPLETED**
       - ✅ List, dict, set, tuple literal types
-      - ✅ Comprehension types
+      - ✅ Comprehension types (partial - literals only)
       - ✅ 55 comprehensive tests
       - ✅ Generic type resolution (list[int], dict[str,int], etc.)
+    - ✅ **Comprehension Type Inference (December 12, 2025) - COMPLETED**
+      - ✅ List comprehensions: `[x * 2 for x in numbers]` → `List[int]`
+      - ✅ Set comprehensions: `{x for x in items}` → `Set[elem_type]`
+      - ✅ Dict comprehensions: `{k: v for ...}` → `Dict[k_type, v_type]`
+      - ✅ Generator variable typing from iterables
+      - ✅ Scope management (Python 3 semantics)
+      - ✅ 19 comprehensive tests
+      - ✅ Fixed type annotation case sensitivity (`List` vs `list`)
     - ✅ Type Checking (December 11, 2025) - **FULLY COMPLETED**
       - ✅ Type annotation validation
       - ✅ Assignment type compatibility checking

@@ -416,8 +416,12 @@ fn test_comprehension_gets_unknown_type() {
     let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let _ = analyzer.analyze(&program); // May error on undefined 'range'
 
-    // List comprehensions should be Unknown for now
+    // List comprehensions now infer types based on element expression
+    // Since range(10) is unknown, the comprehension infers List[Unknown]
     if let Some(symbol) = analyzer.symbol_table().resolve_symbol("squares") {
-        assert_eq!(symbol.ty, Type::Unknown);
+        match &symbol.ty {
+            Type::List(_) => {}, // Success - it's a List type
+            _ => panic!("Expected List type, got {:?}", symbol.ty),
+        }
     }
 }

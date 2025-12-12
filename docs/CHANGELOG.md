@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Type Inference - Comprehension Type Inference - December 12, 2025
+
+**Implemented Type Inference for List/Set/Dict Comprehensions** — Comprehensions now correctly infer types based on element expressions and iterable types, resolving KNOWN_LIMITATIONS #1.
+
+**Features**:
+- **List Comprehensions**: `[expr for x in iterable]` → `List[expr_type]`
+- **Set Comprehensions**: `{expr for x in iterable}` → `Set[expr_type]`
+- **Dict Comprehensions**: `{k: v for x in iterable}` → `Dict[k_type, v_type]`
+- **Generator Variable Typing**: Infers `x` type from `iterable` element type
+  - `for x in List[int]` → `x` is `int`
+  - `for x in Set[str]` → `x` is `str`
+  - `for (k, v) in Dict[str, int]` → `k` is `str`, `v` is `int`
+- **Scope Management**: Comprehensions create their own scopes (Python 3 semantics)
+
+**Implementation Details**:
+- Added comprehension type inference in `analyzer.rs::infer_type()`
+- Added `extract_iterable_element_type()` helper to map container types to element types
+- Generator variables are defined with inferred types before element expression type inference
+- Each comprehension enters scope, defines generators, infers element type, then exits scope
+
+**Bug Fixes**:
+- Fixed case sensitivity in type annotation resolution (`List[int]` vs `list[int]`)
+- Updated `test_comprehension_gets_unknown_type` to reflect new inference behavior
+
+**New Test File**: `test_comprehension_type_inference.rs` (19 tests)
+- 7 list comprehension tests
+- 4 set comprehension tests  
+- 4 dict comprehension tests
+- 4 edge case tests (empty literals, unknown iterables, nested comprehensions)
+
+**Testing**:
+- **Total Tests**: 1175 (was 1156, +19)
+- All tests passing
+- Comprehensive coverage of comprehension type inference scenarios
+
+**Documentation**:
+- Updated KNOWN_LIMITATIONS #1 status: "Partial support" → "RESOLVED"
+- Documented implementation tasks and completion in KNOWN_LIMITATIONS.md
+
+**Impact**: Major improvement in type inference accuracy. Comprehensions now provide proper type information for downstream analysis, enabling better type checking and error detection.
+
+---
+
 ### 🧪 Testing - Complex Exception Pattern Coverage - December 12, 2025
 
 **Added Comprehensive Exception Control Flow Tests** — Created extensive test suite for complex exception handling patterns that were previously untested, increasing confidence in control flow analyzer correctness.

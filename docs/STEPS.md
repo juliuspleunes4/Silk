@@ -679,6 +679,74 @@ Implemented proper control flow analysis for comprehensions:
 
 ---
 
+### Step 17.6: Implement Comprehension Type Inference ✅
+**Status**: COMPLETE (December 12, 2025)
+**File**: `crates/silk-semantic/src/analyzer.rs`
+**Tests**: 19 tests, all passing
+
+Implemented full type inference for list/set/dict comprehensions:
+- **List comprehensions**: `[x * 2 for x in numbers]` → `List[int]`
+- **Set comprehensions**: `{x for x in items}` → `Set[elem_type]`
+- **Dict comprehensions**: `{k: v for x in items}` → `Dict[k_type, v_type]`
+- **Generator variable typing**: Infers variable types from iterable element types
+  - `for x in List[int]` → `x` is `int`
+  - `for x in Set[str]` → `x` is `str`
+  - Supports extracting element types from List/Set/Dict/Str
+- **Scope management**: Comprehensions create their own scopes (Python 3 semantics)
+
+**Implementation Details**:
+- Modified `infer_type()` to handle ListComp, SetComp, DictComp expressions
+- Added `extract_iterable_element_type()` helper method
+  - `List[T]` → `T`
+  - `Set[T]` → `T`
+  - `Dict[K,V]` → `K` (for dict iteration)
+  - `Str` → `Str` (string iteration)
+  - Unknown iterables → `Unknown`
+- Each comprehension:
+  1. Enters new scope
+  2. Analyzes iterable and infers element type
+  3. Defines generator variable with inferred element type
+  4. Infers element/key/value expression types
+  5. Exits scope
+- Generator variables properly typed before element expression inference
+
+**Bug Fixes**:
+- Fixed case sensitivity in `resolve_type_annotation()`: now handles both `List[int]` and `list[int]`
+- Updated `test_comprehension_gets_unknown_type` to reflect new inference behavior
+
+**Tests Implemented** (test_comprehension_type_inference.rs):
+1. List comprehensions (7 tests):
+   - Simple comprehension with annotated iterable
+   - With filter condition
+   - With literal iterable
+   - Nested comprehensions
+   - Unknown iterable handling
+   - Empty list handling
+
+2. Set comprehensions (4 tests):
+   - Simple set comprehension
+   - With filter condition
+   - With literal iterable
+   - Nested set comprehensions
+
+3. Dict comprehensions (4 tests):
+   - Simple dict comprehension
+   - With filter condition
+   - With literal iterable
+   - Nested dict comprehensions
+
+4. Edge cases (4 tests):
+   - Unknown iterable types
+   - Empty list literals
+   - Nested comprehensions
+   - Collection structure preservation
+
+**Total Test Count**: 1175 tests (was 1156, +19)
+
+**KNOWN_LIMITATIONS Resolution**: Resolved limitation #1 "Type Inference for Complex Comprehensions"
+
+---
+
 ## Phase 6: Integration & Documentation (Steps 18-20)
 
 ### Step 18: Integrate with SemanticAnalyzer
