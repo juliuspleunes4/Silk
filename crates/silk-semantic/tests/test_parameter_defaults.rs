@@ -6,7 +6,7 @@ use silk_semantic::SemanticAnalyzer;
 /// Helper function to analyze source code
 fn analyze(source: &str) -> Result<(), String> {
     let program = Parser::parse(source).expect("Parser should succeed");
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer
         .analyze(&program)
         .map_err(|errors| format!("{:?}", errors))

@@ -59,29 +59,38 @@ impl Parser {
         let body = self.parse_block()?;
 
         // Parse elif and else branches
-        let mut orelse = Vec::new();
-
+        // We need to build the elif chain from right to left (inside-out)
+        // First collect all elif clauses, then build the nested structure
+        let mut elif_clauses = Vec::new();
+        
         while self.check(TokenKind::Elif) {
+            let elif_span_start = self.current_token().span.clone();
             self.advance(); // consume 'elif'
             let elif_test = self.parse_expression()?;
             self.expect(TokenKind::Colon, "Expected ':' after elif condition")?;
             let elif_body = self.parse_block()?;
+            elif_clauses.push((elif_span_start, elif_test, elif_body));
+        }
 
-            // Create nested if for elif
+        // Parse else clause (innermost)
+        let mut orelse = if self.check(TokenKind::Else) {
+            self.advance(); // consume 'else'
+            self.expect(TokenKind::Colon, "Expected ':' after else")?;
+            self.parse_block()?
+        } else {
+            Vec::new()
+        };
+
+        // Build elif chain from right to left
+        for (elif_span, elif_test, elif_body) in elif_clauses.into_iter().rev() {
             orelse = vec![Statement::new(
                 StatementKind::If {
                     test: elif_test,
                     body: elif_body,
-                    orelse: Vec::new(),
+                    orelse,
                 },
-                self.current_token().span.clone(),
+                elif_span,
             )];
-        }
-
-        if self.check(TokenKind::Else) {
-            self.advance(); // consume 'else'
-            self.expect(TokenKind::Colon, "Expected ':' after else")?;
-            orelse = self.parse_block()?;
         }
 
         Ok(StatementKind::If { test, body, orelse })
@@ -111,7 +120,34 @@ impl Parser {
         self.advance(); // consume 'for'
 
         // Parse target (variable(s))
-        let target_expr = self.parse_expression()?;
+        // Use higher precedence to prevent 'in' from being parsed as an infix operator
+        let mut target_expr = self.parse_precedence(crate::expr::Precedence::Comparison.succ())?;
+        
+        // Check for tuple unpacking: for x, y in ...
+        if self.check(TokenKind::Comma) {
+            let start_span = target_expr.span.clone();
+            let mut elements = vec![target_expr];
+            while self.check(TokenKind::Comma) {
+                self.advance(); // consume comma
+                if self.check(TokenKind::In) {
+                    break; // Trailing comma before 'in'
+                }
+                elements.push(self.parse_precedence(crate::expr::Precedence::Comparison.succ())?);
+            }
+            // Construct tuple expression
+            let end_span = elements.last().unwrap().span.clone();
+            let span = silk_lexer::Span::new(
+                start_span.start,
+                end_span.end,
+                start_span.line,
+                start_span.column,
+            );
+            target_expr = silk_ast::Expression::new(
+                silk_ast::ExpressionKind::Tuple { elements },
+                span,
+            );
+        }
+        
         let target = self.expr_to_pattern(target_expr)?;
 
         self.expect(TokenKind::In, "Expected 'in' in for loop")?;
@@ -964,6 +1000,12 @@ impl Parser {
         use silk_ast::{Type, TypeKind};
 
         let start = self.current_token().span.clone();
+
+        // Handle None keyword as a type
+        if self.check(TokenKind::None) {
+            self.advance();
+            return Ok(Type::new(TypeKind::None, start));
+        }
 
         // For now, just parse simple type names
         if let TokenKind::Identifier = self.current_token().kind {

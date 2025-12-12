@@ -2,7 +2,7 @@
 
 > **✅ IMPLEMENTATION UPDATE**: As of December 8, 2025, critical missing features have been implemented! Lexer indentation tracking and all parser statement types are now complete.
 
-## Current Progress Summary (as of December 11, 2025)
+## Current Progress Summary (as of December 12, 2025)
 
 ### ✅ Completed
 - **Project Structure**: Cargo workspace with 6 crates (`silk-cli`, `silk-compiler`, `silk-lexer`, `silk-ast`, `silk-parser`, `silk-semantic`)
@@ -48,7 +48,7 @@
   - **255 tests passing** covering all implemented features ✅
   - Block parsing with indentation support ✅
   - Function parameter parsing with type annotations, defaults, *args, **kwargs ✅
-  - Type annotation parsing (simple types and generics) ✅
+  - Type annotation parsing (simple types and generics, None keyword support) ✅
   - Expression to pattern conversion for for loops ✅
   - Decorators for functions and classes ✅
   - Lambda expressions ✅
@@ -95,8 +95,42 @@
     - ✅ Phase 5: Binary Operation Validation (Steps 15-17) - 31 tests
     - ✅ Phase 6: Collection Operations (Steps 18-20) - 17 tests
     - ✅ Phase 7: Integration & Documentation (Steps 21-25) - 10 tests - **COMPLETE**
-    - **Total tests: 829 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration tests)
-  - Control Flow Analysis ❌ (0% - future)
+    - **Total tests: 1060 passing** (710 baseline + 22 assignment + 20 function call + 20 return + 31 binary operation + 16 collection + 10 integration + 183 control flow tests + 28 analyzer tests + 20 integration = 1060 total)
+  - Control Flow Analysis ✅ (100% - **COMPLETE**)
+    - ✅ Phase 1: Infrastructure Setup (Steps 1-4) - 8 tests - **COMPLETE**
+    - ✅ Phase 2: Unreachable Code Detection (Steps 5-8) - 51 tests - **COMPLETE**
+    - ✅ Phase 3: Variable Initialization Tracking (Steps 9-11) - 46 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 9: Track Variable Definitions - 19 tests - **COMPLETE**
+      - ✅ Step 10: Conditional Initialization - 15 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 11: Function Parameters and Defaults - 12 tests - **COMPLETE** (December 12, 2025)
+    - ✅ Phase 4: Return Path Validation (Steps 12-14) - 40 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 12: Track Return Paths - 12 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 13: Handle Complex Return Patterns - 14 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 14: Validate Return Types Match - 14 tests - **COMPLETE** (December 12, 2025)
+    - ✅ Phase 5: Dead Code Detection (Steps 15-17.5) - 38 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 15: Detect Unused Variables - 13 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 15.5: Fix Nested Scope Variable Visibility - 12 tests - **COMPLETE** (December 12, 2025) - **CRITICAL FIX**
+      - ✅ Step 16: Detect Unused Functions - 11 tests - **COMPLETE** (December 12, 2025)
+      - ⚠️ Step 17: Optimize Dead Code Reporting - **DEFERRED** - Requires two-pass analysis (see STEPS.md for detailed findings)
+      - ✅ Step 17.5: Comprehension Scope Support - 14 tests - **COMPLETE** (December 12, 2025)
+    - ✅ Phase 6: Integration & Documentation (Steps 18-20) - 20 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 18: Integrate with SemanticAnalyzer - 10 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 19: Comprehensive Integration Tests - 10 tests - **COMPLETE** (December 12, 2025)
+      - ✅ Step 20: Documentation & Finalization - **COMPLETE** (December 12, 2025)
+    - **Total Control Flow tests: 1060 passing** (1040 baseline + 20 integration = 1060 total)
+    - **Key Features**:
+      - Unreachable code detection after return/break/continue/raise
+      - Uninitialized variable detection with scope tracking
+      - Missing return statement detection in typed functions
+      - Unused variable and function warnings
+      - Full comprehension scope support (Python 3+ semantics)
+      - Nested function closure support
+      - Configurable (can be disabled for pure type checking tests)
+    - **Known Limitations**:
+      - ⚠️ Method calls (`obj.method()`) are not tracked as function calls - methods will appear as unused functions
+      - ⚠️ Decorator function invocations are not tracked - decorator functions will appear as unused (though decorated functions are correctly marked as used)
+      - These limitations are documented in integration tests: `test_class_methods_control_flow` and `test_decorator_with_control_flow`
+      - Future enhancement: requires extending call tracking to handle attribute access expressions and decorator application
 - Code Generation ❌ (0% - future)
 - Runtime ❌ (0% - future)
 
@@ -104,7 +138,7 @@
 
 ## ⚠️ Active Issues
 
-✅ **No active critical issues** - All phases complete, 830 tests passing
+✅ **No active critical issues** - Control flow analysis in progress, 1026 tests passing (181 control flow tests: 8 infrastructure + 10 unreachable + 12 conditional reachability + 14 loop reachability + 15 try/except reachability + 19 variable initialization + 15 conditional initialization + 12 function parameter initialization + 12 return path tracking + 14 complex return patterns + 14 return validation + 13 unused variable detection + 12 nested scope variables + 11 unused function detection = 181)
 
 ---
 

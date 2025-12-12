@@ -11,7 +11,7 @@ y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -29,7 +29,7 @@ y = x[1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -47,7 +47,7 @@ y: int = x["a"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -65,7 +65,7 @@ y: str = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -84,7 +84,7 @@ y = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     // Should have error for undefined function, but NOT for subscript
@@ -108,7 +108,7 @@ y: int = x["a"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected InvalidSubscript error");
@@ -133,7 +133,7 @@ y = x["test"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected InvalidSubscript error");
@@ -155,7 +155,7 @@ y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -183,7 +183,7 @@ y = x["test"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected InvalidSubscript error");
@@ -206,7 +206,7 @@ y: int = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -235,7 +235,7 @@ y = x[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected InvalidSubscript error");
@@ -259,7 +259,7 @@ y: int = x[0][1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -277,7 +277,7 @@ y: int = x["a"][0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected InvalidSubscript error");
@@ -300,7 +300,7 @@ y: int = x[0] + x[1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -321,7 +321,7 @@ y: int = f(x[0])
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -341,7 +341,7 @@ b: int = y[999]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected errors, got: {:?}", result);
@@ -368,7 +368,7 @@ result: str = d[42]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(

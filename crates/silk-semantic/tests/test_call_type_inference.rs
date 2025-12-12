@@ -14,7 +14,7 @@ result = get_number()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type int
@@ -32,7 +32,7 @@ msg = get_message()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // msg should have type str
@@ -50,7 +50,7 @@ x = some_func()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // x should have Unknown type (no return type annotation)
@@ -68,7 +68,7 @@ pi = calculate()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // pi should have type float
@@ -83,7 +83,7 @@ length = len([1, 2, 3])
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // length should have type int
@@ -98,7 +98,7 @@ text = str(123)
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // text should have type str
@@ -113,7 +113,7 @@ result = print("hello")
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type None
@@ -136,7 +136,7 @@ result = process(get_int())
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type str (from process's return type)
@@ -157,7 +157,7 @@ result = get_x() + get_y()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type int (int + int = int)
@@ -175,7 +175,7 @@ result = print(get_message())
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type None (print returns None)
@@ -195,7 +195,7 @@ z = create()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // All should have type int
@@ -219,7 +219,7 @@ result = factorial(5)
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // result should have type int
@@ -239,7 +239,7 @@ result = obj.method()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Method calls not yet supported - returns Unknown
@@ -255,7 +255,7 @@ result = x()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // Calling a non-function (int) returns Unknown
@@ -270,7 +270,7 @@ result = undefined_function()
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     // Will have error about undefined function
     let analysis_result = analyzer.analyze(&program);
     assert!(
@@ -290,7 +290,7 @@ user_input = input("Enter name: ")
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // input returns str
@@ -308,7 +308,7 @@ number = int("42")
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // int() returns int
@@ -323,7 +323,7 @@ number = float("3.14")
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // float() returns float
@@ -338,7 +338,7 @@ flag = bool(1)
 "#;
     let program = Parser::parse(source).unwrap();
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     analyzer.analyze(&program).unwrap();
 
     // bool() returns bool

@@ -10,7 +10,7 @@ x: int = 1 + 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -27,7 +27,7 @@ x: float = 1.5 + 2.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -46,7 +46,7 @@ y: float = 3.5 + 4
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -63,7 +63,7 @@ x: str = "hello" + "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -82,7 +82,7 @@ c: float = 7 - 1.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -101,7 +101,7 @@ c: float = 3 * 1.5
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -120,7 +120,7 @@ c: float = 8 / 2.0
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -143,7 +143,7 @@ e: int = 16 >> 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -162,7 +162,7 @@ x = 1 + "hello"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for int + str");
@@ -182,7 +182,7 @@ x = "hello" + 42
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for str + int");
@@ -199,7 +199,7 @@ x = "hello" - "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for str - str");
@@ -217,7 +217,7 @@ x = "hello" * 3.14
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for str * float");
@@ -234,7 +234,7 @@ x = True + False
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for bool + bool");
@@ -253,7 +253,7 @@ x = 3.14 | 2.71
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for float | float");
@@ -271,7 +271,7 @@ x = "hello" & "world"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for str & str");
@@ -288,7 +288,7 @@ x = 1.5 << 2
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for float << int");
@@ -310,7 +310,7 @@ def f():
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     // Should only error on undefined 'y', not on the operation
@@ -332,7 +332,7 @@ y: float = (5.0 / 2.0) + (3.0 * 1.5)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -349,7 +349,7 @@ x = (1 + 2) * ("hello" + 3)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -374,7 +374,7 @@ x: int = add(1 + 2, 3 * 4)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(
@@ -392,7 +392,7 @@ y: int = x + "text"
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(

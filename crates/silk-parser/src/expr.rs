@@ -7,7 +7,7 @@ use silk_lexer::TokenKind;
 
 /// Operator precedence levels (higher = tighter binding)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Precedence {
+pub(crate) enum Precedence {
     None = 0,
     Walrus = 1,          // := (named expression)
     Or = 2,              // or
@@ -32,7 +32,7 @@ impl Parser {
     }
 
     /// Parse expression with operator precedence climbing
-    fn parse_precedence(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
+    pub(crate) fn parse_precedence(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
         let mut left = self.parse_primary()?;
 
         while !self.is_at_end() {
@@ -1053,7 +1053,7 @@ impl Parser {
 
 impl Precedence {
     /// Get next higher precedence level (for left-associative operators)
-    fn succ(self) -> Self {
+    pub(crate) fn succ(self) -> Self {
         match self as u8 {
             x if x < Precedence::Primary as u8 => unsafe { std::mem::transmute(x + 1) },
             _ => self,

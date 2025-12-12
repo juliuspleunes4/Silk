@@ -16,7 +16,7 @@ y: str = get_number()
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected error for str = int");
@@ -42,7 +42,7 @@ y: int = get_list()["bad"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err(), "Expected subscript error");
@@ -72,7 +72,7 @@ bad: str = add(double(5), double(10))
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -100,7 +100,7 @@ z: int = get_int() + get_str()
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -130,7 +130,7 @@ c: int = a["bad"]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -156,7 +156,7 @@ x: int = conditional(True)
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -180,7 +180,7 @@ z: str = x[0][1]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -202,7 +202,7 @@ y: int = data[0]
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -229,7 +229,7 @@ z: str = process("bad")
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
@@ -273,7 +273,7 @@ bad3: int = process_list("not a list")
 "#;
     let program = Parser::parse(source).expect("Failed to parse");
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new_without_control_flow();
     let result = analyzer.analyze(&program);
 
     assert!(result.is_err());
